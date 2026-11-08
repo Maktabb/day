@@ -417,6 +417,19 @@ textarea.inp{min-height:70px;resize:vertical}
 .tbl tr.sech td{background:var(--line-2);font-weight:700}
 .tbl tr.tot td{border-top:2px solid var(--line);font-weight:700}
 
+.tbl.sm{font-size:12.5px}
+.tbl.sm th,.tbl.sm td{padding:8px 7px;white-space:nowrap}
+.tbl.sm td:first-child,.tbl.sm th:first-child{position:sticky;inset-inline-start:0;background:var(--surface);z-index:1}
+.tbl.sm th:first-child{background:var(--surface-2)}
+.tbl.sm tr.sech td:first-child{background:var(--line-2)}
+.tbl.sm tfoot td:first-child{background:var(--surface-2)}
+.stcard{margin-bottom:10px;cursor:pointer}
+.stg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin-top:10px;font-size:13px}
+.stg div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dashed var(--line-2);padding-bottom:4px}
+.stg small{color:var(--muted)}
+@media (max-width:420px){.kpi{padding:12px}.kpi .v{font-size:19px}.kpi .l{font-size:12px}h1.pg{font-size:22px}}
+@media (max-width:420px){.tbl.sm{font-size:12px}.tbl.sm th,.tbl.sm td{padding:8px 5px}}
+
 </style>
 </head>
 <body>
@@ -2199,6 +2212,8 @@ function dayReview() {
 const AN = { tab: 'is', period: 'all', from: '', to: '', ownerRev: 0 };
 const AN_TABS = [['is', 'قائمة الدخل'], ['ie', 'إيرادات ومصروفات'], ['ge', 'مصروفات عمومية'], ['pl', 'ربحية وسيولة'], ['bs', 'المركز المالي'], ['st', 'مستوى الموظف'], ['pe', 'مصروفات شخصية']];
 
+const anMon = ym => { const [y, m] = ym.split('-'); return AR_MONTHS[+m - 1] + ' ' + y.slice(2); };
+const am = (v, c) => money(Math.round(+v || 0), c);
 /* توحيد أسماء البنود المكتوبة بأكثر من شكل */
 const AN_NORM = { 'تأأسيس': 'رسوم تأسيس', 'ض ق مصافة': 'ضريبة قيمة مضافة', 'نقابة': 'نقابة المحامين', 'اشترك موقع': 'اشتراك موقع', 'تجديد تشييد وبناء': 'تجديد التشييد والبناء',
   'ايدع رأس المال': 'إيداع رأس المال', 'مستخرين': 'مستخرج سجل تجاري', 'متسخرج': 'مستخرج سجل تجاري', 'مستخرح': 'مستخرج سجل تجاري', 'ضايفة': 'ضيافة', 'ختك الكترونى 3 سنين': 'ختم إلكتروني / توكن',
@@ -2262,12 +2277,13 @@ function vAnalytics(r, el) {
   const txs = anTxs(), { S, M, mk } = anAgg(txs);
   const body = { is: anIncome, ie: anIE, ge: anGeneral, pl: anProfit, bs: anBalance, st: anStaff, pe: anPersonal }[AN.tab](txs, S, M, mk);
   el.innerHTML = `<h1 class="pg">التحليلات المالية</h1>
-    <div class="card pad filters"><div class="chips scroll">${PERIODS.filter(p => p[0] !== 'yest').map(([k, l]) => `<button class="chip ${AN.period === k ? 'on' : ''}" data-act="an-period" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="card pad filters"><select class="inp" data-act-change="an-period" style="width:100%">${PERIODS.filter(p => p[0] !== 'yest').map(([k, l]) => `<option value="${k}" ${AN.period === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
       ${AN.period === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-an="from" value="${AN.from}"><span class="small">إلى</span><input type="date" class="inp" data-an="to" value="${AN.to}"></div>` : ''}
-      <div class="chips scroll" style="margin-top:10px">${AN_TABS.map(([k, l]) => `<button class="chip ${AN.tab === k ? 'on' : ''}" data-act="an-tab" data-v="${k}">${l}</button>`).join('')}</div></div>
+      <div class="chips scroll antabs" style="margin-top:10px">${AN_TABS.map(([k, l]) => `<button class="chip ${AN.tab === k ? 'on' : ''}" data-act="an-tab" data-v="${k}">${l}</button>`).join('')}</div></div>
     ${xlDone() ? '' : `<div class="note warn" style="margin-top:10px">${icon('info', 18)}<div>حركات الإكسيل القديمة لم تُرحَّل بعد، فالتحليلات هنا تشمل حركات البرنامج فقط. نفّذي «ترحيل حركات الإكسيل» من الإعدادات لتدخل المصروفات القديمة في كل التحليلات.</div></div>`}
     <div style="margin-top:12px">${body}</div>
     <div class="note info" style="margin-top:12px">${icon('info', 18)}<div>التحليلات تحسب الحركات المعتمدة فقط، وعلى أساس نقدي (ما دخل وما خرج فعلًا). تحويلات العهدة بين الزملاء لا تدخل في أي إيراد أو مصروف.</div></div>`;
+  setTimeout(() => { const c = el.querySelector('.antabs .chip.on'); if (c) c.scrollIntoView({ inline: 'center', block: 'nearest' }); }, 0);
 }
 
 /* ---- قائمة الدخل ---- */
@@ -2278,11 +2294,11 @@ function anIncome(txs, S, M, mk) {
   return `<div class="card pad"><label class="row small" style="cursor:pointer"><input type="checkbox" data-act="an-owner" ${AN.ownerRev ? 'checked' : ''}> اعتبار «وارد أ. محمود» (الذي ليس عليه اسم عميل) إيرادًا من العملاء</label>
       <div class="small muted" style="margin-top:4px">في الإكسيل أغلب مدفوعات العملاء كانت مسجلة «وارد أ. محمود» بدون اسم العميل. بدون هذا الخيار يظهر الإيراد أقل من الحقيقي في الفترة القديمة.</div></div>
     <div class="grid g4" style="margin-top:12px">
-      <div class="card kpi"><div class="l">صافي الإيراد</div><div class="v pos">${money(nr)}</div></div>
-      <div class="card kpi"><div class="l">مجمل الربح · ${anPct(S.gross, nr)}</div><div class="v ${anNeg(S.gross)}">${money(S.gross)}</div></div>
-      <div class="card kpi"><div class="l">المصروفات العمومية والرواتب</div><div class="v neg">${money(S.opex)}</div></div>
-      <div class="card kpi hl"><div class="l">صافي الربح · ${anPct(S.net, nr)}</div><div class="v ${anNeg(S.net)}">${money(S.net)}</div></div></div>
-    <div class="card tblwrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>البند</th><th class="n">المبلغ</th><th class="n">% من الإيراد</th></tr></thead><tbody>
+      <div class="card kpi"><div class="l">صافي الإيراد</div><div class="v pos">${am(nr)}</div></div>
+      <div class="card kpi"><div class="l">مجمل الربح · ${anPct(S.gross, nr)}</div><div class="v ${anNeg(S.gross)}">${am(S.gross)}</div></div>
+      <div class="card kpi"><div class="l">المصروفات العمومية والرواتب</div><div class="v neg">${am(S.opex)}</div></div>
+      <div class="card kpi hl"><div class="l">صافي الربح · ${anPct(S.net, nr)}</div><div class="v ${anNeg(S.net)}">${am(S.net)}</div></div></div>
+    <div class="card tblwrap" style="margin-top:12px"><table class="tbl sm"><thead><tr><th>البند</th><th class="n">المبلغ</th><th class="n">% من الإيراد</th></tr></thead><tbody>
       ${anRow('<b>الإيرادات</b>', 0, { blank: 1, cls: 'sech' })}
       ${anRow('مقبوضات من العملاء', S.rev, { ind: 1, pct: anPct(S.rev, nr) })}
       ${AN.ownerRev ? anRow('وارد أ. محمود (معتبر إيرادًا)', S.fund, { ind: 1, pct: anPct(S.fund, nr) }) : ''}
@@ -2312,17 +2328,17 @@ function anIE(txs, S, M, mk) {
   const gov = anBy(txs, t => anKey(t) === 'gov', anCat);
   const totExp = S.direct + S.opex;
   return `<div class="grid g4">
-      <div class="card kpi"><div class="l">إجمالي الإيرادات</div><div class="v pos">${money(S.netRev)}</div></div>
-      <div class="card kpi"><div class="l">إجمالي المصروفات</div><div class="v neg">${money(totExp)}</div></div>
-      <div class="card kpi"><div class="l">الفرق</div><div class="v ${anNeg(S.net)}">${money(S.net)}</div></div>
+      <div class="card kpi"><div class="l">إجمالي الإيرادات</div><div class="v pos">${am(S.netRev)}</div></div>
+      <div class="card kpi"><div class="l">إجمالي المصروفات</div><div class="v neg">${am(totExp)}</div></div>
+      <div class="card kpi"><div class="l">الفرق</div><div class="v ${anNeg(S.net)}">${am(S.net)}</div></div>
       <div class="card kpi"><div class="l">نسبة المصروفات للإيراد</div><div class="v">${anPct(totExp, S.netRev)}</div></div></div>
-    <h2 class="sec">حسب الشهر</h2>
-    <div class="card tblwrap"><table class="tbl"><thead><tr><th>الشهر</th><th class="n">إيرادات</th><th class="n">رسوم حكومية</th><th class="n">مباشر</th><th class="n">عمومي ورواتب</th><th class="n">الفرق</th></tr></thead>
-      <tbody>${mk.map(m => { const o = M[m]; return `<tr><td>${monthName(m)}</td><td class="n">${fmt(o.netRev)}</td><td class="n">${fmt(o.gov)}</td><td class="n">${fmt(o.op)}</td><td class="n">${fmt(o.opex)}</td><td class="n ${anNeg(o.net)}"><b>${fmt(o.net)}</b></td></tr>`; }).join('') || '<tr><td colspan="6" class="empty">لا بيانات</td></tr>'}</tbody>
-      ${mk.length ? `<tfoot><tr><td>الإجمالي</td><td class="n">${fmt(S.netRev)}</td><td class="n">${fmt(S.gov)}</td><td class="n">${fmt(S.op)}</td><td class="n">${fmt(S.opex)}</td><td class="n ${anNeg(S.net)}">${fmt(S.net)}</td></tr></tfoot>` : ''}</table></div>
+    <h2 class="sec">حسب الشهر <small class="muted">(التكاليف = رسوم حكومية + مصروفات مباشرة)</small></h2>
+    <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشهر</th><th class="n">إيرادات</th><th class="n">تكاليف</th><th class="n">عمومي</th><th class="n">الفرق</th></tr></thead>
+      <tbody>${mk.map(m => { const o = M[m]; return `<tr><td>${anMon(m)}</td><td class="n">${fmt(o.netRev)}</td><td class="n">${fmt(o.direct)}</td><td class="n">${fmt(o.opex)}</td><td class="n ${anNeg(o.net)}"><b>${fmt(o.net)}</b></td></tr>`; }).join('') || '<tr><td colspan="5" class="empty">لا بيانات</td></tr>'}</tbody>
+      ${mk.length ? `<tfoot><tr><td>الإجمالي</td><td class="n">${fmt(S.netRev)}</td><td class="n">${fmt(S.direct)}</td><td class="n">${fmt(S.opex)}</td><td class="n ${anNeg(S.net)}">${fmt(S.net)}</td></tr></tfoot>` : ''}</table></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
-      <div><h2 class="sec">الإيراد حسب الشهر</h2><div class="card pad">${anBars(mk.map(m => [monthName(m), r2(M[m].netRev)]), 'g', 24)}</div></div>
-      <div><h2 class="sec">المصروف حسب الشهر</h2><div class="card pad">${anBars(mk.map(m => [monthName(m), r2(M[m].direct + M[m].opex)]), 'r', 24)}</div></div>
+      <div><h2 class="sec">الإيراد حسب الشهر</h2><div class="card pad">${anBars(mk.map(m => [anMon(m), r2(M[m].netRev)]), 'g', 24)}</div></div>
+      <div><h2 class="sec">المصروف حسب الشهر</h2><div class="card pad">${anBars(mk.map(m => [anMon(m), r2(M[m].direct + M[m].opex)]), 'r', 24)}</div></div>
       <div><h2 class="sec">أعلى العملاء دفعًا</h2><div class="card pad">${anBars(cli, 'g', 10)}</div></div>
       <div><h2 class="sec">أعلى بنود الرسوم الحكومية</h2><div class="card pad">${anBars(gov, '', 10)}</div></div></div>`;
 }
@@ -2339,18 +2355,18 @@ function anGeneral(txs) {
   const unsure = cats.filter(([k]) => AN_UNSURE.has(k));
   const sal = txs.filter(t => anKey(t) === 'sal');
   return `<div class="grid g4">
-      <div class="card kpi"><div class="l">إجمالي المصروفات العمومية</div><div class="v neg">${money(tot)}</div></div>
+      <div class="card kpi"><div class="l">إجمالي المصروفات العمومية</div><div class="v neg">${am(tot)}</div></div>
       <div class="card kpi"><div class="l">عدد الحركات</div><div class="v">${g.length}</div></div>
-      <div class="card kpi"><div class="l">متوسط شهري</div><div class="v">${money(mk.length ? r2(tot / mk.length) : 0)}</div></div>
+      <div class="card kpi"><div class="l">متوسط شهري</div><div class="v">${am(mk.length ? r2(tot / mk.length) : 0)}</div></div>
       <div class="card kpi"><div class="l">أكبر بند</div><div class="v" style="font-size:16px">${cats[0] ? esc(cats[0][0]) + ' · ' + anPct(cats[0][1], tot) : '—'}</div></div></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
       <div><h2 class="sec">حسب البند</h2><div class="card pad">${anBars(cats, 'r', 14)}</div></div>
       <div><h2 class="sec">حسب من صرفها</h2><div class="card pad">${anBars(who, '', 10)}</div></div></div>
     <h2 class="sec">أعلى البنود شهريًا</h2>
-    <div class="card tblwrap"><table class="tbl"><thead><tr><th>الشهر</th>${top.map(c => `<th class="n">${esc(c)}</th>`).join('')}<th class="n">الإجمالي</th></tr></thead>
-      <tbody>${mk.map(m => `<tr><td>${monthName(m)}</td>${top.map(c => `<td class="n">${fmt(months[m][c] || 0)}</td>`).join('')}<td class="n"><b>${fmt(months[m].all)}</b></td></tr>`).join('') || '<tr><td colspan="9" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
+    <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشهر</th>${top.map(c => `<th class="n">${esc(c)}</th>`).join('')}<th class="n">الإجمالي</th></tr></thead>
+      <tbody>${mk.map(m => `<tr><td>${anMon(m)}</td>${top.map(c => `<td class="n">${fmt(months[m][c] || 0)}</td>`).join('')}<td class="n"><b>${fmt(months[m].all)}</b></td></tr>`).join('') || '<tr><td colspan="9" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
     <h2 class="sec">كل البنود</h2>
-    <div class="card tblwrap"><table class="tbl"><thead><tr><th>البند</th><th class="n">العدد</th><th class="n">المبلغ</th><th class="n">%</th></tr></thead><tbody>
+    <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>البند</th><th class="n">العدد</th><th class="n">المبلغ</th><th class="n">%</th></tr></thead><tbody>
       ${cats.map(([k, v]) => `<tr><td>${esc(k)}${AN_UNSURE.has(k) ? ' <span class="pendb">يحتاج توضيح</span>' : ''}</td><td class="n">${g.filter(t => anCat(t) === k).length}</td><td class="n">${fmt(v)}</td><td class="n">${anPct(v, tot)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
     ${unsure.length ? `<div class="note warn" style="margin-top:10px">${icon('info', 18)}<div><b>بنود تحتاج توضيحًا (${unsure.length}):</b> ${unsure.map(([k, v]) => esc(k) + ' (' + fmt(v) + ')').join('، ')}. اشرحيها لي لأصنفها صح (مصروف على عميل، تحويل، أو بند مكتب).</div></div>` : ''}
     <div class="note info" style="margin-top:10px">${icon('info', 18)}<div>الرواتب: ${sal.length ? `سُجّل منها ${fmt(sal.reduce((s, t) => s + (+t.amount || 0), 0))} من الإكسيل وتظهر في بند الرواتب بقائمة الدخل.` : 'لم تُضف بعد، وسيكون لها بند مستقل عند إضافتها.'}</div></div>`;
@@ -2366,17 +2382,17 @@ function anProfit(txs, S, M, mk) {
   return `<h2 class="sec" style="margin-top:0">الربحية</h2><div class="grid g4">
       <div class="card kpi"><div class="l">هامش مجمل الربح</div><div class="v ${anNeg(S.gross)}">${anPct(S.gross, S.netRev)}</div></div>
       <div class="card kpi"><div class="l">هامش صافي الربح</div><div class="v ${anNeg(S.net)}">${anPct(S.net, S.netRev)}</div></div>
-      <div class="card kpi"><div class="l">صافي الربح</div><div class="v ${anNeg(S.net)}">${money(S.net)}</div></div>
-      <div class="card kpi"><div class="l">الأتعاب المستحقة (من البرنامج)</div><div class="v" style="color:#0f766e">${money(feeAcc)}</div></div></div>
+      <div class="card kpi"><div class="l">صافي الربح</div><div class="v ${anNeg(S.net)}">${am(S.net)}</div></div>
+      <div class="card kpi"><div class="l">الأتعاب المستحقة (من البرنامج)</div><div class="v" style="color:#0f766e">${am(feeAcc)}</div></div></div>
     <h2 class="sec">السيولة</h2><div class="grid g4">
-      <div class="card kpi hl"><div class="l">النقدية الحالية (خزنة + عُهد)</div><div class="v ${anNeg(cash)}">${money(cash)}</div></div>
-      <div class="card kpi"><div class="l">مصروف شهري (آخر 3 شهور)</div><div class="v">${money(burn)}</div></div>
+      <div class="card kpi hl"><div class="l">النقدية الحالية (خزنة + عُهد)</div><div class="v ${anNeg(cash)}">${am(cash)}</div></div>
+      <div class="card kpi"><div class="l">مصروف شهري (آخر 3 شهور)</div><div class="v">${am(burn)}</div></div>
       <div class="card kpi"><div class="l">تكفي كم شهر</div><div class="v">${runway == null ? '—' : runway.toFixed(1)}</div></div>
-      <div class="card kpi"><div class="l">مستحق على العملاء</div><div class="v">${money(recv)}</div></div></div>
+      <div class="card kpi"><div class="l">مستحق على العملاء</div><div class="v">${am(recv)}</div></div></div>
     <div class="note info" style="margin-top:10px">${icon('info', 18)}<div>دفعات مقدمة من عملاء لم تُستهلك: ${fmt(adv)} ج.م. نسبة التداول = ${adv > 0 ? ((cash + recv) / adv).toFixed(2) : '—'} (النقدية + المستحق ÷ دفعات العملاء المقدمة). أرصدة العملاء من حركات البرنامج فقط ولا تشمل الإكسيل.</div></div>
     <h2 class="sec">حركة النقدية شهريًا</h2>
-    <div class="card tblwrap"><table class="tbl"><thead><tr><th>الشهر</th><th class="n">تشغيلي (صافي)</th><th class="n">تمويل</th><th class="n">مسحوبات وشخصي</th><th class="n">تغير النقدية</th></tr></thead>
-      <tbody>${mk.map(m => { const o = M[m], op = r2(o.rev - o.ref - o.gov - o.op - o.gen - o.sal), ch = r2(op + o.fund + o.xin - o.xout - o.wd - o.pers); return `<tr><td>${monthName(m)}</td><td class="n ${anNeg(op)}">${fmt(op)}</td><td class="n">${fmt(o.fund)}</td><td class="n">${fmt(o.wd + o.pers)}</td><td class="n ${anNeg(ch)}"><b>${fmt(ch)}</b></td></tr>`; }).join('') || '<tr><td colspan="5" class="empty">لا بيانات</td></tr>'}</tbody></table></div>`;
+    <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشهر</th><th class="n">تشغيلي</th><th class="n">تمويل</th><th class="n">مسحوبات</th><th class="n">التغير</th></tr></thead>
+      <tbody>${mk.map(m => { const o = M[m], op = r2(o.rev - o.ref - o.gov - o.op - o.gen - o.sal), ch = r2(op + o.fund + o.xin - o.xout - o.wd - o.pers); return `<tr><td>${anMon(m)}</td><td class="n ${anNeg(op)}">${fmt(op)}</td><td class="n">${fmt(o.fund)}</td><td class="n">${fmt(o.wd + o.pers)}</td><td class="n ${anNeg(ch)}"><b>${fmt(ch)}</b></td></tr>`; }).join('') || '<tr><td colspan="5" class="empty">لا بيانات</td></tr>'}</tbody></table></div>`;
 }
 
 /* ---- المركز المالي ---- */
@@ -2395,10 +2411,10 @@ function anBalance() {
   const resid = r2(equity - known);
   const li = (l, v, o = {}) => `<tr class="${o.cls || ''}"><td>${o.ind ? '<span style="padding-inline-start:16px"></span>' : ''}${l}</td><td class="n ${anNeg(v)}">${fmt(v)}</td></tr>`;
   return `<div class="grid g4">
-      <div class="card kpi"><div class="l">إجمالي الأصول</div><div class="v">${money(assets)}</div></div>
-      <div class="card kpi"><div class="l">إجمالي الالتزامات</div><div class="v">${money(liab)}</div></div>
-      <div class="card kpi hl"><div class="l">حقوق الملكية</div><div class="v ${anNeg(equity)}">${money(equity)}</div></div></div>
-    <div class="card tblwrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>البند</th><th class="n">المبلغ</th></tr></thead><tbody>
+      <div class="card kpi"><div class="l">إجمالي الأصول</div><div class="v">${am(assets)}</div></div>
+      <div class="card kpi"><div class="l">إجمالي الالتزامات</div><div class="v">${am(liab)}</div></div>
+      <div class="card kpi hl"><div class="l">حقوق الملكية</div><div class="v ${anNeg(equity)}">${am(equity)}</div></div></div>
+    <div class="card tblwrap" style="margin-top:12px"><table class="tbl sm"><thead><tr><th>البند</th><th class="n">المبلغ</th></tr></thead><tbody>
       ${li('<b>الأصول</b>', 0, { cls: 'sech' }).replace(/<td class="n[^"]*">0<\/td>/, '<td></td>')}
       ${trs.map(x => li(esc(accName(x.a.id)), x.b, { ind: 1 })).join('')}
       ${cus.map(x => li(esc(accName(x.a.id)) + ' (عهدة)', x.b, { ind: 1 })).join('')}
@@ -2436,8 +2452,9 @@ function anStaff(txs) {
       <div><h2 class="sec" style="margin-top:0">الأكثر تحصيلًا من العملاء</h2><div class="card pad">${anBars(rows.map(o => [accName(o.a.id).replace(/^عهدة\s+/, ''), r2(o.col)]).sort((a, b) => b[1] - a[1]), 'g', 10)}</div></div>
       <div><h2 class="sec" style="margin-top:0">الأكثر صرفًا</h2><div class="card pad">${anBars(rows.map(o => [accName(o.a.id).replace(/^عهدة\s+/, ''), o.spent]).sort((a, b) => b[1] - a[1]), 'r', 10)}</div></div></div>
     <h2 class="sec">تفصيل كل موظف</h2>
-    <div class="card tblwrap"><table class="tbl"><thead><tr><th>الموظف</th><th class="n">حصّل من عملاء</th><th class="n">من أ. محمود</th><th class="n">رسوم</th><th class="n">مباشر</th><th class="n">عمومي</th><th class="n">تحويلات (داخل/خارج)</th><th class="n">الرصيد الآن</th><th class="n">عدد الحركات</th></tr></thead>
-      <tbody>${rows.map(o => `<tr data-act="go" data-h="account/${o.a.id}" style="cursor:pointer"><td>${nm(o)}</td><td class="n">${fmt(o.col)}</td><td class="n">${fmt(o.own)}</td><td class="n">${fmt(o.gov)}</td><td class="n">${fmt(o.op)}</td><td class="n">${fmt(o.gen)}</td><td class="n">${fmt(o.tin)} / ${fmt(o.tout)}</td><td class="n ${anNeg(o.bal)}"><b>${fmt(o.bal)}</b>${o.pend ? ` <span class="pendb">${fmt(o.pend)} بانتظار</span>` : ''}</td><td class="n">${o.n}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
+    ${rows.map(o => `<div class="card pad stcard" data-act="go" data-h="account/${o.a.id}"><div class="row"><b>${nm(o)}</b><span class="sp"></span><span class="${anNeg(o.bal)}"><small class="muted">الرصيد الآن</small> <b>${fmt(o.bal)}</b></span></div>
+      ${o.pend ? `<div class="small" style="margin-top:2px"><span class="pendb">${fmt(o.pend)} بانتظار الاعتماد</span></div>` : ''}
+      <div class="stg"><div><small>حصّل من عملاء</small><b>${fmt(o.col)}</b></div><div><small>من أ. محمود</small><b>${fmt(o.own)}</b></div><div><small>رسوم حكومية</small><b>${fmt(o.gov)}</b></div><div><small>مصروف مباشر</small><b>${fmt(o.op)}</b></div><div><small>مصروف عمومي</small><b>${fmt(o.gen)}</b></div><div><small>عدد الحركات</small><b>${o.n}</b></div><div><small>تحويلات داخلة</small><b>${fmt(o.tin)}</b></div><div><small>تحويلات خارجة</small><b>${fmt(o.tout)}</b></div></div></div>`).join('') || '<div class="empty">لا بيانات</div>'}
     <div class="note info" style="margin-top:10px">${icon('info', 18)}<div>«مسحوبات الإدارة» التي تُصرف من عهدة الموظف لا تظهر في الأعمدة لأنها ليست مصروف مكتب. اضغط على الموظف لفتح حسابه.</div></div>`;
 }
 
@@ -2447,16 +2464,16 @@ function anPersonal(txs, S, M, mk) {
   const top = anBy(p, () => true, t => String(t.description || t.category || 'غير محدد').split(' — ').pop().slice(0, 40));
   return `<div class="row" style="margin-bottom:10px"><button class="btn pri" data-act="new-type" data-t="PERSONAL">${icon('plus', 17)} تسجيل مصروف شخصي</button></div>
     <div class="grid g4">
-      <div class="card kpi hl"><div class="l">المصروفات الشخصية</div><div class="v">${money(S.pers)}</div></div>
+      <div class="card kpi hl"><div class="l">المصروفات الشخصية</div><div class="v">${am(S.pers)}</div></div>
       <div class="card kpi"><div class="l">عدد الحركات</div><div class="v">${p.length}</div></div>
-      <div class="card kpi"><div class="l">مسحوبات الإدارة الأخرى</div><div class="v">${money(S.wd)}</div></div>
-      <div class="card kpi"><div class="l">تمويل الإدارة</div><div class="v">${money(S.fund)}</div></div></div>
+      <div class="card kpi"><div class="l">مسحوبات الإدارة الأخرى</div><div class="v">${am(S.wd)}</div></div>
+      <div class="card kpi"><div class="l">تمويل الإدارة</div><div class="v">${am(S.fund)}</div></div></div>
     <h2 class="sec">حسب الشهر</h2>
-    <div class="card tblwrap"><table class="tbl"><thead><tr><th>الشهر</th><th class="n">شخصي</th><th class="n">مسحوبات أخرى</th><th class="n">تمويل</th></tr></thead>
-      <tbody>${mk.filter(m => M[m].pers || M[m].wd || M[m].fund).map(m => `<tr><td>${monthName(m)}</td><td class="n">${fmt(M[m].pers)}</td><td class="n">${fmt(M[m].wd)}</td><td class="n">${fmt(M[m].fund)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
+    <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشهر</th><th class="n">شخصي</th><th class="n">مسحوبات أخرى</th><th class="n">تمويل</th></tr></thead>
+      <tbody>${mk.filter(m => M[m].pers || M[m].wd || M[m].fund).map(m => `<tr><td>${anMon(m)}</td><td class="n">${fmt(M[m].pers)}</td><td class="n">${fmt(M[m].wd)}</td><td class="n">${fmt(M[m].fund)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
       <div><h2 class="sec">أكبر البنود</h2><div class="card pad">${anBars(top, '', 10)}</div></div>
-      <div><h2 class="sec">آخر الحركات</h2><div class="card">${p.slice(0, 15).map(t => `<div class="lrow" data-act="tx" data-id="${t.id}"><div class="grow"><b>${esc(t.description || t.category || 'مصروف شخصي')}</b><div class="small muted">${dLong(t.date)} · ${esc(accName(t.fromAcc))}</div></div>${money(t.amount, 'neg')}</div>`).join('') || '<div class="empty">لا توجد حركات في الفترة</div>'}</div></div></div>
+      <div><h2 class="sec">آخر الحركات</h2><div class="card">${p.slice(0, 15).map(t => `<div class="lrow" data-act="tx" data-id="${t.id}"><div class="grow"><b>${esc(t.description || t.category || 'مصروف شخصي')}</b><div class="small muted">${dLong(t.date)} · ${esc(accName(t.fromAcc))}</div></div>${am(t.amount, 'neg')}</div>`).join('') || '<div class="empty">لا توجد حركات في الفترة</div>'}</div></div></div>
     <div class="note info" style="margin-top:10px">${icon('info', 18)}<div>المصروفات الشخصية لا تدخل في مصروفات المكتب ولا في الربح، وتُحسب من حقوق الملكية. المسحوبات القديمة المسماة «مسحوبات أ. محمود» اتنقلت هنا عند ترحيل الإكسيل.</div></div>`;
 }
 
@@ -2832,6 +2849,7 @@ function bindEvents() {
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.id === 'bk-file') return importBackup(t.files[0]);
+    if (t.dataset.actChange === 'an-period') { AN.period = t.value; render(); return; }
     if (t.dataset.actChange === 'entry-pick') { if (t.value) go(t.value); return; }
     if (F && t.dataset.rphoto && t.files && t.files[0]) {
       const i = +t.dataset.i;
