@@ -46,7 +46,7 @@ a{color:var(--navy-3);text-decoration:none}
 .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ===== shell ===== */
-.shell{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr)}
+.shell{min-height:100vh;display:grid;align-content:start;grid-template-columns:minmax(0,1fr)}
 .shell>*{min-width:0}
 .top{position:sticky;top:0;z-index:30;background:var(--navy);color:#fff;
   padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;
@@ -380,6 +380,40 @@ textarea.inp{min-height:70px;resize:vertical}
 .lbox .mono.logo{width:58px;height:58px}
 .usel{width:100%;height:52px;font-size:16px;font-weight:600}
 
+.epick{background:transparent;border:0;padding:0;box-shadow:none}
+.epick .pm{max-width:none}
+.epick .pmb.sel{outline:3px solid var(--gold);outline-offset:2px}
+.epick .epsel{margin-top:10px;width:100%;height:52px;font-size:16px;font-weight:600}
+.mybal .epick .pm{max-width:420px}
+
+.pmb.fee{background:#0f766e}
+.epick .pm:has(.fee){grid-template-columns:repeat(3,1fr);max-width:560px}
+.epick .pm:has(.fee) .pmb{font-size:16px;gap:6px;padding:0 6px}
+.bigpair.p3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bigpair.p3 .bigbtn.v{padding:14px 4px;min-height:132px}
+.bigpair.p3 .bigbtn.v b{font-size:17px}
+.bigpair.p3 .bigbtn.v small{display:none}
+
+.eplist{display:grid;gap:8px;margin-top:10px}
+.eplist .eopt{width:100%;height:52px;font-size:16px;font-weight:700;justify-content:center;background:#fff;border:1.5px solid var(--gold);color:var(--navy)}
+.eplist .eopt:active{background:var(--gold);color:#fff}
+
+.pendb{font-size:14px;margin-inline-start:4px}
+.rv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px auto;max-width:460px;text-align:center}
+.rv div{background:#fff7e6;border:1px solid #f3d9a4;border-radius:12px;padding:8px 4px}
+.rv small{display:block;font-size:11px;color:#8a6a1f;margin-bottom:2px}.rv b{font-size:15px;color:var(--navy)}
+.rv.ok{display:block;background:#ecfdf5;border:1px solid #b7ebd0;border-radius:12px;padding:8px;color:#0f766e;font-weight:700;font-size:14px}
+.setcats{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.setcat{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow)}
+.setcat .av{flex:none}.setcat small{display:block;color:#64748b;font-weight:400;margin-top:2px}
+.daysum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.daysum div{background:#f8fafc;border-radius:12px;padding:10px;text-align:center}
+
+.cnt{background:#dc2626;color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;margin-inline-start:4px}
+.rvrow{display:flex;align-items:center;gap:6px;border-bottom:1px solid #eef0f3}.rvrow .tx{flex:1;border:0}.rvb{padding:0 8px}
+
+.xlb{font-size:10px;background:#eef2ff;color:#3730a3;border-radius:6px;padding:1px 5px;font-weight:700}
+
 </style>
 </head>
 <body>
@@ -521,18 +555,19 @@ const TYPES = {
   IN_OWNER: { n: 'وارد من الأستاذ محمود', s: 'وارد من أ. محمود', d: 1, c: '#0e7490', ic: 'bank', hint: 'مبلغ استلمته من الأستاذ محمود' },
   OUT_OWNER: { n: 'مسحوبات الإدارة', s: 'مسحوبات', d: -1, c: '#6b3fa0', ic: 'out', hint: 'مبالغ مسحوبة لصالح أ. محمود' },
   CLIENT_REFUND: { n: 'رد مبلغ لعميل', s: 'رد لعميل', d: -1, c: '#be185d', ic: 'undo', hint: 'إرجاع جزء من مدفوعات العميل', client: 1 },
+  FEE: { n: 'أتعاب مستحقة', s: 'أتعاب', d: 0, c: '#0f766e', ic: 'chart', hint: 'أتعاب المكتب المتفق عليها للعميل — تُسجَّل على حسابه ولا تحرّك الخزينة', client: 1 },
   OPENING: { n: 'رصيد افتتاحي', s: 'رصيد افتتاحي', d: 1, c: '#57606a', ic: 'flag', hint: 'رصيد مرحّل لحساب أو لعميل' }
 };
 /* الصلاحيات الثلاث: full = الصلاحية الكاملة، sup = أدمن / مشرف، staff = محاسب / محامي */
 const ROLE_NAMES = { full: 'الصلاحية الكاملة', sup: 'أدمن / مشرف', staff: 'محاسب / محامي' };
 const ROLE_INFO = {
   full: 'كل الصلاحيات: إدارة الفريق (إضافة وحذف وتعديل الصلاحيات)، ربط الشيت واسترجاع النسخ، الأرصدة الافتتاحية، والتقارير.',
-  sup: 'يرى عُهد بقية الفريق وكل الحركات والتقارير، ويدخل كل أنواع الحركات ويدير الخزينة ويراجع تكرار العملاء ويدمجهم، دون إدارة الفريق.',
+  sup: 'يرى عُهد الفريق ويراجعها، وأرصدة العملاء ومصروفاتهم، وكل الحركات (تعديلها وحذفها بكود الحذف)، ويدخل كل أنواع الحركات ويراجع تكرار العملاء ويدمجهم؛ دون إدارة الفريق والأكواد والأرباح والخسائر.',
   staff: 'يسجّل الوارد (من الخزنة أو من الأستاذ محمود أو من عميل) والصرف (رسوم أو مصروفات أو تحويل عهدة لزميل)، ويرى حركاته وعهدته فقط.'
 };
 const ROLE_TYPES = {
   staff: ['IN_CLIENT', 'IN_OWNER', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP'],
-  sup: ['IN_CLIENT', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'IN_OWNER', 'OUT_OWNER', 'CLIENT_REFUND'],
+  sup: ['IN_CLIENT', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'IN_OWNER', 'OUT_OWNER', 'CLIENT_REFUND', 'FEE'],
   full: Object.keys(TYPES)
 };
 /* توافق مع الأسماء القديمة (admin / accountant / member) */
@@ -591,9 +626,15 @@ function changed() { VER++; persist(); }
 /* ====== وصول للبيانات ====== */
 const userById = id => D.users.find(u => u.id === id);
 const accById = id => D.accounts.find(a => a.id === id);
-const accName = id => (accById(id) || {}).name || (id ? id : '—');
+const accGone = a => !!a && a.type === 'custody' && +a.active === 0 && D.users.some(u => u.account === a.id && +u.deleted);
+const accName = id => { const a = accById(id); return a ? (accGone(a) ? 'زميل سابق - ' + String(a.name).replace(/^عهدة\s+/, '') : a.name) : (id ? id : '—'); };
+const hashCode = s => { let h = 5381; const t = 'msj|' + String(s); for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) >>> 0; return 'h' + h.toString(36); };
+const delCodeSet = () => !!((D.lists || {}).delCodeH || [])[0];
+const delCodeOk = c => ((D.lists || {}).delCodeH || [])[0] === hashCode(String(c).trim());
 const clientById = id => D.clients[id];
 const clientName = id => { const c = D.clients[id]; if (!c) return id ? 'عميل غير معروف' : ''; return c.name; };
+const isPend = t => t.approved !== '' && t.approved != null && (+t.approved === 0 || +t.approved === 2);   // غير معتمدة (بانتظار أو مرفوضة)
+const isQueue = t => t.approved !== '' && t.approved != null && +t.approved === 0;
 const activeTx = () => Object.values(D.txs).filter(t => !+t.deleted);
 const isPriv = () => ME && ME.role !== 'staff';          // مشرف أو كاملة
 const isAdmin = () => ME && ME.role !== 'staff';         // إشراف: دمج العملاء ومراجعة التكرار
@@ -611,33 +652,40 @@ function calc() {
   const acc = {}, cli = {}, usage = {};
   D.accounts.forEach(a => acc[a.id] = { bal: 0, inM: 0, outM: 0, n: 0, last: '' });
   const ms = monthStart(today());
-  const ca = id => cli[id] || (cli[id] = { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, n: 0, last: '' });
+  const ca = id => cli[id] || (cli[id] = { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, n: 0, last: '' });
   const A_ = id => acc[id] || (acc[id] = { bal: 0, inM: 0, outM: 0, n: 0, last: '' });
   for (const t of activeTx()) {
     const a = +t.amount || 0;
-    const inA = (id) => { if (!id) return; const x = A_(id); x.bal += a; x.n++; if (t.date >= ms) x.inM += a; if (t.date > x.last) x.last = t.date; };
-    const outA = (id) => { if (!id) return; const x = A_(id); x.bal -= a; x.n++; if (t.date >= ms) x.outM += a; if (t.date > x.last) x.last = t.date; };
+    const inA = (id) => { if (!id) return; const x = A_(id); x.bal += a; if (isPend(t)) x.pend = (x.pend || 0) + a; x.n++; if (t.date >= ms) x.inM += a; if (t.date > x.last) x.last = t.date; };
+    const outA = (id) => { if (!id) return; const x = A_(id); x.bal -= a; if (isPend(t)) x.pend = (x.pend || 0) - a; x.n++; if (t.date >= ms) x.outM += a; if (t.date > x.last) x.last = t.date; };
+    const cx = isXL(t) ? () => ({}) : ca;   // حركات الإكسيل لا تدخل في رصيد العميل (المدفوعات القديمة لم تكن مربوطة بالعملاء)
     switch (t.type) {
-      case 'IN_CLIENT': inA(t.toAcc); if (t.clientId) ca(t.clientId).paid += a; break;
+      case 'IN_CLIENT': inA(t.toAcc); if (t.clientId) cx(t.clientId).paid += a; break;
       case 'IN_OWNER': inA(t.toAcc); break;
       case 'TRANSFER': outA(t.fromAcc); inA(t.toAcc); break;
-      case 'GOV_FEE': outA(t.fromAcc); if (t.clientId) ca(t.clientId).fees += a; break;
-      case 'OP_EXP': outA(t.fromAcc); if (t.clientId) ca(t.clientId).ops += a; break;
+      case 'GOV_FEE': outA(t.fromAcc); if (t.clientId) cx(t.clientId).fees += a; break;
+      case 'OP_EXP': outA(t.fromAcc); if (t.clientId) cx(t.clientId).ops += a; break;
       case 'OFFICE_EXP': case 'OUT_OWNER': outA(t.fromAcc); break;
-      case 'CLIENT_REFUND': outA(t.fromAcc); if (t.clientId) ca(t.clientId).refund += a; break;
+      case 'FEE': if (t.clientId) cx(t.clientId).chg += a; break;
+      case 'CLIENT_REFUND': outA(t.fromAcc); if (t.clientId) cx(t.clientId).refund += a; break;
       case 'OPENING': if (t.toAcc) { const x = A_(t.toAcc); x.bal += a; x.n++; if (t.date > x.last) x.last = t.date; } if (t.clientId) ca(t.clientId).opening += a; break;
     }
     if (t.clientId) { const c = ca(t.clientId); c.n++; if (t.date > c.last) c.last = t.date; }
     if (t.category) { const k = t.type + '|' + t.category; usage[k] = (usage[k] || 0) + 1; }
     if (t.place) usage['P|' + t.place] = (usage['P|' + t.place] || 0) + 1;
   }
-  Object.values(cli).forEach(c => c.bal = r2(c.opening + c.paid - c.refund - c.fees - c.ops));
+  Object.values(cli).forEach(c => c.bal = r2(c.opening + c.paid - c.refund - c.fees - c.ops - c.chg));
   _calc = { acc, cli, usage };
   _calcVer = VER;
   return _calc;
 }
 const accBal = id => r2((calc().acc[id] || {}).bal || 0);
-const cliStat = id => calc().cli[id] || { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, n: 0, last: '', bal: 0 };
+const accPend = id => r2((calc().acc[id] || {}).pend || 0);
+const accBalR = id => r2(accBal(id) - accPend(id));
+const pendTxs = () => activeTx().filter(isPend);
+const queueTxs = () => activeTx().filter(isQueue);
+const pendOf = id => pendTxs().filter(t => t.fromAcc === id || t.toAcc === id);
+const cliStat = id => calc().cli[id] || { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, n: 0, last: '', bal: 0 };
 
 /* ====== الأرشيف ====== */
 let _arch = null, _archVer = null;
@@ -669,6 +717,43 @@ function archIndex() {
 const archObj = r => { const o = {}; ARCH_COLS.forEach((k, i) => o[k] = r[i]); return o; };
 
 /* التدفقات المستخرجة من الأرشيف لأغراض التقارير فقط */
+const isXL = t => String(t.batchId || '').startsWith('XL-');
+const xlDone = () => !!((D.lists || {}).xlImported || [])[0];
+/* تحويل صفوف يومية الإكسيل إلى حركات عادية — بنفس أثرها على الأرصدة تمامًا */
+function buildLegacyTxs() {
+  const { ci } = archIndex(), out = [], missing = new Set(), now = nowIso();
+  const accOf = m => (D.accounts.find(a => a.type === 'custody' && String(a.name).replace(/^عهدة\s+/, '') === m) || {}).id;
+  const userOf = id => (D.users.find(u => u.account === id) || {}).id || ME.id;
+  const rows = A.rows.slice().sort((x, y) => String(x[ci.date]).localeCompare(String(y[ci.date])) || (+x[ci.row]) - (+y[ci.row]));
+  rows.forEach((r, n) => {
+    const kind = r[ci.kind], date = r[ci.date], cat = r[ci.cat] || '', cid = r[ci.clientId] || '', mem = r[ci.member], row = r[ci.row];
+    const C = +r[ci.inc] || 0, Dd = +r[ci.cust] || 0, E = +r[ci.misc] || 0, F = +r[ci.fee] || 0;
+    const M = accOf(mem); if (!M) { missing.add(mem); return; }
+    const clean = v => (v == null || v === 'None') ? '' : String(v).trim();
+    const desc = [clean(r[ci.name]), clean(r[ci.desc])].filter(Boolean).join(' — ');
+    const ts = new Date(Date.parse(date + 'T06:00:00Z') + n * 1000).toISOString();
+    const base = { date, clientId: '', category: '', description: desc, payMethod: '', place: clean(r[ci.place]), stage: '', service: '', projectRef: '', receiptNo: '',
+      fromAcc: '', toAcc: '', batchId: 'XL-' + row, userId: userOf(M), createdAt: ts, updatedAt: now, updatedBy: ME.id, deleted: 0, approved: 1, approvedBy: ME.id, approvedAt: now };
+    let k = 0; const push = o => out.push({ ...base, id: 'XL' + row + '-' + (k++), ...o });
+    const inType = (cid || kind === 'وارد عميل') ? 'IN_CLIENT' : 'IN_OWNER';
+    const inCli = inType === 'IN_CLIENT' ? cid : '';
+    const both = Math.min(C, Dd);
+    if (both) push({ type: inType, amount: both, toAcc: M, clientId: inCli });
+    if (C > both) push({ type: inType, amount: r2(C - both), toAcc: 'TRS', clientId: inCli });
+    if (Dd > both) push({ type: 'TRANSFER', amount: r2(Dd - both), fromAcc: 'TRS', toAcc: M });
+    const own = kind === 'مسحوبات أ. محمود' || kind === 'تحويل عهدة';
+    const office = kind === 'مصروف عمومي' || ((kind === 'غير مصنف' || kind === 'تسوية' || kind === 'رصيد مرحل') && !cid);
+    const exp = (amt, isFee) => {
+      if (!amt) return;
+      if (own) return push({ type: 'OUT_OWNER', amount: amt, fromAcc: M, category: kind });
+      if (office) return push({ type: 'OFFICE_EXP', amount: amt, fromAcc: M, category: cat || 'مصروفات متنوعة' });
+      if (isFee) return push({ type: 'GOV_FEE', amount: amt, fromAcc: M, clientId: cid, category: cat || 'غير محدد' });
+      push({ type: 'OP_EXP', amount: amt, fromAcc: M, clientId: cid, category: kind === 'مصروف عملية' ? (cat || 'غير محدد') : 'غير محدد' });
+    };
+    exp(E, false); exp(F, true);
+  });
+  return { txs: out, missing: [...missing] };
+}
 function legacyFlows() {
   const out = [];
   const { ci } = archIndex();
@@ -729,7 +814,7 @@ async function flush() {
   try {
     while (Q.length) {
       const op = Q[0];
-      const res = await apiPost(op.action, op.payload);
+      const res = await apiPost(op.action, op.action === 'importTx' && op.payload.ids ? { txs: op.payload.ids.map(id => D.txs[id]).filter(Boolean) } : op.payload);
       if (res.error === 'BAD_KEY') throw Object.assign(new Error('رمز الربط غير صحيح'), { hard: 1 });
       if (!res.ok) onOpError(op, res); else onOpOk(op, res);
       Q.shift();
@@ -755,7 +840,7 @@ function compressImage(file, maxSide = 1600, q = 0.72) {
 const receiptPending = id => Q.some(q => q.action === 'saveReceipt' && q.payload.txId === id);
 function queueReceipt(tx, image) {
   const c = D.clients[tx.clientId] || {};
-  queue('saveReceipt', { txId: tx.id, clientId: tx.clientId, clientName: c.name || '', phone: c.phone || '', date: tx.date, category: tx.category || '', amount: tx.amount, receiptNo: tx.receiptNo || '', image });
+  queue('saveReceipt', { txId: tx.id, clientId: tx.clientId, clientName: c.name || '', phone: c.phone || '', date: tx.date, category: tx.category || '', description: tx.description || '', amount: tx.amount, receiptNo: tx.receiptNo || '', image });
 }
 
 function onOpOk(op, res) {
@@ -784,12 +869,13 @@ function onOpError(op, res) {
   }
   toast('تعذر حفظ عملية على الشيت — راجع الإعدادات', 'err');
 }
-const normTx = t => ({ ...t, amount: +t.amount || 0, deleted: +t.deleted || 0 });
+const normTx = t => ({ ...t, amount: +t.amount || 0, deleted: +t.deleted || 0, approved: (t.approved === '' || t.approved == null) ? 1 : +t.approved });
 const normClient = c => ({ ...c, active: c.active === '' || c.active === undefined ? 1 : +c.active });
 function mergeServer(res) {
   const pend = new Set();
   Q.forEach(q => {
     if (q.action === 'saveTx') q.payload.txs.forEach(t => pend.add(t.id));
+    if (q.action === 'importTx') (q.payload.ids || []).forEach(id => pend.add(id));
     if (q.action === 'saveClient') pend.add(q.payload.client.id);
   });
   const pendKinds = new Set(Q.map(q => q.action));
@@ -799,7 +885,13 @@ function mergeServer(res) {
     Object.values(D.clients).forEach(c => { if (pend.has(c.id)) keepC[c.id] = c; });
     D.txs = keepT; D.clients = keepC;
   }
-  (res.transactions || []).forEach(t => { if (!pend.has(t.id)) D.txs[t.id] = normTx(t); });
+  (res.transactions || []).forEach(t => {
+    if (pend.has(t.id)) return;
+    const n = normTx(t), old = D.txs[t.id];
+    // إن كان سكربت الشيت قديمًا (لا يعرف أعمدة الاعتماد) نحتفظ بحالة الاعتماد المحلية
+    if (old && t.approved === undefined) { n.approved = old.approved; n.approvedBy = old.approvedBy; n.approvedAt = old.approvedAt; }
+    D.txs[t.id] = n;
+  });
   (res.clients || []).forEach(c => { if (!pend.has(c.id)) D.clients[c.id] = normClient(c); });
   if (res.accounts && res.accounts.length && !pendKinds.has('saveAccount')) D.accounts = res.accounts.map(a => ({ ...a, active: +a.active }));
   if (res.users && res.users.length && !pendKinds.has('saveUser')) {
@@ -915,6 +1007,7 @@ function navItems() {
     ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
     ['accounts', priv ? 'الخزينة والعهد' : 'عهدتي', 'wallet'],
+    ...(priv ? [['review', 'مراجعة الاعتماد', 'check']] : []),
     ...(priv ? [['reports', 'التقارير', 'chart']] : []),
     ...(isAdmin() ? [['dups', 'مراجعة تكرار العملاء', 'merge']] : []),
     ['settings', 'الإعدادات', 'sliders']
@@ -938,14 +1031,14 @@ function paintNav() {
   const r = route().name;
   const on = h => (r === h || (h === 'clients' && r === 'client') || (h === 'accounts' && r === 'account')) ? 'on' : '';
   $('#side').innerHTML = `<a class="cta" href="#entry">${icon('plus', 18, 2.2)} حركة جديدة</a>` +
-    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${icon(i, 19)} ${l}</a>`).join('') +
+    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${icon(i, 19)} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}</a>`).join('') +
     `<hr><a href="#" data-act="logout">${icon('logout', 19)} تسجيل الخروج</a>`;
   $('#bnav').innerHTML = `
     <a href="#home" class="${on('home')}">${icon('home', 22)}الرئيسية</a>
     <a href="#journal" class="${on('journal')}">${icon('list', 22)}${isPriv() ? 'اليومية' : 'حركاتي'}</a>
     <a href="#entry" class="plus ${on('entry')}"><span>${icon('plus', 24, 2.4)}</span>حركة</a>
     ${isPriv() ? `<a href="#clients" class="${on('clients')}">${icon('users', 22)}العملاء</a>` : `<a href="#account/${myAcc()}" class="${on('accounts')}">${icon('wallet', 22)}عهدتي</a>`}
-    <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'settings', 'dups'].includes(r) ? 'on' : ''}">${icon('menu', 22)}المزيد</a>`;
+    <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'settings', 'dups', 'review'].includes(r) ? 'on' : ''}">${icon('menu', 22)}المزيد</a>`;
 }
 function route() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -969,9 +1062,9 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, reports: vReports, dups: vDups, settings: vSettings, more: vMore };
+    account: vAccount, review: vReview, reports: vReports, dups: vDups, settings: vSettings, more: vMore };
   const fn = V[r.name] || vHome;
-  if ((r.name === 'reports' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
+  if ((r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   $('#view').innerHTML = '';
   fn(r, $('#view'));
   if (!isPriv()) {
@@ -1060,13 +1153,14 @@ function txRow(t, acc) {
   return `<div class="tx" data-act="tx" data-id="${t.id}">
     <div class="ic" style="background:color-mix(in srgb,${m.c} 12%,white);color:${m.c}">${icon(m.ic, 19)}</div>
     <div class="grow"><div class="t1 ell">${esc(txTitle(t, acc))}</div><div class="t2 ell">${sub.join(' · ') || tBadge(t.type)}</div></div>
-    <div class="a ${s > 0 ? 'pos' : s < 0 ? 'neg' : ''}">${s > 0 ? '+' : s < 0 ? '−' : '⇄ '}${money(amt)}</div>
+    ${isPend(t) ? (+t.approved === 2 ? '<span class="pendb" title="غير معتمدة">❌</span>' : '<span class="pendb" title="لم تُراجع بعد">⏳</span>') : ''}
+    <div class="a ${s > 0 ? 'pos' : s < 0 ? 'neg' : ''}" ${t.type === 'FEE' ? `style="color:${m.c}"` : ''}>${s > 0 ? '+' : s < 0 ? '−' : t.type === 'FEE' ? '' : '⇄ '}${money(amt)}</div>
   </div>`;
 }
 function txDetails(id) {
   const t = D.txs[id]; if (!t) return;
   const m = TYPES[t.type] || {};
-  const u = userById(t.userId);
+  const u0 = userById(t.userId), u = u0 && +u0.deleted ? { ...u0, name: 'زميل سابق - ' + u0.name } : u0;
   const can = canEdit(t);
   const rows = [
     ['النوع', tBadge(t.type)], ['التاريخ', dLong(t.date)], ['المبلغ', `<b>${money(t.amount)}</b> ج.م`],
@@ -1076,11 +1170,13 @@ function txDetails(id) {
     t.type === 'GOV_FEE' && ['صورة الإيصال', t.receiptUrl ? `<a href="${esc(t.receiptUrl)}" target="_blank" rel="noopener">فتح الصورة على Drive</a>` : (receiptPending(t.id) ? 'قيد الرفع على Drive…' : '<span class="muted">لا توجد صورة</span>')], t.place && ['المكان', esc(t.place)],
     t.payMethod && ['طريقة الدفع', esc(t.payMethod)], t.stage && ['المرحلة', esc(t.stage)], t.service && ['الخدمة', esc(t.service)],
     t.description && ['البيان', esc(t.description)], ['أدخلها', esc(u ? u.name : t.userId) + ` <span class="muted small">${t.createdAt ? new Date(t.createdAt).toLocaleString('ar-EG-u-nu-latn') : ''}</span>`],
+    !+t.deleted && t.type !== 'OPENING' && ['المراجعة', isPend(t) ? (+t.approved === 2 ? '<b style="color:#b91c1c">❌ غير معتمدة</b>' : '<b style="color:#b45309">⏳ بانتظار الاعتماد</b>') : `<b style="color:#0f766e">✔ معتمدة</b>${t.approvedBy && userById(t.approvedBy) ? ' <span class="muted small">— ' + esc(userById(t.approvedBy).name) + '</span>' : ''}`],
     +t.deleted && ['الحالة', `<span class="neg">محذوفة — ${esc(t.deleteReason || '')}</span>`]
   ].filter(Boolean);
   modal(`<h3><span class="ic" style="color:${m.c}">${icon(m.ic, 20)}</span> تفاصيل الحركة</h3>
     <dl class="dl">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
-    <div class="acts">${can && !+t.deleted ? `<button class="btn pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 17)} تعديل</button>
+    <div class="acts">${isPriv() && !+t.deleted && t.type !== 'OPENING' ? (isPend(t) ? `<button class="btn pri" data-act="tx-approve" data-id="${t.id}">${icon('check', 17)} اعتماد</button>${+t.approved === 2 ? '' : `<button class="btn danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`}` : `<button class="btn" data-act="tx-unapprove" data-id="${t.id}">إلغاء الاعتماد</button>`) : ''}
+      ${can && !+t.deleted ? `<button class="btn pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 17)} تعديل</button>
       <button class="btn danger" data-act="tx-del" data-id="${t.id}">${icon('trash', 17)} حذف</button>` : ''}
       ${t.type === 'GOV_FEE' && !+t.deleted && (isPriv() || t.userId === ME.id) ? `<button class="btn" data-act="tx-photo" data-id="${t.id}">${icon('camera', 17)} ${t.receiptUrl ? 'استبدال الصورة' : 'إرفاق صورة'}</button>` : ''}
       <button class="btn" data-act="mclose">إغلاق</button></div>
@@ -1090,6 +1186,7 @@ function canEdit(t) {
   if (!ME) return false;
   if (t.type === 'OPENING') return isFull();
   if (isPriv()) return true;
+  if (!isPend(t)) return false;
   return t.userId === ME.id && (t.createdAt || '').slice(0, 10) === new Date().toISOString().slice(0, 10);
 }
 
@@ -1109,7 +1206,7 @@ function vHome(r, el) {
   if (mine) {
     const b = accBal(myAcc());
     body = `<div class="card mybal"><div class="l">${icon('wallet', 18)} رصيد عهدتي</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)} <small>ج.م</small></div>
-      ${entryPicker()}</div>`;
+      ${reviewLine(myAcc())}${entryPicker()}</div>`;
   } else {
     const trs = accBal('TRS');
     const cust = D.accounts.filter(a => a.type === 'custody' && +a.active !== 0);
@@ -1125,6 +1222,7 @@ function vHome(r, el) {
       <div class="card kpi"><div class="l">${icon('in', 16)} وارد العملاء — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v pos">${money(inc)}</div></div>
       <div class="card kpi"><div class="l">${icon('out', 16)} المصروفات — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v neg">${money(exp)}</div></div>
     </div>
+    ${trsBreakdown()}
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:12px">
       <div class="card"><h2 class="sec" style="margin:14px 14px 6px">أرصدة العهد</h2>
         ${cust.map(a => { const b = accBal(a.id); return `<div class="lrow" data-act="go" data-h="account/${a.id}"><div class="av">${esc(initials(a.name.replace('عهدة ', '')))}</div><div class="grow"><b>${esc(a.name.replace('عهدة ', ''))}</b><div class="small muted">${(c.acc[a.id] || {}).last ? 'آخر حركة ' + dShort(c.acc[a.id].last) : 'لا حركات بعد'}</div></div><b class="${b < 0 ? 'neg' : ''}">${money(b)}</b></div>`; }).join('')}
@@ -1139,7 +1237,7 @@ function vHome(r, el) {
     </div>`;
   }
   if (mine) { el.innerHTML = hello + body; return; }
-  el.innerHTML = hello + quick + body + `
+  el.innerHTML = hello + quick + body + queueSection() + `
     <h2 class="sec">آخر الحركات</h2>
     <div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
     ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>`;
@@ -1148,16 +1246,17 @@ function bigBtn(em, title, hint, c, h, cls) {
   return `<button class="bigbtn ${cls || ''}" style="--c:${c}" data-act="go" data-h="${h}"><span class="em">${em}</span><span class="tx"><b>${title}</b>${hint ? `<small>${hint}</small>` : ''}</span></button>`;
 }
 function entryPicker() {
-  const ok = k => ROLE_TYPES[isPriv() ? 'full' : 'staff'] ? true : true;
   const allowed = isPriv() ? null : ROLE_TYPES.staff;
   const o = (k, md, n) => (!allowed || allowed.includes(k)) ? `<option value="entry/${k}${md ? '?mode=' + md : ''}">${n}</option>` : '';
-  return `<div class="epick"><label>${icon('plus', 18, 2.2)} حركة جديدة</label><select class="inp" data-act-change="entry-pick">
-    <option value="">اختر نوع الحركة…</option>
-    <optgroup label="📥 وارد">${o('TRANSFER', 'in', 'وارد من خزنة المكتب')}${o('IN_OWNER', '', 'وارد من الأستاذ محمود')}${o('IN_CLIENT', '', 'وارد من عميل')}</optgroup>
-    <optgroup label="📤 صرف">${o('GOV_FEE', '', 'رسوم بإيصال')}${o('OP_EXP', '', 'مصروف مباشر')}${o('OFFICE_EXP', '', 'مصروف عمومي')}${o('TRANSFER', 'out', 'تحويل عهدة لزميل')}</optgroup></select></div>`;
+  const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
+  const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
+  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm">
+      <button class="pmb in" data-act="pick-open" data-g="in"><span>➕</span>وارد</button>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>➖</span>صرف</button>${isPriv() ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button>` : ''}</div>
+    <div class="eplist"></div></div>`;
 }
 function mainPair() {
-  return `<div class="bigpair">${bigBtn('📥', 'وارد', 'من الخزنة أو الأستاذ محمود أو عميل', TYPES.IN_CLIENT.c, 'entry/in', 'v')}${bigBtn('📤', 'صرف', 'رسوم، مصروفات، أو تحويل عهدة', TYPES.OFFICE_EXP.c, 'entry/out', 'v')}</div>`;
+  return `<div class="bigpair ${isPriv() ? 'p3' : ''}">${bigBtn('📥', 'وارد', 'من الخزنة أو الأستاذ محمود أو عميل', TYPES.IN_CLIENT.c, 'entry/in', 'v')}${bigBtn('📤', 'صرف', 'رسوم، مصروفات، أو تحويل عهدة', TYPES.OFFICE_EXP.c, 'entry/out', 'v')}${isPriv() ? bigBtn('💼', 'أتعاب', 'أتعاب مستحقة على عميل', TYPES.FEE.c, 'entry/FEE', 'v') : ''}</div>`;
 }
 function typeTile(k) {
   const m = TYPES[k];
@@ -1169,6 +1268,32 @@ function vMore(r, el) {
   el.innerHTML = `<h1 class="pg">المزيد</h1><div class="card">
     ${navItems().filter(([h]) => !['home', 'journal', 'clients'].includes(h)).map(([h, l, i]) => `<div class="lrow" data-act="go" data-h="${h}"><div class="av">${icon(i, 19)}</div><b class="grow">${l}</b>${icon('fwd', 18)}</div>`).join('')}
     <div class="lrow" data-act="logout"><div class="av">${icon('logout', 19)}</div><b class="grow">تسجيل الخروج</b></div></div>`;
+}
+
+function trsBreakdown() {
+  const m = {};
+  activeTx().forEach(t => {
+    const s = t.toAcc === 'TRS' ? 1 : t.fromAcc === 'TRS' ? -1 : 0; if (!s) return;
+    const k = t.payMethod || 'بدون تحديد طريقة'; m[k] = r2((m[k] || 0) + s * (+t.amount || 0));
+  });
+  const rows = Object.entries(m).filter(([, v]) => Math.abs(v) > 0.004);
+  if (!rows.length) return '';
+  return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">${icon('bank', 18)} خزنة المكتب حسب طريقة الدفع</h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));padding:8px 14px 14px">${rows.sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="card kpi"><div class="l">${esc(k)}</div><div class="v ${v < 0 ? 'neg' : ''}">${money(v)} <small>ج.م</small></div></div>`).join('')}</div></div>`;
+}
+
+function reviewLine(id) {
+  const p = pendOf(id), d = accPend(id);
+  if (!p.length) return `<div class="rv ok">✅ كل حركات العهدة معتمدة</div>`;
+  return `<div class="rv"><div><small>عهدتك الآن</small><b>${money(accBal(id))}</b></div><div><small>بعد المراجعة (المعتمد فقط)</small><b>${money(accBalR(id))}</b></div><div><small>قيد المراجعة</small><b>${p.length} حركة</b></div></div>`;
+}
+
+function queueSection() {
+  const q = queueTxs().sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt));
+  if (!q.length) return '';
+  return `<h2 class="sec">${icon('check', 18)} حركات تحتاج الاعتماد والمراجعة <span class="cnt">${q.length}</span><span class="sp"></span><a href="#review" class="small">فتح المراجعة ←</a></h2>
+    <div class="card">${q.slice(0, 15).map(t => `<div class="rvrow">${txRow(t, '')}<div class="rvb"><button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button></div></div>`).join('')}
+    ${q.length > 15 ? `<div class="totbar"><a href="#review">عرض الباقي (${q.length - 15}) ←</a></div>` : ''}</div>`;
 }
 
 /* ====== شاشة الإدخال ====== */
@@ -1283,13 +1408,14 @@ function formHTML() {
   if (m.lines) parts.push(linesField());
   else parts.push(fld(t === 'OPENING' ? 'المبلغ (بالسالب إن كان الرصيد مدينًا)' : 'المبلغ', `<input class="inp big ltr" style="text-align:center" inputmode="decimal" data-f="amount" placeholder="0" value="${esc(F.amount)}" autocomplete="off">`, { req: 1, help: 'يمكن كتابة جمع مثل 115+85' }));
   // طريقة الدفع
-  if (['IN_CLIENT', 'IN_OWNER', 'OUT_OWNER', 'CLIENT_REFUND', 'TRANSFER'].includes(t)) parts.push(fld('طريقة الدفع', chipsRow('payMethod', list('payMethods'), F.payMethod)));
+  if (['IN_CLIENT', 'IN_OWNER', 'OUT_OWNER', 'CLIENT_REFUND', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t)) parts.push(fld('طريقة الدفع', chipsRow('payMethod', list('payMethods'), F.payMethod)));
   // المرحلة
   if (t === 'GOV_FEE' || t === 'OP_EXP') parts.push(fld('مرحلة ملف العميل <span class="muted small">(اختياري)</span>', chipsRow('stage', list('stages'), F.stage, { scroll: 1 })));
   // البيان
-  const sugg = { IN_CLIENT: ['دفعة تحت الحساب', 'أتعاب', 'رسوم حكومية', 'سداد نهائي'], TRANSFER: ['عهدة يومية', 'رد عهدة', 'استكمال عهدة'] }[t];
-  parts.push(fld('البيان / ملاحظات', `<input class="inp" data-f="description" value="${esc(F.description)}" placeholder="${t === 'IN_CLIENT' ? 'مثال: دفعة تحت حساب التأسيس' : 'اختياري'}">
-    ${sugg ? `<div class="chips" style="margin-top:6px">${sugg.map(s => `<button class="chip" data-act="f-set" data-k="description" data-v="${s}">${s}</button>`).join('')}</div>` : ''}`));
+  const sugg = { FEE: ['أتعاب تأسيس شركة', 'أتعاب استشارة', 'أتعاب مراجعة', 'أتعاب شهرية'], IN_CLIENT: ['دفعة تحت الحساب', 'أتعاب', 'رسوم حكومية', 'سداد نهائي'], TRANSFER: ['عهدة يومية', 'رد عهدة', 'استكمال عهدة'] }[t];
+  const expT = ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t);
+  parts.push(fld(expT ? 'البيان' : 'البيان / ملاحظات', `<input class="inp" data-f="description" value="${esc(F.description)}" placeholder="${t === 'IN_CLIENT' ? 'مثال: دفعة تحت حساب التأسيس' : expT ? 'إجباري: صُرف في إيه وتوضيحه' : 'اختياري'}">
+    ${sugg ? `<div class="chips" style="margin-top:6px">${sugg.map(s => `<button class="chip" data-act="f-set" data-k="description" data-v="${s}">${s}</button>`).join('')}</div>` : ''}`, { req: expT }));
   // تفاصيل إضافية
   if (m.client) parts.push(`<details ${F.service || F.projectRef ? 'open' : ''}><summary class="small" style="cursor:pointer;color:var(--navy-3);font-weight:600">تفاصيل إضافية (الخدمة، مرجع المشروع)</summary>
     <div class="f2 st" style="margin-top:10px">${fld('الخدمة', `<select class="inp" data-f="service"><option value="">—</option>${list('services').map(s => `<option ${F.service === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>`)}
@@ -1498,6 +1624,7 @@ async function saveEntry(again) {
   if (!F.date) return bad('[data-f="date"]', 'حدد التاريخ');
   const needClient = m.client || (t === 'OPENING' && F.openTarget === 'client');
   if (needClient && !F.clientId) { const q = $('#cp-q'); q && q.focus(); return bad('#cp-q', 'اختر العميل أو أضفه'); }
+  if (['GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t) && !F.description.trim()) return bad('[data-f="description"]', 'اكتب البيان: صُرف في إيه وتوضيحه');
   const base = {
     date: F.date, type: t, clientId: needClient ? F.clientId : '', place: F.place || '', stage: F.stage || '', service: F.service || '',
     projectRef: F.projectRef || '', description: F.description.trim(), payMethod: '', receiptNo: '', category: '', fromAcc: '', toAcc: '', batchId: ''
@@ -1545,10 +1672,10 @@ async function saveEntry(again) {
   let saved;
   if (F.editId) {
     const old = D.txs[F.editId];
-    saved = [Object.assign({}, old, rows[0], { id: old.id, userId: old.userId, createdAt: old.createdAt, updatedAt: now, updatedBy: ME.id, batchId: old.batchId || '' })];
+    saved = [Object.assign({}, old, rows[0], { id: old.id, userId: old.userId, createdAt: old.createdAt, updatedAt: now, updatedBy: ME.id, batchId: old.batchId || '' }, isPriv() ? {} : { approved: 0, approvedBy: '', approvedAt: '' })];
   } else {
     const batch = rows.length > 1 ? uid('B') : '';
-    saved = rows.map(x => ({ ...x, id: uid('T'), batchId: batch, userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0 }));
+    saved = rows.map(x => ({ ...x, id: uid('T'), batchId: batch, userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0, approved: isPriv() ? 1 : 0, approvedBy: isPriv() ? ME.id : '', approvedAt: isPriv() ? now : '' }));
   }
   saved.forEach(x => D.txs[x.id] = x);
   queue('saveTx', { txs: saved });
@@ -1598,6 +1725,7 @@ function journalTxs() {
   }).sort((x, y) => (y.date + y.createdAt).localeCompare(x.date + x.createdAt));
 }
 function journalArch() {
+  if (xlDone()) return [];
   if (J.type && J.type !== 'ARCH') return [];
   const { ci } = archIndex();
   const [a, b] = periodRange(J.period, J.from, J.to);
@@ -1639,10 +1767,11 @@ function vJournal(r, el) {
       <div class="chips scroll">${PERIODS.map(([k, l]) => `<button class="chip ${J.period === k ? 'on' : ''}" data-act="j-period" data-v="${k}">${l}</button>`).join('')}</div>
       ${J.period === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-j="from" value="${J.from}"><span class="small">إلى</span><input type="date" class="inp" data-j="to" value="${J.to}"></div>` : ''}
       <div class="fbar">
-        <select class="inp" data-j="type"><option value="">كل الأنواع</option><option value="ARCH" ${J.type === 'ARCH' ? 'selected' : ''}>📊 من يومية الإكسيل فقط</option>${Object.entries(TYPES).map(([k, m]) => `<option value="${k}" ${J.type === k ? 'selected' : ''}>${m.n}</option>`).join('')}</select>
-        ${isPriv() ? `<select class="inp" data-j="acc"><option value="">كل الحسابات</option>${D.accounts.map(a => `<option value="${a.id}" ${J.acc === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>` : ''}
+        <select class="inp" data-j="type"><option value="">كل الأنواع</option>${xlDone() ? '' : `<option value="ARCH" ${J.type === 'ARCH' ? 'selected' : ''}>📊 من يومية الإكسيل فقط</option>`}${Object.entries(TYPES).map(([k, m]) => `<option value="${k}" ${J.type === k ? 'selected' : ''}>${m.n}</option>`).join('')}</select>
+        ${isPriv() ? `<select class="inp" data-j="acc"><option value="">كل الحسابات</option>${D.accounts.filter(a => !accGone(a)).map(a => `<option value="${a.id}" ${J.acc === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>` : ''}
         <div class="search grow" style="min-width:200px">${icon('search', 18)}<input class="inp" style="width:100%" data-j="q" value="${esc(J.q)}" placeholder="بحث: عميل، بند، إيصال، مكان…"></div>
-        <button class="btn sm" data-act="j-export">${icon('download', 16)} تصدير Excel</button>
+        <button class="btn sm" data-act="day-review">${icon('list', 16)} مراجعة يوم</button>
+        ${isPriv() ? `<button class="btn sm" data-act="j-export">${icon('download', 16)} تصدير Excel</button>` : ''}
       </div>
     </div>
     <div class="card" style="margin-top:12px">
@@ -1650,10 +1779,10 @@ function vJournal(r, el) {
         const arr = farr.filter(f => f.t).map(f => f.t);
         const di = r2(arr.filter(t => t.type !== 'OPENING' && txSign(t, J.acc) > 0).reduce((s, t) => s + Math.abs(+t.amount), 0));
         const dout = r2(arr.filter(t => t.type !== 'OPENING' && txSign(t, J.acc) < 0).reduce((s, t) => s + Math.abs(+t.amount), 0));
-        return `<div class="dayh"><span>${dLong(d)}</span><span class="sp"></span><span class="muted small">وارد <b class="pos">${money(di)}</b> · صادر <b class="neg">${money(dout)}</b></span></div>` + farr.map(f => f.t ? txRow(f.t, J.acc || (isPriv() ? '' : myAcc())) : archRow(f.x, aci)).join('');
+        return `<div class="dayh"><span>${dLong(d)}</span><span class="sp"></span>${isPriv() ? `<span class="muted small">وارد <b class="pos">${money(di)}</b> · صادر <b class="neg">${money(dout)}</b></span>` : ''}</div>` + farr.map(f => f.t ? txRow(f.t, J.acc || (isPriv() ? '' : myAcc())) : archRow(f.x, aci)).join('');
       }).join('') : `<div class="empty">لا توجد حركات في هذه الفترة.</div>`}
       ${shown.length > J.limit ? `<div class="totbar"><button class="btn sm" data-act="j-more">عرض المزيد (${shown.length - J.limit})</button></div>` : ''}
-      ${arch.length ? `<div class="totbar"><span>من يومية الإكسيل: <b>${arch.length.toLocaleString('en-US')}</b> سطر</span><span>وارد <b class="pos">${money(aSum('inc'))}</b></span><span>رسوم حكومية <b class="neg">${money(aSum('fee'))}</b></span><span>مصروفات نثرية <b class="neg">${money(aSum('misc'))}</b></span></div>` : ''}<div class="totbar"><span>عدد الحركات: <b>${txs.length}</b></span><span>إجمالي الوارد: <b class="pos">${money(inT)}</b></span><span>إجمالي الصادر: <b class="neg">${money(outT)}</b></span>${J.acc ? `<span>الصافي: <b>${money(inT - outT)}</b></span>` : ''}</div>
+      ${arch.length && isPriv() ? `<div class="totbar"><span>من يومية الإكسيل: <b>${arch.length.toLocaleString('en-US')}</b> سطر</span><span>وارد <b class="pos">${money(aSum('inc'))}</b></span><span>رسوم حكومية <b class="neg">${money(aSum('fee'))}</b></span><span>مصروفات نثرية <b class="neg">${money(aSum('misc'))}</b></span></div>` : ''}<div class="totbar"><span>عدد الحركات: <b>${txs.length}</b></span><span>إجمالي الوارد: <b class="pos">${money(inT)}</b></span><span>إجمالي الصادر: <b class="neg">${money(outT)}</b></span>${J.acc ? `<span>الصافي: <b>${money(inT - outT)}</b></span>` : ''}</div>
     </div>`;
 }
 function exportJournal() {
@@ -1732,7 +1861,7 @@ function clientStatement(id) {
     let cr = 0, dr = 0;
     if (t.type === 'IN_CLIENT' || t.type === 'OPENING') cr = a; else dr = a;
     if (t.type === 'OPENING' && a < 0) { cr = 0; dr = -a; }
-    bal = r2(bal + cr - dr);
+    if (!isXL(t)) bal = r2(bal + cr - dr);
     return { t, cr, dr, bal };
   });
 }
@@ -1769,6 +1898,7 @@ function vClient(r, el) {
     </div>
     <div class="grid g4" style="margin-top:12px">
       <div class="card stat"><small>إجمالي المدفوع من العميل</small><b class="pos">${money(s.paid + Math.max(s.opening, 0))}</b></div>
+      <div class="card stat"><small>الأتعاب المستحقة</small><b style="color:#0f766e">${money(s.chg)}</b></div>
       <div class="card stat"><small>الرسوم الحكومية</small><b>${money(s.fees)}</b></div>
       <div class="card stat"><small>مصروفات العملية + المرتجع</small><b>${money(s.ops + s.refund)}</b></div>
       <div class="card stat" style="background:${s.bal < 0 ? 'var(--out-soft)' : 'var(--in-soft)'}"><small>${s.bal < 0 ? 'الرصيد: مستحق على العميل' : 'الرصيد: تحت حساب العميل'}</small><b class="${s.bal < 0 ? 'neg' : 'pos'}">${money(Math.abs(s.bal))}</b></div>
@@ -1778,12 +1908,12 @@ function vClient(r, el) {
     ${mineOnly ? `<div class="note info" style="margin-bottom:10px">${icon('info', 18)}<div>يعرض كشف الحساب حركاتك أنت فقط على هذا العميل.</div></div>` : ''}
     <div class="card tblwrap">${st.length ? `<table class="tbl"><thead><tr><th>التاريخ</th><th>البيان</th><th>بواسطة</th><th class="n">مدفوع للمكتب</th><th class="n">مصروف على الملف</th><th class="n">الرصيد</th></tr></thead>
       <tbody>${st.map(({ t, cr, dr, bal }) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="num">${t.date}</td>
-        <td>${tBadge(t.type)} ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${t.category && t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
+        <td>${tBadge(t.type)}${isXL(t) ? ' <span class="xlb">إكسيل</span>' : ''} ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${t.category && t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
         <td class="small">${esc(accName(t.fromAcc || t.toAcc).replace('عهدة ', ''))}</td>
         <td class="n pos">${cr ? fmt(cr) : ''}</td><td class="n neg">${dr ? fmt(dr) : ''}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="3">الإجمالي</td><td class="n">${fmt(st.reduce((a, x) => a + x.cr, 0))}</td><td class="n">${fmt(st.reduce((a, x) => a + x.dr, 0))}</td><td class="n">${mineOnly ? '' : fmt(s.bal)}</td></tr></tfoot></table>`
       : '<div class="empty">لا توجد حركات لهذا العميل في التطبيق بعد.</div>'}</div>
-    ${arch.length ? `<h2 class="sec">سجل العميل في يومية الإكسيل 2026</h2>
+    ${arch.length && !xlDone() ? `<h2 class="sec">سجل العميل في يومية الإكسيل 2026</h2>
       <div class="note info" style="margin-bottom:10px">${icon('archive', 18)}<div>للاطلاع فقط ولا يدخل في رصيد العميل؛ لأن مدفوعات العملاء في الإكسيل لم تكن مربوطة بالعميل دائمًا (كانت تُسجّل غالبًا «وارد أ. محمود»).
       الإجمالي: رسوم <b>${money(as.fee)}</b> · نثرية <b>${money(as.misc)}</b>${as.inc ? ` · وارد مسجّل باسمه <b>${money(as.inc)}</b>` : ''}</div></div>
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>المحاسب</th><th>البيان</th><th>المكان</th><th class="n">وارد</th><th class="n">نثرية</th><th class="n">رسوم</th></tr></thead>
@@ -1887,10 +2017,11 @@ function vAccount(r, el) {
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم</b><div class="small muted">كشف ${esc(a.name)} — ${dLong(today())}</div></div></div>
     ${isPriv() ? `<div class="row no-print" style="margin-bottom:8px"><a href="#accounts" class="btn ghost sm">${icon('back', 16)} الخزينة والعهد</a></div>` : ''}
     <h1 class="pg">${esc(a.name)} <span class="sp"></span><button class="btn sm no-print" data-act="print">${icon('print', 16)} طباعة</button></h1>
+    ${a.type === 'custody' ? `<div class="no-print">${reviewLine(a.id)}</div>` : ''}
     <div class="grid g4"><div class="card kpi hl"><div class="l">الرصيد الحالي</div><div class="v ${accBal(a.id) < 0 ? 'neg' : ''}">${money(accBal(a.id))} <small>ج.م</small></div></div>
-      <div class="card kpi"><div class="l">رصيد أول الفترة</div><div class="v">${money(opening)}</div></div>
+      ${isPriv() ? `<div class="card kpi"><div class="l">رصيد أول الفترة</div><div class="v">${money(opening)}</div></div>
       <div class="card kpi"><div class="l">وارد الفترة</div><div class="v pos">${money(inT)}</div></div>
-      <div class="card kpi"><div class="l">صادر الفترة</div><div class="v neg">${money(outT)}</div></div></div>
+      <div class="card kpi"><div class="l">صادر الفترة</div><div class="v neg">${money(outT)}</div></div>` : ''}</div>
     <div class="card pad no-print" style="margin-top:12px"><div class="chips scroll">${PERIODS.map(([k, l]) => `<button class="chip ${AS.period === k ? 'on' : ''}" data-act="as-period" data-v="${k}">${l}</button>`).join('')}</div>
       ${AS.period === 'custom' ? `<div class="fbar" style="margin-top:8px"><span class="small">من</span><input type="date" class="inp" data-as="from" value="${AS.from}"><span class="small">إلى</span><input type="date" class="inp" data-as="to" value="${AS.to}"></div>` : ''}</div>
     <div class="card tblwrap" style="margin-top:12px">${rows.length ? `<table class="tbl"><thead><tr><th>التاريخ</th><th>البيان / العميل</th><th class="n">وارد</th><th class="n">صادر</th><th class="n">الرصيد</th></tr></thead><tbody>
@@ -1901,7 +2032,7 @@ function vAccount(r, el) {
 /* حركات يومية الإكسيل القديمة لعضو الفريق (للاطلاع، رصيدها الختامي = الرصيد الافتتاحي المرحّل) */
 const AL = {};
 function legacyAccountHtml(a) {
-  if (a.type === 'treasury') return '';
+  if (a.type === 'treasury' || xlDone()) return '';
   const mem = String(a.name).replace(/^عهدة\s+/, '');
   const { ci } = archIndex();
   let bal = 0, inT = 0, outT = 0;
@@ -1925,7 +2056,7 @@ const RP = { period: 'month', from: '', to: '', legacy: 0 };
 function vReports(r, el) {
   const [from, to] = periodRange(RP.period, RP.from, RP.to);
   const live = activeTx().filter(t => t.type !== 'OPENING');
-  const flows = (RP.legacy ? live.concat(legacyFlows()) : live).filter(t => t.date >= from && t.date <= to);
+  const flows = (RP.legacy && !xlDone() ? live.concat(legacyFlows()) : live).filter(t => t.date >= from && t.date <= to);
   const sum = ty => r2(flows.filter(t => t.type === ty).reduce((s, t) => s + (+t.amount || 0), 0));
   const S = { inc: sum('IN_CLIENT'), own: sum('IN_OWNER'), fee: sum('GOV_FEE'), op: sum('OP_EXP'), off: sum('OFFICE_EXP'), wd: sum('OUT_OWNER'), ref: sum('CLIENT_REFUND') };
   const net = r2(S.inc + S.own - S.ref - S.fee - S.op - S.off - S.wd);
@@ -1939,11 +2070,24 @@ function vReports(r, el) {
   flows.filter(t => ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t.type)).forEach(t => { const k = memberOf(t); const o = spentBy[k] || (spentBy[k] = { GOV_FEE: 0, OP_EXP: 0, OFFICE_EXP: 0 }); o[t.type] += +t.amount; });
   const cliTop = by('GOV_FEE', t => clientName(t.clientId)).map(([k, v]) => [k, v]);
   const cs = calc().cli;
+  const pf = live.filter(x => x.date >= from && x.date <= to);
+  const P = { fee: 0, col: 0, op: 0, off: 0 }, pc = {}, pm = {};
+  pf.forEach(x => {
+    const a = +x.amount || 0, mo = x.date.slice(0, 7), mm = pm[mo] || (pm[mo] = { fee: 0, op: 0, off: 0 });
+    const c = x.clientId ? (pc[x.clientId] || (pc[x.clientId] = { fee: 0, col: 0, op: 0 })) : null;
+    if (x.type === 'FEE') { P.fee += a; mm.fee += a; if (c) c.fee += a; }
+    else if (x.type === 'IN_CLIENT') { P.col += a; if (c) c.col += a; }
+    else if (x.type === 'OP_EXP') { P.op += a; mm.op += a; if (c) c.op += a; }
+    else if (x.type === 'OFFICE_EXP') { P.off += a; mm.off += a; }
+  });
+  P.gross = r2(P.fee - P.op); P.net = r2(P.fee - P.op - P.off);
+  const prow = Object.entries(pc).filter(([, v]) => v.fee || v.op).map(([id, v]) => ({ id, ...v, profit: r2(v.fee - v.op) })).sort((a, b) => b.profit - a.profit);
+  const pct = (a, b) => b > 0 ? Math.round(a / b * 100) + '%' : '—';
   const debt = Object.entries(cs).filter(([, v]) => v.bal < 0).sort((a, b) => a[1].bal - b[1].bal);
   el.innerHTML = `<h1 class="pg">التقارير</h1>
     <div class="card pad filters"><div class="chips scroll">${PERIODS.filter(p => p[0] !== 'yest').map(([k, l]) => `<button class="chip ${RP.period === k ? 'on' : ''}" data-act="rp-period" data-v="${k}">${l}</button>`).join('')}</div>
       ${RP.period === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-rp="from" value="${RP.from}"><span class="small">إلى</span><input type="date" class="inp" data-rp="to" value="${RP.to}"></div>` : ''}
-      <label class="row small" style="cursor:pointer"><input type="checkbox" data-act="rp-legacy" ${RP.legacy ? 'checked' : ''}> تضمين بيانات يومية الإكسيل (يناير – نوفمبر 2026) للتحليل</label></div>
+      ${xlDone() ? '' : `<label class="row small" style="cursor:pointer"><input type="checkbox" data-act="rp-legacy" ${RP.legacy ? 'checked' : ''}> تضمين بيانات يومية الإكسيل (يناير – نوفمبر 2026) للتحليل</label>`}</div>
     <div class="grid g4" style="margin-top:12px">
       <div class="card kpi"><div class="l">وارد العملاء</div><div class="v pos">${money(S.inc)}</div></div>
       <div class="card kpi"><div class="l">الرسوم الحكومية</div><div class="v">${money(S.fee)}</div></div>
@@ -1952,9 +2096,21 @@ function vReports(r, el) {
       <div class="card kpi"><div class="l">تمويل الإدارة${RP.legacy ? ' / وارد عن طريق أ. محمود' : ''}</div><div class="v">${money(S.own)}</div></div>
       <div class="card kpi"><div class="l">مسحوبات الإدارة</div><div class="v">${money(S.wd)}</div></div>
       <div class="card kpi"><div class="l">رد للعملاء</div><div class="v">${money(S.ref)}</div></div>
-      <div class="card kpi hl"><div class="l">صافي التدفق النقدي (كل الوارد − كل الصادر)</div><div class="v ${net < 0 ? 'neg' : ''}">${money(net)}</div></div>
+      ${isFull() ? `<div class="card kpi hl"><div class="l">صافي التدفق النقدي (كل الوارد − كل الصادر)</div><div class="v ${net < 0 ? 'neg' : ''}">${money(net)}</div></div>` : ''}
     </div>
     ${RP.legacy ? `<div class="note warn" style="margin-top:10px">${icon('info', 18)}<div>في الإكسيل كانت أغلب مدفوعات العملاء تُسجل «وارد أ. محمود» دون اسم العميل، لذا يظهر جزء كبير من الوارد التاريخي تحت «تمويل الإدارة». التحويلات بين العهد مستبعدة من التقرير.</div></div>` : ''}
+    ${isFull() ? `    <h2 class="sec">الربحية — الأتعاب مقابل المصروفات</h2>
+    <div class="grid g4">
+      <div class="card kpi"><div class="l">الأتعاب المستحقة</div><div class="v" style="color:#0f766e">${money(P.fee)}</div></div>
+      <div class="card kpi"><div class="l">مصروفات مباشرة على العملاء</div><div class="v neg">${money(P.op)}</div></div>
+      <div class="card kpi"><div class="l">ربح العمليات (أتعاب − مباشر) · ${pct(P.gross, P.fee)}</div><div class="v ${P.gross < 0 ? 'neg' : 'pos'}">${money(P.gross)}</div></div>
+      <div class="card kpi hl"><div class="l">صافي الربح بعد المصروفات العمومية · ${pct(P.net, P.fee)}</div><div class="v ${P.net < 0 ? 'neg' : ''}">${money(P.net)}</div></div>
+    </div>
+    <div class="note info" style="margin-top:10px">${icon('info', 18)}<div>الربحية محسوبة من حركات «أتعاب مستحقة» المسجّلة في التطبيق. الرسوم الحكومية تُسدَّد بالنيابة عن العميل فلا تدخل في الربح أو الخسارة. المحصَّل فعليًا من العملاء في الفترة: <b>${money(P.col)}</b> ج.م.</div></div>
+    <div class="card tblwrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>العميل</th><th class="n">أتعاب</th><th class="n">مصروف مباشر</th><th class="n">الربح</th><th class="n">الهامش</th><th class="n">محصّل</th></tr></thead>
+      <tbody>${prow.slice(0, 40).map(v => `<tr data-act="go" data-h="client/${v.id}" style="cursor:pointer"><td>${esc(clientName(v.id))}</td><td class="n">${fmt(v.fee)}</td><td class="n">${fmt(v.op)}</td><td class="n ${v.profit < 0 ? 'neg' : 'pos'}">${fmt(v.profit)}</td><td class="n">${pct(v.profit, v.fee)}</td><td class="n">${fmt(v.col)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted" style="text-align:center">لا توجد أتعاب مسجّلة في هذه الفترة. سجّل أتعاب العميل من زرار 💼 أتعاب.</td></tr>'}</tbody>
+      ${prow.length ? `<tfoot><tr><td>الإجمالي (${prow.length} عميل)</td><td class="n">${fmt(r2(prow.reduce((s, v) => s + v.fee, 0)))}</td><td class="n">${fmt(r2(prow.reduce((s, v) => s + v.op, 0)))}</td><td class="n">${fmt(P.gross)}</td><td class="n">${pct(P.gross, P.fee)}</td><td class="n">${fmt(r2(prow.reduce((s, v) => s + v.col, 0)))}</td></tr></tfoot>` : ''}</table></div>
+    ${Object.keys(pm).length ? `<div class="card tblwrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>الشهر</th><th class="n">أتعاب</th><th class="n">مباشر</th><th class="n">عمومي</th><th class="n">صافي الربح</th></tr></thead><tbody>${Object.keys(pm).sort().map(k => { const o = pm[k], n = r2(o.fee - o.op - o.off); return `<tr><td>${monthName(k)}</td><td class="n">${fmt(o.fee)}</td><td class="n">${fmt(o.op)}</td><td class="n">${fmt(o.off)}</td><td class="n ${n < 0 ? 'neg' : 'pos'}">${fmt(n)}</td></tr>`; }).join('')}</tbody></table></div>` : ''}` : ''}
     <h2 class="sec">حسب الشهر</h2>
     <div class="card tblwrap"><table class="tbl"><thead><tr><th>الشهر</th><th class="n">وارد العملاء</th><th class="n">تمويل الإدارة</th><th class="n">رسوم حكومية</th><th class="n">مصروف عمليات</th><th class="n">مصروف عمومي</th><th class="n">مسحوبات</th></tr></thead>
       <tbody>${mk.map(m => { const o = months[m]; return `<tr><td>${monthName(m)}</td><td class="n">${fmt(o.IN_CLIENT)}</td><td class="n">${fmt(o.IN_OWNER)}</td><td class="n">${fmt(o.GOV_FEE)}</td><td class="n">${fmt(o.OP_EXP)}</td><td class="n">${fmt(o.OFFICE_EXP)}</td><td class="n">${fmt(o.OUT_OWNER)}</td></tr>`; }).join('') || '<tr><td colspan="7" class="empty">لا بيانات في الفترة</td></tr>'}</tbody></table></div>
@@ -1983,11 +2139,53 @@ function vDups(r, el) {
       <button class="btn sm" data-act="dup-no" data-a="${d.a}" data-b="${d.b}">ليسا نفس العميل</button></div></div>`).join('') || '<div class="card empty">لا توجد حالات للمراجعة.</div>'}</div>`;
 }
 
+/* ====== المراجعة والاعتماد ====== */
+const RV = { tab: 'q' };
+function vReview(r, el) {
+  const srt = a => a.sort((x, y) => (y.date + y.createdAt).localeCompare(x.date + x.createdAt));
+  const q = srt(queueTxs()), rej = srt(activeTx().filter(t => +t.approved === 2)), okk = srt(activeTx().filter(t => !isPend(t) && t.type !== 'OPENING' && t.approvedBy)).slice(0, 100);
+  const mem = D.accounts.filter(a => a.type === 'custody' && +a.active !== 0);
+  const miss = activeTx().filter(t => isXL(t) && (TYPES[t.type] || {}).client && !t.clientId).sort((x, y) => (y.date + y.createdAt).localeCompare(x.date + x.createdAt));
+  const list = RV.tab === 'ok' ? okk : RV.tab === 'rej' ? rej : RV.tab === 'miss' ? miss : q;
+  const btns = t => RV.tab === 'miss' ? `<button class="btn sm pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 15)} إكمال</button>` : RV.tab === 'ok' ? `<button class="btn sm" data-act="tx-unapprove" data-id="${t.id}">تراجع عن الاعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`
+    : RV.tab === 'rej' ? `<button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm" data-act="tx-unapprove" data-id="${t.id}">رجوع للانتظار</button>`
+    : `<button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`;
+  el.innerHTML = `<h1 class="pg">مراجعة الاعتماد <span class="sp"></span>${q.length ? `<button class="btn sm pri" data-act="approve-all">${icon('check', 16)} اعتماد الكل (${q.length})</button>` : ''}</h1>
+    <div class="card tblwrap"><table class="tbl"><thead><tr><th>العضو</th><th class="n">عهدته الآن</th><th class="n">بعد المراجعة</th><th class="n">غير معتمد</th></tr></thead><tbody>
+    ${mem.map(a => { const n = pendOf(a.id).length; return `<tr data-act="go" data-h="account/${a.id}" style="cursor:pointer"><td>${esc(a.name.replace('عهدة ', ''))}</td><td class="n">${fmt(accBal(a.id))}</td><td class="n"><b>${fmt(accBalR(a.id))}</b></td><td class="n">${n ? `<b style="color:#b45309">${n}</b>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>
+    <div class="chips" style="margin:12px 0"><button class="chip ${RV.tab === 'q' ? 'on' : ''}" data-act="rv-tab" data-v="q">بانتظار الاعتماد (${q.length})</button><button class="chip ${RV.tab === 'rej' ? 'on' : ''}" data-act="rv-tab" data-v="rej">غير معتمدة (${rej.length})</button><button class="chip ${RV.tab === 'ok' ? 'on' : ''}" data-act="rv-tab" data-v="ok">معتمدة (آخر 100)</button>${miss.length ? `<button class="chip ${RV.tab === 'miss' ? 'on' : ''}" data-act="rv-tab" data-v="miss">📝 بيانات ناقصة (${miss.length})</button>` : ''}</div>
+    ${RV.tab === 'miss' ? '<p class="small muted" style="margin:0 0 8px">حركات مرحّلة من الإكسيل بدون عميل. اضغط «إكمال» واختر العميل ثم احفظ.</p>' : ''}
+    <div class="card">${list.length ? list.slice(0, 300).map(t => `<div class="rvrow">${txRow(t, '')}<div class="rvb">${btns(t)}</div></div>`).join('') : '<div class="empty">لا توجد حركات هنا.</div>'}</div>`;
+}
+const queueApprove = arr => queue('saveTx', { txs: arr.map(t => ({ ...t, __approveOnly: 1 })) });
+function approveTx(t) { Object.assign(t, { approved: 1, approvedBy: ME.id, approvedAt: nowIso(), updatedAt: nowIso(), updatedBy: ME.id }); }
+const DR = { d: '', f: '' };
+function dayReview() {
+  DR.d = DR.d || today(); DR.f = '';
+  const m = modal(`<h3>${icon('list', 20)} مراجعة يوم</h3>
+    <input type="date" id="dr-d" class="inp" value="${DR.d}">
+    <div class="chips" style="margin:10px 0"><button class="chip on" data-v="">الكل</button><button class="chip" data-v="in">وارد</button><button class="chip" data-v="out">منصرف</button></div>
+    <div id="dr-b"></div><div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  const acc = isPriv() ? '' : myAcc();
+  const paint = () => {
+    const txs = activeTx().filter(t => t.date === DR.d && t.type !== 'OPENING' && (isPriv() || t.fromAcc === myAcc() || t.toAcc === myAcc() || t.userId === ME.id))
+      .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+    const inn = txs.filter(t => txSign(t, acc) > 0), out = txs.filter(t => txSign(t, acc) < 0);
+    const tot = a => r2(a.reduce((s, t) => s + Math.abs(+t.amount), 0));
+    const list = DR.f === 'in' ? inn : DR.f === 'out' ? out : txs;
+    m.querySelector('#dr-b').innerHTML = `<div class="daysum"><div><small class="muted">إجمالي الوارد</small><br><b class="pos">${money(tot(inn))}</b> <small>(${inn.length})</small></div><div><small class="muted">إجمالي المنصرف</small><br><b class="neg">${money(tot(out))}</b> <small>(${out.length})</small></div></div>
+      ${list.length ? `<div class="card" style="max-height:46vh;overflow:auto">${list.map(t => txRow(t, acc)).join('')}</div>` : '<div class="empty">لا توجد حركات في هذا اليوم.</div>'}`;
+  };
+  m.querySelector('#dr-d').onchange = e => { DR.d = e.target.value || today(); paint(); };
+  m.querySelectorAll('.chip').forEach(b => b.onclick = () => { DR.f = b.dataset.v; m.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); paint(); });
+  paint();
+}
+
 /* ====== الإعدادات ====== */
 function vSettings(r, el) {
   const lastS = LS.get('lastSync', '');
-  const sec = [];
-  if (isPriv()) sec.push(`<h2 class="sec">الاتصال بالشيت (Google Sheets)</h2>
+  const secs = {}; const push = (k, h) => { secs[k] = (secs[k] || '') + h; };
+  if (isPriv()) push('conn', `<h2 class="sec">الاتصال بالشيت (Google Sheets)</h2>
     <div class="card pad form">
       <div class="note ${cfgOk() ? (SYNC.state === 'err' ? 'err' : 'ok') : 'info'}">${icon(cfgOk() ? 'sync' : 'info', 18)}<div>${cfgOk()
         ? `متصل بالشيت. آخر مزامنة: ${SYNC.last ? new Date(SYNC.last).toLocaleString('ar-EG-u-nu-latn') : '—'} · بانتظار المزامنة: <b>${Q.length}</b>${SYNC.state === 'err' ? ` · <b>${esc(SYNC.msg)}</b>` : ''}`
@@ -1997,12 +2195,12 @@ function vSettings(r, el) {
       <div class="row wrap"><button class="btn pri" data-act="set-connect">${icon('check', 17)} حفظ واختبار الاتصال</button>
         ${cfgOk() ? `<button class="btn" data-act="set-sync">${icon('sync', 17)} مزامنة الآن</button><button class="btn" data-act="set-full">إعادة تحميل كامل من الشيت</button>` : ''}</div>
     </div>`);
-  if (FAILED.length) sec.push(`<h2 class="sec">عمليات لم تُحفظ على الشيت</h2><div class="card">${FAILED.map((f, i) => `<div class="lrow" style="cursor:default"><div class="grow"><b>${esc(f.msg)}</b><div class="small muted">${esc(f.action)} · ${new Date(f.at).toLocaleString('ar-EG-u-nu-latn')}</div></div>
+  if (FAILED.length) push('conn', `<h2 class="sec">عمليات لم تُحفظ على الشيت</h2><div class="card">${FAILED.map((f, i) => `<div class="lrow" style="cursor:default"><div class="grow"><b>${esc(f.msg)}</b><div class="small muted">${esc(f.action)} · ${new Date(f.at).toLocaleString('ar-EG-u-nu-latn')}</div></div>
     <button class="btn sm" data-act="fail-retry" data-i="${i}">إعادة المحاولة</button><button class="btn sm danger" data-act="fail-drop" data-i="${i}">تجاهل</button></div>`).join('')}</div>`);
-  sec.push(`<h2 class="sec">حسابي</h2><div class="card pad"><div class="row wrap"><div class="grow" style="flex:1 1 220px"><b>${esc(ME.name)}</b><div class="small muted">${ROLE_NAMES[ME.role]} · ${esc(accName(ME.account))}</div></div>
+  push('acct', `<h2 class="sec">حسابي</h2><div class="card pad"><div class="row wrap"><div class="grow" style="flex:1 1 220px"><b>${esc(ME.name)}</b><div class="small muted">${ROLE_NAMES[ME.role]} · ${esc(accName(ME.account))}</div></div>
     <button class="btn" data-act="set-code">${icon('key', 17)} تغيير رمز الدخول</button><button class="btn" data-act="logout">${icon('logout', 17)} خروج</button></div>
     ${String(ME.code) === '1234' ? `<div class="note warn" style="margin-top:10px">${icon('alert', 18)}<div>ما زلت تستخدم الرمز الافتراضي 1234. يُرجى تغييره.</div></div>` : ''}</div>`);
-  if (isFull()) sec.push(`<h2 class="sec">الفريق والصلاحيات<span class="sp"></span><button class="btn sm pri" data-act="user-add">${icon('plus', 16)} إضافة زميل</button></h2>
+  if (isFull()) push('team', `<h2 class="sec">الفريق والصلاحيات<span class="sp"></span><button class="btn sm pri" data-act="user-add">${icon('plus', 16)} إضافة زميل</button></h2>
     <div class="card pad small" style="margin-bottom:8px">${Object.entries(ROLE_NAMES).map(([k, l]) => `<div style="margin:3px 0"><b>${l}:</b> ${ROLE_INFO[k]}</div>`).join('')}</div>
     <div class="card tblwrap"><table class="tbl"><thead><tr><th>الاسم</th><th>الصلاحية</th><th>رمز الدخول</th><th>حساب العهدة</th><th>نشط</th><th></th></tr></thead><tbody>
     ${liveUsers().map(u => `<tr data-uid="${u.id}"><td><input class="inp" data-u="name" value="${esc(u.name)}" style="min-width:130px"></td>
@@ -2011,16 +2209,27 @@ function vSettings(r, el) {
       <td><input type="checkbox" data-u="active" ${+u.active !== 0 ? 'checked' : ''}></td>
       <td><div class="row"><button class="btn sm" data-act="user-save" data-id="${u.id}">حفظ</button>${u.id !== ME.id ? `<button class="btn sm danger" data-act="user-del" data-id="${u.id}">حذف</button>` : ''}</div></td></tr>`).join('')}</tbody></table>
     <div class="totbar"><span class="small muted">عند إضافة زميل يُنشأ له حساب عهدة تلقائيًا. الحذف يخفي الزميل من الدخول والقوائم مع بقاء حركاته القديمة في اليومية، ولا يتم إلا بعد رد عهدته إلى الخزينة.</span></div></div>`);
-  if (isPriv()) sec.push(`<h2 class="sec">القوائم</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${Object.entries(LIST_NAMES).map(([k, l]) => `<div class="card pad">
+  if (isPriv()) push('lists', `<h2 class="sec">القوائم</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${Object.entries(LIST_NAMES).map(([k, l]) => `<div class="card pad">
     <div class="fld"><label>${l}</label><textarea class="inp" id="l-${k}" rows="7">${esc(list(k).join('\n'))}</textarea><small class="help">قيمة في كل سطر — الترتيب يحدد ظهورها</small></div>
     <button class="btn sm" style="margin-top:8px" data-act="list-save" data-k="${k}">حفظ القائمة</button></div>`).join('')}</div>`);
-  sec.push(`<h2 class="sec">النسخ الاحتياطي</h2><div class="card pad"><div class="row wrap">
+  if (isFull()) push('xl', xlDone()
+    ? `<div class="note ok">${icon('check', 18)}<div>تم ترحيل حركات يومية الإكسيل إلى اليومية بتاريخ ${esc(D.lists.xlImported[0])}. الحركات الناقصة تظهر في «مراجعة الاعتماد ← بيانات ناقصة».</div></div>`
+    : `<div class="card pad"><p>تحويل كل صفوف يومية الإكسيل 2026 (${A.rows.length.toLocaleString('en-US')} صف) إلى حركات عادية في اليومية بتاريخها وتسلسلها، وكأنها أُدخلت من البرنامج.</p>
+      <ul class="small" style="margin:8px 0;line-height:1.9"><li>أرصدة العهد والخزنة تبقى كما هي بالضبط: الأرصدة المرحّلة تُستبدل بالحركات نفسها.</li><li>الحركات المرحّلة تُعتبر معتمدة، ولا تدخل في رصيد العميل لأن مدفوعات العملاء في الإكسيل لم تكن مربوطة بالعملاء.</li><li>الحركات التي ينقصها عميل تظهر في «بيانات ناقصة» لإكمالها يدويًا.</li><li>يتم مرة واحدة فقط، والرفع للشيت يأخذ دقائق — اترك التطبيق مفتوحًا حتى تخضر الإشارة.</li></ul>
+      <button class="btn pri" data-act="xl-import">${icon('upload', 17)} ترحيل حركات الإكسيل الآن</button></div>`);
+  if (isFull()) push('sec', `<h2 class="sec">كود الحذف</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="dc-new" type="password" inputmode="numeric" autocomplete="off" placeholder="${delCodeSet() ? 'كود جديد (يستبدل الحالي)' : 'اكتب كود الحذف'}" style="max-width:240px"><button class="btn pri" data-act="delcode-save">حفظ الكود</button></div>
+    <p class="small muted" style="margin-top:8px">${delCodeSet() ? '✅ الكود مفعّل: لا تُحذف أي حركة (من أي عضو) إلا بإدخاله.' : '⚠️ لم يُحدَّد كود بعد، فالحذف حاليًا بدون كود. حدّد كودًا ليصبح الحذف به فقط.'}</p></div>`);
+  push('bk', `<h2 class="sec">النسخ الاحتياطي</h2><div class="card pad"><div class="row wrap">
       <button class="btn" data-act="bk-export">${icon('download', 17)} تنزيل نسخة احتياطية</button>
       ${isPriv() ? `<button class="btn" data-act="j-export-all">${icon('download', 17)} تصدير كل الحركات (Excel)</button><button class="btn" data-act="cl-export">${icon('download', 17)} تصدير العملاء (Excel)</button>` : ''}
       ${isFull() ? `<label class="btn">${icon('upload', 17)} استرجاع نسخة<input type="file" accept=".json" id="bk-file" hidden></label>` : ''}</div>
       <p class="small muted" style="margin:10px 0 0">الشيت نفسه هو النسخة الأساسية، ويمكن تفعيل نسخة احتياطية يومية تلقائية على Google Drive بتشغيل الدالة <b>installDailyBackup</b> مرة واحدة من محرر Apps Script.</p></div>`);
-  sec.push(`<p class="small muted" style="text-align:center">إصدار التطبيق ${APP_VER}</p>`);
-  el.innerHTML = `<h1 class="pg">الإعدادات</h1>` + sec.join('');
+  const CATS = [['acct', 'حسابي', 'user', 'الاسم ورمز الدخول'], ['conn', 'الاتصال بالشيت', 'sync', 'رابط الشيت والمزامنة'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء'],
+    ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['sec', 'كود الحذف', 'key', 'حماية حذف الحركات'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير']].filter(c => secs[c[0]]);
+  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|القوائم|كود الحذف|النسخ الاحتياطي)<\/h2>/, ''); return; }
+  el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
+    <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}"><div class="av">${icon(i, 20)}</div><div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
+    <p class="small muted" style="text-align:center;margin-top:18px">إصدار التطبيق ${APP_VER}</p>`;
 }
 
 async function connectSheet() {
@@ -2093,6 +2302,14 @@ function changeCodeModal() {
 /* ====== الأحداث ====== */
 const ACT = {
   go: el => go(el.dataset.h),
+  'pick-open': el => {
+    const box = el.closest('.epick'), list = box.querySelector('.eplist'), g = el.dataset.g;
+    const same = el.classList.contains('sel');
+    box.querySelectorAll('.pmb').forEach(b => b.classList.toggle('sel', !same && b === el));
+    if (same) { list.innerHTML = ''; return; }
+    const tmp = document.createElement('div'); tmp.innerHTML = box.dataset[g];
+    list.innerHTML = [...tmp.children].map(o => `<button class="btn eopt ${g}" data-act="go" data-h="${o.getAttribute('value')}">${o.textContent}</button>`).join('');
+  },
   logout: a => { if (a !== 'force' && unsynced()) { syncNow(); toast('لسه البيانات لم يتم حفظها على الشيت. انتظر حتى تظهر الإشارة الخضراء «متزامن» ثم اخرج.', 'err'); return; } ME = null; F = null; LS.del('session'); history.replaceState(null, '', location.pathname); $('#app').innerHTML = ''; renderLogin(); },
   'new-type': el => { F = null; go('entry/' + el.dataset.t); },
   'entry-change': () => { const g = F && (['IN_CLIENT', 'IN_OWNER'].includes(F.type) || (F.type === 'TRANSFER' && F.mode === 'in')) ? 'in' : (F && ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'TRANSFER'].includes(F.type) ? 'out' : ''); F = null; go('entry' + (g ? '/' + g : '')); },
@@ -2132,10 +2349,12 @@ const ACT = {
     const t = D.txs[el.dataset.id];
     const m = modal(`<h3>${icon('trash', 20)} حذف الحركة</h3><p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م</p>
       ${fld('سبب الحذف', `<input id="del-r" class="inp" placeholder="مثال: إدخال مكرر">`, { req: 1 })}
+      ${delCodeSet() ? fld('كود الحذف', `<input id="del-c" class="inp ltr" type="password" inputmode="numeric" autocomplete="off">`, { req: 1 }) : ''}
       <p class="small muted">تبقى الحركة محفوظة في الشيت مع علامة «محذوفة» وسبب الحذف للمراجعة.</p>
       <div class="acts"><button class="btn danger" id="del-ok">حذف</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
     m.querySelector('#del-ok').onclick = () => {
       const reason = $('#del-r').value.trim(); if (!reason) return toast('اكتب سبب الحذف', 'err');
+      if (delCodeSet() && !delCodeOk(($('#del-c') || {}).value || '')) return toast('كود الحذف غير صحيح', 'err');
       Object.assign(t, { deleted: 1, deleteReason: reason, updatedAt: nowIso(), updatedBy: ME.id });
       queue('saveTx', { txs: [t] }); changed(); closeModal(); toast('تم حذف الحركة'); render();
     };
@@ -2211,9 +2430,19 @@ const ACT = {
     if (!u || u.id === ME.id) return toast('لا يمكن حذف حسابك الحالي', 'err');
     if (u.role === 'full' && +u.active !== 0 && activeFull().length <= 1) return toast('لا يمكن حذف آخر مستخدم بالصلاحية الكاملة', 'err');
     const a = accById(u.account), st = a ? calc().acc[a.id] : null;
-    if (st && Math.abs(st.bal) > 0.004) return toast(`على ${u.name} رصيد عهدة ${money(st.bal)} — يجب ردّه للخزينة أولًا`, 'err');
+    const bal = a ? r2(accBal(a.id)) : 0;
     const hist = st && st.n ? `وله ${st.n} حركة سابقة ستبقى ظاهرة في اليومية والتقارير.` : 'ليس له حركات سابقة.';
-    if (!(await ask(`حذف الزميل «${u.name}» نهائيًا من قائمة الدخول والفريق؟ ${hist}`, 'حذف', true))) return;
+    const settle = Math.abs(bal) > 0.004;
+    const msg = settle
+      ? `حذف الزميل «${u.name}» نهائيًا من قائمة الدخول والفريق؟<br>على عهدته رصيد <b>${money(bal)}</b> ج.م، وسيُرحَّل تلقائيًا ${bal > 0 ? 'إلى خزينة المكتب' : 'من خزينة المكتب لتصفيته'} بحركة تحويل بتاريخ اليوم. ${hist}`
+      : `حذف الزميل «${u.name}» نهائيًا من قائمة الدخول والفريق؟ ${hist}`;
+    if (!(await ask(msg, 'حذف', true))) return;
+    if (settle) {
+      const now = nowIso(), x = { id: uid('T'), batchId: '', date: today(), type: 'TRANSFER', amount: Math.abs(bal), fromAcc: bal > 0 ? a.id : 'TRS', toAcc: bal > 0 ? 'TRS' : a.id,
+        clientId: '', category: '', description: `تصفية عهدة ${u.name} عند حذفه من الفريق`, payMethod: 'نقدي', place: '', stage: '', service: '', projectRef: '', receiptNo: '',
+        userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0 };
+      D.txs[x.id] = x; queue('saveTx', { txs: [x] });
+    }
     u.deleted = 1; u.active = 0;
     if (a && a.type === 'custody') { a.active = 0; queue('saveAccount', { account: a }); }
     queue('saveUser', { user: u }); changed(); toast('تم حذف الزميل'); render();
@@ -2232,6 +2461,41 @@ const ACT = {
       D.accounts.push(acc); D.users.push(u);
       queue('saveAccount', { account: acc }); queue('saveUser', { user: u }); changed(); closeModal(); toast('تمت إضافة العضو'); render();
     };
+  },
+  'day-review': () => dayReview(),
+  'xl-import': async () => {
+    if (!isFull() || xlDone()) return;
+    if (!A.rows.length) return toast('بيانات الإكسيل غير محمّلة على هذا الجهاز بعد', 'err');
+    const { txs, missing } = buildLegacyTxs();
+    if (missing.length) return toast('أعضاء في الإكسيل بدون حساب عهدة: ' + missing.join('، '), 'err');
+    const before = {}; D.accounts.forEach(a => before[a.id] = accBal(a.id));
+    const opens = activeTx().filter(t => t.type === 'OPENING' && !t.clientId && t.toAcc && (accById(t.toAcc) || {}).type === 'custody');
+    // التحقق قبل الحفظ: الأرصدة بعد الترحيل = الأرصدة الحالية
+    const sim = {}; D.accounts.forEach(a => sim[a.id] = before[a.id]);
+    opens.forEach(t => sim[t.toAcc] -= +t.amount);
+    txs.forEach(t => { if (t.fromAcc && sim[t.fromAcc] != null) sim[t.fromAcc] -= t.amount; if (t.toAcc && sim[t.toAcc] != null) sim[t.toAcc] += t.amount; });
+    const diff = D.accounts.filter(a => Math.abs(r2(sim[a.id] - before[a.id])) > 0.01);
+    const fix = diff.map(a => ({ a, d: r2(before[a.id] - sim[a.id]) }));
+    if (!(await ask(`سيتم إضافة <b>${txs.length.toLocaleString('en-US')}</b> حركة من الإكسيل، واستبدال ${opens.length} رصيد مرحّل بها.${fix.length ? `<br>فروق ستُضاف لها حركة «تسوية ترحيل»: ${fix.map(x => `${esc(x.a.name)} (${fmt(x.d)})`).join('، ')}` : '<br>الأرصدة بعد الترحيل مطابقة للحالية تمامًا ✅'}`, 'ترحيل'))) return;
+    const now = nowIso();
+    fix.forEach((x, i) => txs.push({ id: 'XLADJ-' + x.a.id, date: (D.meta || {}).cutover || today(), type: 'OPENING', amount: x.d, toAcc: x.a.id, fromAcc: '', clientId: '', category: '', description: 'تسوية فرق ترحيل الإكسيل', payMethod: '', place: '', stage: '', service: '', projectRef: '', receiptNo: '', batchId: 'XL-ADJ', userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0, approved: 1, approvedBy: ME.id, approvedAt: now }));
+    txs.forEach(t => D.txs[t.id] = t);
+    opens.forEach(t => Object.assign(t, { deleted: 1, deleteReason: 'استُبدل بحركات الإكسيل المرحّلة', updatedAt: now, updatedBy: ME.id }));
+    for (let i = 0; i < txs.length; i += 400) queue('importTx', { ids: txs.slice(i, i + 400).map(t => t.id) });
+    if (opens.length) queue('saveTx', { txs: opens });
+    D.lists.xlImported = [today()]; queue('saveLists', { lists: { xlImported: D.lists.xlImported } });
+    changed(); toast(`تم ترحيل ${txs.length.toLocaleString('en-US')} حركة — جارٍ الرفع للشيت`); go('journal');
+  },
+  'tx-approve': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; approveTx(t); queueApprove([t]); changed(); closeModal(); toast('تم اعتماد الحركة'); render(); },
+  'tx-reject': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 2, approvedBy: ME.id, approvedAt: nowIso(), updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('تم تعليمها غير معتمدة'); render(); },
+  'rv-tab': el => { RV.tab = el.dataset.v; render(); },
+  'tx-unapprove': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 0, approvedBy: '', approvedAt: '', updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('رجعت الحركة لبانتظار الاعتماد'); render(); },
+  'approve-many': async el => { const arr = queueTxs().filter(t => t.userId === el.dataset.u); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد ${arr.length} حركة؟`, 'اعتماد'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم الاعتماد'); render(); },
+  'approve-all': async () => { const arr = queueTxs(); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد كل الحركات (${arr.length})؟`, 'اعتماد الكل'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم اعتماد الكل'); render(); },
+  'delcode-save': () => {
+    const c = ($('#dc-new').value || '').trim();
+    if (c.length < 4) return toast('الكود لا يقل عن 4 أرقام/حروف', 'err');
+    D.lists.delCodeH = [hashCode(c)]; queue('saveLists', { lists: { delCodeH: D.lists.delCodeH } }); changed(); toast('تم حفظ كود الحذف'); render();
   },
   'list-save': el => {
     const k = el.dataset.k;
