@@ -1101,15 +1101,16 @@ function render() {
 let _loginUser = null, _pin = '';
 function renderLogin() {
   const users = liveUsers().filter(u => +u.active !== 0);
-  const last = LS.get('lastUser', '');
+  _loginUser = null; _pin = '';
   $('#app').innerHTML = `<div class="login"><div class="lbox" id="lbox"></div></div>`;
   const paint = () => {
     const box = $('#lbox');
     if (!_loginUser) {
       box.innerHTML = `${monoHtml(true)}<h1>اليومية المالية</h1>
-        <div class="fld"><select class="inp usel" id="usel"><option value="">اختر اسمك…</option>${users.map(u => `<option value="${u.id}" ${u.id === last ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select></div>`;
+        <div class="fld"><select class="inp usel" id="usel"><option value="">اختر اسمك…</option>${users.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></div>`;
     } else {
       const u = userById(_loginUser);
+      if (!u) { _loginUser = null; return paint(); }
       box.innerHTML = `<div class="mono">${esc(initials(u.name))}</div><h1>${esc(u.name)}</h1><p>أدخل رمز الدخول</p>
         <div class="pin">${[0, 1, 2, 3].map(i => `<i class="${_pin.length > i ? 'f' : ''}"></i>`).join('')}${_pin.length > 4 ? `<span class="small muted">+${_pin.length - 4}</span>` : ''}</div>
         <div id="perr" class="small" style="text-align:center;color:var(--out);min-height:20px"></div>
