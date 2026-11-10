@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f9f9fb">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -653,6 +653,71 @@ input[type=checkbox].sw:checked::after,label.row>input[type=checkbox]:checked::a
 .tbl select.inp{min-width:116px}
 .tbl .inp{min-height:38px;font-size:15px}
 
+/* ===== توافق الموبايل: صفوف الاعتماد + الجداول كبطاقات ===== */
+.rvrow{min-width:0;flex-wrap:wrap;border-bottom:.5px solid var(--line);padding-block:2px}
+.rvrow:last-child{border-bottom:0}
+.rvrow .tx{flex:1 1 280px;min-width:0}
+.rvrow .tx::before{display:none}
+.rvrow .rvb{display:flex;gap:6px;flex:none;padding:0 12px}
+.tx .grow,.lrow .grow{min-width:0}
+@media (max-width:640px){
+  .rvrow{display:block;padding:0 0 10px}
+  .rvrow .tx{width:100%}
+  .rvrow .rvb{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;padding:0 14px}
+  .rvrow .rvb .btn{width:100%;min-height:42px;justify-content:center;font-size:15px}
+  .tx{padding:11px 14px}
+  .tx .a{font-size:15px}
+  h1.pg{flex-wrap:wrap;gap:8px}
+
+  /* الجداول العادية تتحول لبطاقات */
+  .tbl.stk,.tbl.stk tbody,.tbl.stk tfoot{display:block;width:100%}
+  .tbl.stk thead{display:none}
+  .tbl.stk tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px 12px;padding:12px 14px;border-bottom:.5px solid var(--line)}
+  .tbl.stk tbody tr:last-child{border-bottom:0}
+  .tbl.stk td{display:block;border:0!important;padding:0!important;min-width:0;white-space:normal;text-align:right;background:transparent!important}
+  .tbl.stk td:empty{display:none}
+  .tbl.stk td:not(.n){grid-column:1/-1}
+  .tbl.stk td.n{text-align:right;direction:rtl}
+  .tbl.stk td.n::before,.tbl.stk td:nth-child(n+3):not(.n)::before{content:attr(data-l);display:block;color:var(--muted);font-size:11.5px;font-weight:500;margin-bottom:1px}
+  .tbl.stk td.num{font-size:12.5px;color:var(--muted);direction:rtl;text-align:right}
+  .tbl.stk td:nth-child(2):not(.n){font-size:14.5px}
+  .tbl.stk tr.sech{display:block;padding:8px 14px;background:var(--bg)}
+  .tbl.stk tfoot tr{background:var(--surface-2);border-top:.5px solid var(--line)}
+  .tbl.stk tfoot td:first-child{font-weight:700}
+  .tbl.stk tfoot td:first-child::before{display:none}
+  .tbl.stk tr[data-act]:active{background:rgba(60,60,67,.08)}
+  .tblwrap{overflow:hidden}
+}
+@media (min-width:641px) and (max-width:959px){
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tbl th,.tbl td{padding:10px 8px}
+}
+
+/* ===== إصلاحات الفتح من المتصفح على الموبايل ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{max-width:100%;overflow-x:hidden}
+@supports (height:100dvh){
+  .shell,.login{min-height:100dvh}
+  .modal{max-height:92dvh}
+}
+@media (max-width:959px){
+  /* iOS يكبّر الصفحة عند الكتابة لو الخط أصغر من 16px ويفضل مكبّر */
+  input:not([type=checkbox]):not([type=radio]),select,textarea,.inp{font-size:16px!important}
+}
+@media (max-width:640px){
+  .tblwrap .tbl.sm{width:100%;table-layout:auto;font-size:12.5px}
+  .tblwrap .tbl.sm th,.tblwrap .tbl.sm td{padding:8px 6px;white-space:normal}
+  .tblwrap .tbl.sm td.n,.tblwrap .tbl.sm th.n{white-space:nowrap}
+  .tblwrap:has(.tbl.sm){overflow-x:auto;-webkit-overflow-scrolling:touch}
+  main{padding-inline:12px}
+  .modal{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+}
+@media (max-width:640px){
+  .bar{grid-template-columns:minmax(70px,38%) minmax(30px,1fr) auto;gap:8px}
+  .bar>span:first-child,.bar>div:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grid>*{min-width:0}
+}
+
 </style>
 </head>
 <body>
@@ -1094,7 +1159,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261110-082802';
+const BUILD = '20261110-230612';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1366,6 +1431,7 @@ function modal(html, cls = '') {
   const root = $('#modal-root');
   root.innerHTML = `<div class="mback" data-act="mclose-bg"><div class="modal ${cls}" role="dialog" aria-modal="true">${html}</div></div>`;
   document.body.style.overflow = 'hidden';
+  labelTables(root);
   return root.firstChild.firstChild;
 }
 function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; if (_pendingRefresh) { _pendingRefresh = false; render(); } }
@@ -1379,6 +1445,7 @@ function ask(msg, ok = 'متابعة', danger = false) {
 }
 function download(name, content, mime) {
   const blob = new Blob([content], { type: mime });
+  if (window.AndroidBridge) { const fr = new FileReader(); fr.onload = () => AndroidBridge.save(name, String(fr.result).split(',')[1] || '', mime); fr.readAsDataURL(blob); return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click();
@@ -1445,6 +1512,14 @@ function softRefresh() {
   const y = window.scrollY;
   render(); window.scrollTo(0, y);
 }
+/* وسم الجداول بعناوين الأعمدة لتظهر كبطاقات على الموبايل */
+function labelTables(root) {
+  (root || document).querySelectorAll('table.tbl:not(.sm)').forEach(tb => {
+    if (tb.dataset.lb) return; tb.dataset.lb = 1; tb.classList.add('stk');
+    const hs = []; tb.querySelectorAll('thead th').forEach(h => { for (let i = 0; i < (+h.colSpan || 1); i++) hs.push(h.textContent.trim()); });
+    tb.querySelectorAll('tbody tr, tfoot tr').forEach(tr => { let c = 0; tr.querySelectorAll('td').forEach(td => { td.dataset.l = hs[c] || ''; c += +td.colSpan || 1; }); });
+  });
+}
 function render() {
   if (!ME) return renderLogin();
   if (!$('#view')) renderShell();
@@ -1456,6 +1531,7 @@ function render() {
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   $('#view').innerHTML = '';
   fn(r, $('#view'));
+  labelTables($('#view'));
   if (!isPriv()) {
     $('#view').querySelectorAll('a[href^="#client"]').forEach(a => { const s = document.createElement('span'); s.innerHTML = a.innerHTML; a.replaceWith(s); });
     $('#view').querySelectorAll('[data-h^="client/"]').forEach(e => { e.removeAttribute('data-act'); e.removeAttribute('data-h'); e.style.cursor = 'default'; });
@@ -1614,7 +1690,7 @@ function vHome(r, el) {
       <div class="card kpi"><div class="l">${icon('out', 16)} المصروفات — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v neg">${money(exp)}</div></div>
     </div>
     ${trsBreakdown()}
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:12px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));margin-top:12px">
       <div class="card"><h2 class="sec" style="margin:14px 14px 6px">أرصدة العهد</h2>
         ${cust.map(a => { const b = accBal(a.id); return `<div class="lrow" data-act="go" data-h="account/${a.id}"><div class="av">${esc(initials(a.name.replace('عهدة ', '')))}</div><div class="grow"><b>${esc(a.name.replace('عهدة ', ''))}</b><div class="small muted">${(c.acc[a.id] || {}).last ? 'آخر حركة ' + dShort(c.acc[a.id].last) : 'لا حركات بعد'}</div></div><b class="${b < 0 ? 'neg' : ''}">${money(b)}</b></div>`; }).join('')}
       </div>
@@ -1670,7 +1746,7 @@ function trsBreakdown() {
   const rows = Object.entries(m).filter(([, v]) => Math.abs(v) > 0.004);
   if (!rows.length) return '';
   return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">${icon('bank', 18)} خزنة المكتب حسب طريقة الدفع</h2>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));padding:8px 14px 14px">${rows.sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="card kpi"><div class="l">${esc(k)}</div><div class="v ${v < 0 ? 'neg' : ''}">${money(v)} <small>ج.م</small></div></div>`).join('')}</div></div>`;
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${rows.sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="card kpi"><div class="l">${esc(k)}</div><div class="v ${v < 0 ? 'neg' : ''}">${money(v)} <small>ج.م</small></div></div>`).join('')}</div></div>`;
 }
 
 function reviewLine(id) {
@@ -2356,7 +2432,7 @@ function vAccounts(r, el) {
   const c = calc().acc;
   const accs = visAccounts().filter(a => +a.active !== 0).sort((x, y) => (x.type === 'custody') - (y.type === 'custody'));
   el.innerHTML = `<h1 class="pg">الخزينة والعهد ${isFull() ? `<button class="btn sm" data-act="acc-add" style="margin-inline-start:10px">${icon('plus', 16)} إضافة خزينة</button>` : ''}</h1>
-    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">${accs.map(a => {
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr))">${accs.map(a => {
       const x = c[a.id] || {}; const b = accBal(a.id); const u = userById(a.userId);
       return `<div class="card kpi ${a.type === 'treasury' ? 'hl' : ''}" data-act="go" data-h="account/${a.id}" style="cursor:pointer">
         <div class="l">${icon(a.type === 'treasury' ? 'bank' : 'wallet', 16)} ${esc(a.name)}${accPrivate(a) ? ' <span class="badge" style="margin-inline-start:6px">خاصة</span>' : ''}</div>
@@ -2508,7 +2584,7 @@ function vReports(r, el) {
     <h2 class="sec">حسب الشهر</h2>
     <div class="card tblwrap"><table class="tbl"><thead><tr><th>الشهر</th><th class="n">وارد العملاء</th><th class="n">تمويل الإدارة</th><th class="n">رسوم حكومية</th><th class="n">مصروف عمليات</th><th class="n">مصروف عمومي</th><th class="n">مسحوبات</th></tr></thead>
       <tbody>${mk.map(m => { const o = months[m]; return `<tr><td>${monthName(m)}</td><td class="n">${fmt(o.IN_CLIENT)}</td><td class="n">${fmt(o.IN_OWNER)}</td><td class="n">${fmt(o.GOV_FEE)}</td><td class="n">${fmt(o.OP_EXP)}</td><td class="n">${fmt(o.OFFICE_EXP)}</td><td class="n">${fmt(o.OUT_OWNER)}</td></tr>`; }).join('') || '<tr><td colspan="7" class="empty">لا بيانات في الفترة</td></tr>'}</tbody></table></div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));margin-top:4px">
       <div><h2 class="sec">المصروفات العمومية حسب البند</h2><div class="card pad">${bars(by('OFFICE_EXP', t => t.category), 'r')}</div></div>
       <div><h2 class="sec">الرسوم الحكومية حسب النوع</h2><div class="card pad">${bars(by('GOV_FEE', t => t.category), 'g')}</div></div>
       <div><h2 class="sec">أعلى العملاء في الرسوم</h2><div class="card pad">${bars(cliTop, '', 10)}</div></div>
@@ -2703,7 +2779,7 @@ function anIE(txs, S, M, mk) {
     <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشهر</th><th class="n">إيرادات</th><th class="n">تكاليف</th><th class="n">عمومي</th><th class="n">الفرق</th></tr></thead>
       <tbody>${mk.map(m => { const o = M[m]; return `<tr><td>${anMon(m)}</td><td class="n">${fmt(o.netRev)}</td><td class="n">${fmt(o.direct)}</td><td class="n">${fmt(o.opex)}</td><td class="n ${anNeg(o.net)}"><b>${fmt(o.net)}</b></td></tr>`; }).join('') || '<tr><td colspan="5" class="empty">لا بيانات</td></tr>'}</tbody>
       ${mk.length ? `<tfoot><tr><td>الإجمالي</td><td class="n">${fmt(S.netRev)}</td><td class="n">${fmt(S.direct)}</td><td class="n">${fmt(S.opex)}</td><td class="n ${anNeg(S.net)}">${fmt(S.net)}</td></tr></tfoot>` : ''}</table></div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));margin-top:4px">
       <div><h2 class="sec">الإيراد حسب الشهر</h2><div class="card pad">${anBars(mk.map(m => [anMon(m), r2(M[m].netRev)]), 'g', 24)}</div></div>
       <div><h2 class="sec">المصروف حسب الشهر</h2><div class="card pad">${anBars(mk.map(m => [anMon(m), r2(M[m].direct + M[m].opex)]), 'r', 24)}</div></div>
       <div><h2 class="sec">أعلى العملاء دفعًا</h2><div class="card pad">${anBars(cli, 'g', 10)}</div></div>
@@ -2726,7 +2802,7 @@ function anGeneral(txs) {
       <div class="card kpi"><div class="l">عدد الحركات</div><div class="v">${g.length}</div></div>
       <div class="card kpi"><div class="l">متوسط شهري</div><div class="v">${am(mk.length ? r2(tot / mk.length) : 0)}</div></div>
       <div class="card kpi"><div class="l">أكبر بند</div><div class="v" style="font-size:16px">${cats[0] ? esc(cats[0][0]) + ' · ' + anPct(cats[0][1], tot) : '—'}</div></div></div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));margin-top:4px">
       <div><h2 class="sec">حسب البند</h2><div class="card pad">${anBars(cats, 'r', 14)}</div></div>
       <div><h2 class="sec">حسب من صرفها</h2><div class="card pad">${anBars(who, '', 10)}</div></div></div>
     <h2 class="sec">أعلى البنود شهريًا</h2>
@@ -2815,7 +2891,7 @@ function anStaff(txs) {
   rows.forEach(o => { o.tin += tr.filter(t => t.toAcc === o.a.id).reduce((s, t) => s + (+t.amount || 0), 0); o.tout += tr.filter(t => t.fromAcc === o.a.id).reduce((s, t) => s + (+t.amount || 0), 0); });
   rows.sort((x, y) => (y.col + y.spent) - (x.col + x.spent));
   const nm = o => esc(accName(o.a.id).replace(/^عهدة\s+/, ''));
-  return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr))">
+  return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))">
       <div><h2 class="sec" style="margin-top:0">الأكثر تحصيلًا من العملاء</h2><div class="card pad">${anBars(rows.map(o => [accName(o.a.id).replace(/^عهدة\s+/, ''), r2(o.col)]).sort((a, b) => b[1] - a[1]), 'g', 10)}</div></div>
       <div><h2 class="sec" style="margin-top:0">الأكثر صرفًا</h2><div class="card pad">${anBars(rows.map(o => [accName(o.a.id).replace(/^عهدة\s+/, ''), o.spent]).sort((a, b) => b[1] - a[1]), 'r', 10)}</div></div></div>
     <h2 class="sec">تفصيل كل موظف</h2>
@@ -2838,7 +2914,7 @@ function anPersonal(txs, S, M, mk) {
     <h2 class="sec">حسب الشهر</h2>
     <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشهر</th><th class="n">شخصي</th><th class="n">مسحوبات أخرى</th><th class="n">تمويل</th></tr></thead>
       <tbody>${mk.filter(m => M[m].pers || M[m].wd || M[m].fund).map(m => `<tr><td>${anMon(m)}</td><td class="n">${fmt(M[m].pers)}</td><td class="n">${fmt(M[m].wd)}</td><td class="n">${fmt(M[m].fund)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">لا بيانات</td></tr>'}</tbody></table></div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:4px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));margin-top:4px">
       <div><h2 class="sec">أكبر البنود</h2><div class="card pad">${anBars(top, '', 10)}</div></div>
       <div><h2 class="sec">آخر الحركات</h2><div class="card">${p.slice(0, 15).map(t => `<div class="lrow" data-act="tx" data-id="${t.id}"><div class="grow"><b>${esc(t.description || t.category || 'مصروف شخصي')}</b><div class="small muted">${dLong(t.date)} · ${esc(accName(t.fromAcc))}</div></div>${am(t.amount, 'neg')}</div>`).join('') || '<div class="empty">لا توجد حركات في الفترة</div>'}</div></div></div>
     <div class="note info" style="margin-top:10px">${icon('info', 18)}<div>المصروفات الشخصية لا تدخل في مصروفات المكتب ولا في الربح، وتُحسب من حقوق الملكية. المسحوبات القديمة المسماة «مسحوبات أ. محمود» اتنقلت هنا عند ترحيل الإكسيل.</div></div>`;
@@ -2878,7 +2954,7 @@ function vSettings(r, el) {
       <td><input type="checkbox" data-u="active" ${+u.active !== 0 ? 'checked' : ''}></td>
       <td><div class="row"><button class="btn sm" data-act="user-save" data-id="${u.id}">حفظ</button>${u.id !== ME.id ? `<button class="btn sm danger" data-act="user-del" data-id="${u.id}">حذف</button>` : ''}</div></td></tr>`).join('')}</tbody></table>
     <div class="totbar"><span class="small muted">عند إضافة زميل يُنشأ له حساب عهدة تلقائيًا. الحذف يخفي الزميل من الدخول والقوائم مع بقاء حركاته القديمة في اليومية، ولا يتم إلا بعد رد عهدته إلى الخزينة.</span></div></div>`);
-  if (isPriv()) push('lists', `<h2 class="sec">القوائم</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${Object.entries(LIST_NAMES).map(([k, l]) => `<div class="card pad">
+  if (isPriv()) push('lists', `<h2 class="sec">القوائم</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))">${Object.entries(LIST_NAMES).map(([k, l]) => `<div class="card pad">
     <div class="fld"><label>${l}</label><textarea class="inp" id="l-${k}" rows="7">${esc(list(k).join('\n'))}</textarea><small class="help">قيمة في كل سطر — الترتيب يحدد ظهورها</small></div>
     <button class="btn sm" style="margin-top:8px" data-act="list-save" data-k="${k}">حفظ القائمة</button></div>`).join('')}</div>`);
   if (isFull()) push('xl', xlDone()
@@ -3119,7 +3195,7 @@ const ACT = {
   'client-edit': el => openClientModal({ id: el.dataset.id }),
   'client-wa': el => clientWhatsApp(el.dataset.id),
   'client-merge': el => openMergeModal(el.dataset.id),
-  print: () => window.print(),
+  print: () => window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(),
   'dup-keep': el => mergeClients(el.dataset.k, el.dataset.d),
   'dup-no': el => {
     const { a, b } = el.dataset;
