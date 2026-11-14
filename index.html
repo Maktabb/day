@@ -769,6 +769,33 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 .themebtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;width:36px;height:36px;display:grid;place-items:center;font-size:17px;padding:0}
 
+
+/* المهام */
+.tk{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-2);text-decoration:none;color:inherit}
+.tk:last-child{border-bottom:0}
+.tk-c{width:30px;height:30px;border-radius:50%;border:2px solid var(--muted);background:transparent;flex:none;display:grid;place-items:center;color:transparent;padding:0;cursor:pointer;position:relative;font:inherit;font-size:13px;font-weight:700}
+.tk-c::after{content:"";position:absolute;inset:-9px}
+.tk-c.on{background:var(--in);border-color:var(--in);color:#fff}
+.tk-c.nx{border-color:var(--out);color:var(--out)}
+.tk.late .tk-c{border-color:var(--out)}
+.tk-t{font-weight:600;overflow-wrap:anywhere;line-height:1.45}
+.tk.done .tk-t{text-decoration:line-through;color:var(--muted);font-weight:500}
+.tk-m{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.tk-m b{color:var(--ink-2);font-weight:600}
+.tk-late{color:var(--out)!important;font-weight:600}
+.tk-x{border:0;background:transparent;font-size:22px;line-height:1;color:var(--muted);min-width:40px;min-height:40px;cursor:pointer;border-radius:50%}
+.tk-g{font-size:13px;font-weight:700;color:var(--muted);margin:16px 4px 6px}
+.tk-g.late{color:var(--out)}
+.tk-g small{font-weight:500}
+.tk-home{margin-bottom:14px}
+.tk-form{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.tk-pick{display:flex;align-items:center;gap:10px;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;font:inherit;color:inherit;cursor:pointer;min-height:48px}
+.tk-pick.on{border-color:var(--in);background:var(--in-soft)}
+.tk-pick.on .tk-c{background:var(--in);border-color:var(--in);color:#fff}
+.tk-who{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:4px;scrollbar-width:none}
+.tk-who::-webkit-scrollbar{display:none}
+.tk-who .chip{flex:none}
+.tk-who .chip small{opacity:.7;font-weight:600}
 </style>
 </head>
 <body>
@@ -1240,7 +1267,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261112-131511';
+const BUILD = '20261114-150000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1570,6 +1597,7 @@ function navItems() {
   const priv = isPriv();
   return [
     ['home', 'الرئيسية', 'home'],
+    ['tasks', 'المهام', 'check'],
     ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
     ['accounts', priv ? 'الخزينة والعهد' : 'عهدتي', 'wallet'],
@@ -1599,14 +1627,14 @@ function paintNav() {
   const r = route().name;
   const on = h => (r === h || (h === 'clients' && r === 'client') || (h === 'accounts' && r === 'account')) ? 'on' : '';
   $('#side').innerHTML = `<a class="cta" href="#entry">${icon('plus', 18, 2.2)} حركة جديدة</a>` +
-    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${icon(i, 19)} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}</a>`).join('') +
+    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${icon(i, 19)} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}${h === 'tasks' && tkMyOpen().length ? ` <span class="cnt">${tkMyOpen().length}</span>` : ''}</a>`).join('') +
     `<hr><a href="#" data-act="logout">${icon('logout', 19)} تسجيل الخروج</a>`;
   $('#bnav').innerHTML = `
     <a href="#home" class="${on('home')}">${icon('home', 22)}الرئيسية</a>
     <a href="#journal" class="${on('journal')}">${icon('list', 22)}${isPriv() ? 'اليومية' : 'حركاتي'}</a>
     <a href="#entry" class="plus ${on('entry')}"><span>${icon('plus', 24, 2.4)}</span>حركة</a>
     ${isPriv() ? `<a href="#clients" class="${on('clients')}">${icon('users', 22)}العملاء</a>` : `<a href="#account/${myAcc()}" class="${on('accounts')}">${icon('wallet', 22)}عهدتي</a>`}
-    <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'analytics', 'settings', 'dups', 'review'].includes(r) ? 'on' : ''}">${icon('menu', 22)}المزيد</a>`;
+    <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'analytics', 'settings', 'dups', 'review', 'tasks'].includes(r) ? 'on' : ''}">${icon('menu', 22)}المزيد</a>`;
 }
 function route() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -1638,12 +1666,13 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks };
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   $('#view').innerHTML = '';
   fn(r, $('#view'));
+  if (fn === vHome) opsHomeCard($('#view'));
   labelTables($('#view'));
   if (!isPriv()) {
     $('#view').querySelectorAll('a[href^="#client"]').forEach(a => { const s = document.createElement('span'); s.innerHTML = a.innerHTML; a.replaceWith(s); });
@@ -2080,6 +2109,7 @@ function mountForm() {
   const q = $('#cp-q');
   if (q && F.type === 'IN_CLIENT' && !F.clientId && !F.editId) q.focus();
   if (q) cpSearch(q.value);
+  opsMountForm();
 }
 
 /* ---- منتقي العميل ---- */
@@ -2281,11 +2311,12 @@ async function saveEntry(again) {
   }
   saved.forEach(x => D.txs[x.id] = x);
   queue('saveTx', { txs: baseAt ? saved.map(x => ({ ...x, __base: baseAt })) : saved });
+  const tkClosed = opsAfterSave(saved);
   saved.forEach((x, i) => { if (photos[i]) queueReceipt(x, photos[i]); });
   changed();
   const acc = F.fromAcc || F.toAcc;
   const balMsg = acc && t !== 'OPENING' ? ` — رصيد ${accName(acc)}: ${fmt(accBal(acc))}` : '';
-  toast((F.editId ? 'تم حفظ التعديل' : (saved.length > 1 ? `تم حفظ ${saved.length} بنود` : 'تم الحفظ')) + balMsg + (noPhoto ? ' — بدون صورة إيصال (يمكن إرفاقها من تفاصيل الحركة)' : ''));
+  toast((F.editId ? 'تم حفظ التعديل' : (saved.length > 1 ? `تم حفظ ${saved.length} بنود` : 'تم الحفظ')) + balMsg + (noPhoto ? ' — بدون صورة إيصال (يمكن إرفاقها من تفاصيل الحركة)' : '') + (tkClosed ? ` — وأُغلقت ${tkClosed === 1 ? 'مهمة' : tkClosed + ' مهام'}` : ''));
   const back = F.back;
   if (F.editId) { F = null; history.length > 1 ? history.back() : go('journal'); return; }
   if (again) {
@@ -3944,6 +3975,270 @@ async function boot() {
   setInterval(checkVersion, 600000);
   setTimeout(checkVersion, 4000);
 }
+
+/* ====== المهام — تُقرأ مباشرة من شيت «إدارة المكتب» وتُغلق فيه (لا شيت إضافي) ====== */
+let OPS = LS.get('ops2', null) || { tasks: {}, v: -1, q: [] };
+const OPS_ST = { busy: false, again: false, state: '', msg: '', last: 0, full: 0 };
+const TK = { who: 'me', done: false, setup: false, pre: '' };
+const opsCfg = () => {
+  const l = (D && D.lists && D.lists.opsCfg) || [];
+  if (l[0]) return { url: l[0], key: l[1] || '' };
+  const c = LS.get('opsCfg', null);
+  return c && c.url ? c : null;
+};
+const opsSave = () => LS.set('ops2', OPS);
+const tkAll = () => Object.values(OPS.tasks);
+const tkOpen = t => t.status === 'open';
+const tkUserOf = name => { const k = nkey(bareName(name)); return k ? liveUsers().find(u => nkey(bareName(u.name)) === k) : null; };
+const tkMine = t => !!ME && !!t.who && nkey(bareName(t.who)) === nkey(bareName(ME.name));
+const tkLate = t => tkOpen(t) && !!t.due && t.due < today();
+const tkWhoName = t => bareName(t.who) || 'بلا مكلَّف';
+const tkSort = (a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) || String(a.d || '').localeCompare(String(b.d || ''));
+const tkMyOpen = () => tkAll().filter(t => tkOpen(t) && tkMine(t)).sort(tkSort);
+// اسم الملف في إدارة المكتب ↔ اسم العميل في اليومية: تطابق تام بعد التوحيد، أو أحدهما يبدأ/ينتهي بالآخر ككلمة كاملة
+function tkSameName(a, b) {
+  const ka = nkey(a), kb = nkey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  const wa = String(a).trim().split(/\s+/).map(nkey).filter(Boolean), wb = String(b).trim().split(/\s+/).map(nkey).filter(Boolean);
+  const [s, l] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+  if (s.join('').length < 4 || s.length === l.length) return false;
+  return s.every((w, i) => l[i] === w) || s.every((w, i) => l[l.length - s.length + i] === w);
+}
+function tkForClient(id) {
+  const c = D.clients[id]; if (!c) return [];
+  return tkAll().filter(t => tkOpen(t) && tkSameName(t.clientName, c.name));
+}
+function tkClientId(t) {
+  if (!t.clientName) return '';
+  const cs = activeClients(), k = nkey(t.clientName);
+  const c = cs.find(x => nkey(x.name) === k) || cs.find(x => tkSameName(x.name, t.clientName));
+  return c ? c.id : '';
+}
+function opsRefresh() { const r = route().name; if (r === 'tasks' || r === 'home') softRefresh(); else if (ME && $('#side')) paintNav(); }
+function opsBuild(projects) {
+  const pend = new Set(OPS.q.map(o => o.id)), out = {};
+  (projects || []).forEach(p => {
+    const d = (p && p.data) || {};
+    (d.tasks || []).forEach(t => {
+      if (!t || !t.id) return;
+      const id = p.id + '|' + t.id;
+      if (pend.has(id) && OPS.tasks[id]) { out[id] = OPS.tasks[id]; return; }
+      const closed = !!t.done || !!t.nx;
+      out[id] = { id, pid: String(p.id), clientName: String(d.name || ''), text: String(t.t || t.ph || ''), who: String(t.who || ''), due: String(t.due || ''), place: String(t.place || ''),
+        d: String(t.d || ''), status: t.nx ? 'nx' : t.done ? 'done' : 'open', why: String(t.why || ''), doneAt: closed ? String(t.doneAt || d.updatedAt || t.d || '') : '', txId: String(t.tx || ''), raw: t };
+    });
+  });
+  OPS.tasks = out;
+}
+// تعديل حالة مهمة: يُحدَّث محليًا فورًا ويُرفع إلى إدارة المكتب دمجًا على مستوى المهمة (taskops) فلا يطغى على تعديل آخر في الملف
+function opsSet(id, patch, touch) {
+  const t = OPS.tasks[id]; if (!t) return;
+  const raw = { ...t.raw, ...patch };
+  const closed = !!raw.done || !!raw.nx;
+  OPS.tasks[id] = { ...t, raw, status: raw.nx ? 'nx' : raw.done ? 'done' : 'open', why: String(raw.why || ''), doneAt: closed ? String(raw.doneAt || nowIso()) : '', txId: String(raw.tx || '') };
+  const op = { op: 'update', c: 'projects', id: t.pid, taskops: { set: [raw] } };
+  if (touch) op.data = { updatedAt: today() };
+  OPS.q.push({ id, op });
+  opsSave(); opsSync();
+}
+async function opsGet(c, a) {
+  const u = new URL(c.url);
+  if (c.key) u.searchParams.set('k', c.key);
+  u.searchParams.set('a', a);
+  const j = await (await fetchT(u.toString(), { method: 'GET', redirect: 'follow', cache: 'no-store' }, 45000)).json();
+  if (j && j.error) throw new Error(j.error === 'forbidden' ? 'رمز ربط إدارة المكتب غير صحيح' : String(j.error));
+  return j;
+}
+async function opsSync(force) {
+  const c = opsCfg();
+  if (!c || !ME) return;
+  if (OPS_ST.busy) { OPS_ST.again = true; return; }
+  OPS_ST.busy = true; OPS_ST.last = Date.now();
+  let dirty = false;
+  try {
+    if (OPS.q.length) {
+      const batch = OPS.q.slice(0, 40);
+      const r = await fetchT(c.url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ k: c.key, ops: batch.map(x => x.op) }) }, 60000);
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error === 'forbidden' ? 'رمز ربط إدارة المكتب غير صحيح' : (j.error || 'خطأ'));
+      OPS.q.splice(0, batch.length); opsSave();
+    }
+    // فحص خفيف برقم الإصدار، ولا تُحمَّل الملفات إلا إذا تغيّر (وكل 15 دقيقة احتياطًا)
+    const v = (await opsGet(c, 'v')).v;
+    if (force || v !== OPS.v || Date.now() - OPS_ST.full > 900000) {
+      const j = await opsGet(c, 'list');
+      if (!j || !Array.isArray(j.projects)) throw new Error('هذا الرابط ليس سكربت إدارة المكتب');
+      opsBuild(j.projects); OPS.v = j.v; OPS_ST.full = Date.now(); opsSave(); dirty = true;
+    }
+    OPS_ST.state = 'ok'; OPS_ST.msg = '';
+  } catch (e) {
+    OPS_ST.state = 'err'; OPS_ST.msg = e && e.name === 'AbortError' ? 'غير متصل' : String((e && e.message) || 'غير متصل');
+  } finally {
+    OPS_ST.busy = false;
+    if (OPS_ST.again) { OPS_ST.again = false; setTimeout(opsSync, 300); }
+  }
+  if (dirty) opsRefresh();
+}
+
+/* ---- عرض المهمة ---- */
+function tkRow(t, o = {}) {
+  const late = tkLate(t);
+  const due = t.due ? `<span class="${late ? 'tk-late' : ''}">${t.due === today() ? 'اليوم' : (late ? 'متأخرة منذ ' : '') + dShort(t.due)}</span>` : '';
+  const meta = [t.clientName ? `<b>${esc(t.clientName)}</b>` : '', t.place ? esc(t.place) : '', due, o.who ? esc(tkWhoName(t)) : ''].filter(Boolean).join(' · ');
+  if (!tkOpen(t)) {
+    return `<div class="tk done"><span class="tk-c ${t.status === 'nx' ? 'nx' : 'on'}">${t.status === 'nx' ? '✕' : icon('check', 16, 2.6)}</span>
+      <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}${t.status === 'nx' ? ` · <span class="tk-late">لم تُنفَّذ${t.why ? ': ' + esc(t.why) : ''}</span>` : ''}${t.txId ? ' · مع حركة مالية' : ''}</div></div>
+      <button class="btn sm ghost" data-act="tk-reopen" data-id="${esc(t.id)}">تراجع</button></div>`;
+  }
+  return `<div class="tk ${late ? 'late' : ''}"><button class="tk-c" data-act="tk-done" data-id="${esc(t.id)}" aria-label="إتمام المهمة: ${esc(t.text)}"></button>
+    <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}</div></div>
+    <button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
+}
+function opsSetupCard() {
+  const c = opsCfg();
+  return `<div class="card pad"><div class="form">
+    <div class="note info">${icon('alert', 18)}<div class="grow">المهام تُضاف من برنامج «إدارة المكتب» وتظهر هنا تلقائيًا، وإغلاقها هنا يُغلقها هناك. الصق رابط ربط إدارة المكتب مرة واحدة، وسيصل تلقائيًا إلى أجهزة الفريق.</div></div>
+    ${fld('رابط ربط إدارة المكتب', `<input id="ops-url" class="inp ltr" value="${c ? esc(c.url) : ''}" placeholder="https://script.google.com/macros/s/…/exec?k=…">`, { req: 1 })}
+    ${fld('كلمة المرور (إن لم تكن ضمن الرابط)', `<input id="ops-key" class="inp ltr" value="${c ? esc(c.key) : ''}">`)}
+    <div class="row wrap"><button class="btn pri" data-act="ops-connect">${icon('check', 18)} ربط</button>${c ? `<button class="btn" data-act="ops-setup">إلغاء</button>` : ''}</div></div></div>`;
+}
+function vTasks(r, el) {
+  const cfg = opsCfg();
+  const head = `<h1 class="pg" style="margin-bottom:10px">المهام</h1>`;
+  if (!cfg || (TK.setup && isFull())) {
+    el.innerHTML = head + (isFull() ? opsSetupCard() : `<div class="card"><div class="empty">لم يُفعَّل ربط المهام بعد. يفعّله مدير النظام من هذه الصفحة.</div></div>`);
+    return;
+  }
+  if (Date.now() - OPS_ST.last > 8000) opsSync();
+  const all = tkAll();
+  const who = isPriv() ? TK.who : 'me';
+  const inScope = t => who === 'all' ? true : who === 'me' ? tkMine(t) : (tkUserOf(t.who) || {}).id === who;
+  const open = all.filter(t => tkOpen(t) && inScope(t)).sort(tkSort);
+  const td = today();
+  const late = open.filter(tkLate), now = open.filter(t => t.due === td), later = open.filter(t => !t.due || t.due > td);
+  const showWho = who === 'all';
+  let chips = '';
+  if (isPriv()) {
+    const users = liveUsers().filter(u => +u.active !== 0);
+    const n = f => all.filter(t => tkOpen(t) && f(t)).length;
+    const chip = (k, l, c) => `<button class="chip ${who === k ? 'on' : ''}" data-act="tk-who" data-k="${k}">${esc(l)}${c ? ` <small>${c}</small>` : ''}</button>`;
+    chips = `<div class="tk-who">${chip('me', 'مهامي', n(tkMine))}${chip('all', 'الكل', n(() => true))}${users.filter(u => u.id !== ME.id).map(u => chip(u.id, bareName(u.name), n(t => (tkUserOf(t.who) || {}).id === u.id))).join('')}</div>`;
+  }
+  const grp = (title, arr, cls) => arr.length ? `<div class="tk-g ${cls || ''}">${title} <small>(${arr.length})</small></div><div class="card">${arr.map(t => tkRow(t, { who: showWho })).join('')}</div>` : '';
+  const wk = addDays(td, -6);
+  const closed = all.filter(t => !tkOpen(t) && inScope(t) && String(t.doneAt).slice(0, 10) >= wk).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
+  let prod = '';
+  if (isPriv() && who === 'all') {
+    const ms = monthStart(td), by = {};
+    all.forEach(t => { const k = tkWhoName(t); (by[k] || (by[k] = [])).push(t); });
+    const rows = Object.keys(by).map(k => { const mine = by[k]; return { k, open: mine.filter(tkOpen).length, late: mine.filter(tkLate).length, wk: mine.filter(t => t.status === 'done' && String(t.doneAt).slice(0, 10) >= wk).length, mo: mine.filter(t => t.status === 'done' && String(t.doneAt).slice(0, 10) >= ms).length, nx: mine.filter(t => t.status === 'nx').length }; });
+    if (rows.length) prod = `<div class="tk-g">إنتاجية الفريق</div><div class="card" style="overflow:auto"><table class="tbl sm" style="width:100%"><thead><tr><th>العضو</th><th class="n">مفتوحة</th><th class="n">متأخرة</th><th class="n">أُنجزت (7 أيام)</th><th class="n">أُنجزت (الشهر)</th><th class="n">لم تُنفَّذ</th></tr></thead>
+      <tbody>${rows.map(x => `<tr><td><b>${esc(x.k)}</b></td><td class="n">${x.open}</td><td class="n ${x.late ? 'neg' : ''}">${x.late}</td><td class="n">${x.wk}</td><td class="n">${x.mo}</td><td class="n">${x.nx}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  el.innerHTML = head + chips
+    + (OPS_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">تعذّر تحديث المهام (${esc(OPS_ST.msg)}). المعروض آخر نسخة محفوظة على هذا الجهاز${OPS.q.length ? `، و${OPS.q.length} تعديل بانتظار الرفع` : ''}.</div></div>` : '')
+    + (open.length ? grp('متأخرة', late, 'late') + grp('اليوم', now) + grp('قادمة', later)
+      : `<div class="card"><div class="empty">${who === 'me' ? 'لا توجد مهام مفتوحة عليك.' : 'لا توجد مهام مفتوحة.'}</div></div>`)
+    + (closed.length ? `<button class="btn sm ghost" data-act="tk-toggle-done" style="margin-top:14px">${TK.done ? 'إخفاء' : 'عرض'} ما أُغلق خلال 7 أيام (${closed.length})</button>${TK.done ? `<div class="card" style="margin-top:8px">${closed.map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
+    + prod
+    + `<div class="small muted" style="margin-top:16px">تُضاف المهام وتُعدَّل من برنامج «إدارة المكتب»، وتظهر هنا خلال دقيقة.</div>`
+    + (isFull() ? `<div style="margin-top:10px"><button class="btn sm ghost" data-act="ops-setup">إعدادات ربط المهام</button></div>` : '');
+}
+function opsHomeCard(view) {
+  if (!opsCfg() || !view) return;
+  if (Date.now() - OPS_ST.last > 30000) opsSync();
+  const mine = tkMyOpen();
+  const lateTeam = isPriv() ? tkAll().filter(t => tkLate(t) && !tkMine(t)).length : 0;
+  if (!mine.length && !lateTeam) return;
+  const html = `<div class="card tk-home"><div class="row" style="padding:12px 14px 6px"><b>مهامي</b>${mine.length ? `<span class="cnt">${mine.length}</span>` : ''}<span class="sp"></span><a href="#tasks" class="small">كل المهام</a></div>
+    ${mine.slice(0, 3).map(t => tkRow(t)).join('')}
+    ${mine.length > 3 ? `<a href="#tasks" class="tk small muted" style="justify-content:center">و${mine.length - 3} مهام أخرى</a>` : ''}
+    ${!mine.length ? `<div class="tk small muted">لا مهام مفتوحة عليك.</div>` : ''}
+    ${lateTeam ? `<a href="#tasks" class="tk small tk-late" data-act="tk-who" data-k="all">متأخرات لدى الفريق: ${lateTeam}</a>` : ''}</div>`;
+  const h = view.querySelector('h1.pg');
+  if (h) h.insertAdjacentHTML('afterend', html); else view.insertAdjacentHTML('afterbegin', html);
+}
+/* ---- داخل نموذج الحركة: مهام العميل المختار (ثم باقي مهام الموظف) تُغلق مع الحفظ ---- */
+function opsMountForm() {
+  const host = $('#f-client');
+  if (!host || !F || F.editId || !opsCfg()) return;
+  let forClient = F.clientId ? tkForClient(F.clientId) : [];
+  if (!isPriv()) forClient = forClient.filter(tkMine);
+  forClient.sort((a, b) => (tkMine(b) - tkMine(a)) || tkSort(a, b));
+  const seen = new Set(forClient.map(t => t.id));
+  const others = F.clientId ? tkMyOpen().filter(t => !seen.has(t.id)).slice(0, 4) : [];
+  const ts = forClient.concat(others);
+  if (TK.pre) { if (ts.some(t => t.id === TK.pre)) F.opsDone = [TK.pre]; TK.pre = ''; }
+  F.opsDone = (F.opsDone || []).filter(id => ts.some(t => t.id === id));
+  if (!ts.length || host.querySelector('.tk-form')) return;
+  const pick = (t, showFile) => { const on = F.opsDone.includes(t.id); return `<button class="tk-pick ${on ? 'on' : ''}" data-act="tk-pick" data-id="${esc(t.id)}" aria-pressed="${on}"><span class="tk-c">${icon('check', 15, 2.6)}</span><span class="grow">${esc(t.text)}${showFile && t.clientName ? ` <small class="muted">— ${esc(t.clientName)}</small>` : ''}${tkMine(t) ? '' : ` <small class="muted">(${esc(tkWhoName(t))})</small>`}</span></button>`; };
+  host.insertAdjacentHTML('beforeend', `<div class="tk-form">
+    ${forClient.length ? `<div class="small muted">مهام مفتوحة لهذا العميل — علِّم ما أُنجز ليُغلق مع حفظ الحركة</div>${forClient.map(t => pick(t, false)).join('')}` : ''}
+    ${others.length ? `<div class="small muted" ${forClient.length ? 'style="margin-top:6px"' : ''}>${forClient.length ? 'مهام أخرى عليك' : 'مهامك المفتوحة — علِّم ما أُنجز ليُغلق مع حفظ الحركة'}</div>${others.map(t => pick(t, true)).join('')}` : ''}</div>`);
+}
+function opsAfterSave(saved) {
+  const ids = (F && F.opsDone) || [];
+  if (!ids.length || !saved || !saved.length) return 0;
+  const now = nowIso(); let n = 0;
+  ids.forEach(id => { const t = OPS.tasks[id]; if (t && tkOpen(t)) { opsSet(id, { done: true, nx: false, doneAt: now, doneBy: bareName(ME.name), tx: saved[0].id }, true); n++; } });
+  F.opsDone = [];
+  return n;
+}
+function openTaskMore(id) {
+  const t = OPS.tasks[id]; if (!t) return;
+  const cid = tkClientId(t);
+  const types = cid ? ['GOV_FEE', 'OP_EXP', 'IN_CLIENT'].filter(k => TYPES[k] && ROLE_TYPES[ME.role].includes(k)) : [];
+  const m = modal(`<h3>${esc(t.text)}</h3><div class="small muted" style="margin-bottom:10px">${esc(t.clientName)}${t.who ? ' · ' + esc(tkWhoName(t)) : ''}</div>
+    ${types.length ? `<div class="small muted">تسجيل حركة مالية لهذا العميل وإغلاق المهمة معها</div><div class="row wrap" style="margin:6px 0 14px">${types.map(k => `<button class="btn sm" data-go="${k}">${esc(TYPES[k].n)}</button>`).join('')}</div>` : ''}
+    <div class="form">${fld('لم تُنفَّذ؟ اكتب السبب', `<input id="tx-why" class="inp" placeholder="مثال: الموظف المختص غير موجود">`)}</div>
+    <div class="acts"><button class="btn" id="tx-nx">تسجيل «لم تُنفَّذ»</button><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  m.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]');
+    if (g) { TK.pre = t.id; closeModal(); go(`entry/${g.dataset.go}?client=${cid}&back=tasks`); }
+  });
+  m.querySelector('#tx-nx').addEventListener('click', () => {
+    const why = m.querySelector('#tx-why').value.trim();
+    if (!why) { m.querySelector('#tx-why').classList.add('bad'); return toast('اكتب سبب عدم التنفيذ', 'err'); }
+    opsSet(t.id, { nx: true, done: false, why, doneAt: nowIso(), doneBy: bareName(ME.name) }, false);
+    closeModal(); toast('سُجِّلت المهمة «لم تُنفَّذ»'); opsRefresh();
+  });
+}
+Object.assign(ACT, {
+  'tk-done': el => {
+    const t = OPS.tasks[el.dataset.id]; if (!t || !tkOpen(t)) return;
+    opsSet(t.id, { done: true, nx: false, doneAt: nowIso(), doneBy: bareName(ME.name) }, true);
+    toast('أُغلقت المهمة'); opsRefresh();
+  },
+  'tk-reopen': el => { const t = OPS.tasks[el.dataset.id]; if (!t) return; opsSet(t.id, { done: false, nx: false, why: '', doneAt: '', doneBy: '', tx: '' }, false); toast('أُعيد فتح المهمة'); opsRefresh(); },
+  'tk-more': el => openTaskMore(el.dataset.id),
+  'tk-who': el => { TK.who = el.dataset.k; if (route().name === 'tasks') render(); },
+  'tk-toggle-done': () => { TK.done = !TK.done; const y = window.scrollY; render(); window.scrollTo(0, y); },
+  'tk-pick': el => {
+    if (!F) return;
+    const id = el.dataset.id, a = F.opsDone || (F.opsDone = []), i = a.indexOf(id);
+    if (i < 0) a.push(id); else a.splice(i, 1);
+    el.classList.toggle('on', i < 0); el.setAttribute('aria-pressed', String(i < 0));
+  },
+  'ops-setup': () => { if (isFull()) { TK.setup = !TK.setup; render(); } },
+  'ops-connect': async () => {
+    if (!isFull()) return;
+    let url = $('#ops-url').value.trim(), key = $('#ops-key').value.trim();
+    try { const u = new URL(url); if (u.searchParams.get('k')) key = u.searchParams.get('k'); url = u.origin + u.pathname; } catch (e) { return toast('الصق رابط الربط كاملًا', 'err'); }
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(url)) return toast('الرابط يجب أن يبدأ بـ https://script.google.com/macros/s/ وينتهي بـ /exec', 'err');
+    let res;
+    try { res = await opsGet({ url, key }, 'list'); }
+    catch (e) { return toast(/غير صحيح/.test(String(e && e.message)) ? 'كلمة المرور غير صحيحة' : 'تعذّر الاتصال برابط إدارة المكتب', 'err'); }
+    if (!res || !Array.isArray(res.projects)) return toast('هذا الرابط ليس سكربت إدارة المكتب', 'err');
+    LS.set('opsCfg', { url, key });
+    D.lists.opsCfg = [url, key]; queue('saveLists', { lists: { opsCfg: [url, key] } }); changed();
+    OPS = { tasks: {}, v: -1, q: [] }; opsBuild(res.projects); OPS.v = res.v; OPS_ST.full = Date.now(); opsSave(); TK.setup = false;
+    toast('تم ربط المهام بإدارة المكتب'); render();
+  }
+});
+setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
+
 var DEFER_INSTALL = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); DEFER_INSTALL = e; try { render(); } catch (x) { } });
 window.addEventListener('appinstalled', () => { DEFER_INSTALL = null; try { render(); } catch (x) { } });
