@@ -650,6 +650,8 @@ input[type=checkbox].sw:checked::after,label.row>input[type=checkbox]:checked::a
 .card>.tx:first-child,.card>.lrow:first-child,.card>.dayh:first-child{border-radius:var(--r) var(--r) 0 0}
 .card>.tx:last-child,.card>.lrow:last-child{border-radius:0 0 var(--r) var(--r)}
 .bnav .plus span svg,.bnav a.plus.on span svg{stroke:#fff}
+.bnav .plus span{background:linear-gradient(160deg,#2a5494,#0f2747)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 18px -6px rgba(15,39,71,.6)!important;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.bnav .plus:active span{transform:scale(.88)}
 .tbl select.inp{min-width:116px}
 .tbl .inp{min-height:38px;font-size:15px}
 
@@ -695,7 +697,9 @@ input[type=checkbox].sw:checked::after,label.row>input[type=checkbox]:checked::a
 
 /* ===== إصلاحات الفتح من المتصفح على الموبايل ===== */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html,body{max-width:100%;overflow-x:hidden}
+html,body{max-width:100%}
+html{overflow-x:hidden}
+@supports (overflow:clip){body{overflow-x:clip}}
 @supports (height:100dvh){
   .shell,.login{min-height:100dvh}
   .modal{max-height:92dvh}
@@ -796,6 +800,213 @@ html,body{max-width:100%;overflow-x:hidden}
 .tk-who::-webkit-scrollbar{display:none}
 .tk-who .chip{flex:none}
 .tk-who .chip small{opacity:.7;font-weight:600}
+/* =====================================================================
+   v3.8 — خلفية هندسية متحركة، أيقونات إيموجي بأسلوب الآيفون،
+   لمسات الضغط والانتقال، كشف حساب احترافي
+   ===================================================================== */
+/* ---- الخلفية ---- */
+body{background:linear-gradient(165deg,#e9eefb 0%,#f3f0e8 48%,#e8f3ee 100%) fixed;background-color:#eef0f5}
+#app{position:relative;z-index:1}
+.login{background:transparent}
+.bgfx{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:strict}
+.fx{position:absolute;display:block;animation:fxdrift var(--d) ease-in-out var(--dl) infinite alternate;will-change:transform}
+.fx svg{width:100%;height:100%;display:block;animation:fxspin var(--sp) linear infinite}
+.fx svg.o{fill:none;stroke:currentColor;stroke-width:5;stroke-linejoin:round}
+.fx svg.f{fill:currentColor}
+.fx-a{color:rgba(15,39,71,.10)}.fx-b{color:rgba(196,154,44,.20)}.fx-c{color:rgba(31,138,76,.13)}.fx-d{color:rgba(222,84,60,.11)}
+@keyframes fxdrift{to{transform:translate3d(var(--dx),var(--dy),0) scale(1.14)}}
+@keyframes fxspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.fx,.fx svg{animation:none}}
+@media print{.bgfx{display:none!important}body{background:#fff!important}}
+:root{--shadow:0 1px 2px rgba(15,39,71,.05),0 10px 26px -14px rgba(15,39,71,.22)}
+.card{background:rgba(255,255,255,.93);box-shadow:var(--shadow)}
+.tblwrap,.mybal,.tile,.bigbtn,.setcat{box-shadow:var(--shadow)}
+.top{background:rgba(249,249,251,.78)}
+.bnav{background:rgba(249,249,251,.8)}
+
+/* ---- أيقونة التطبيق (مربع بزوايا ناعمة + تدرّج + لمعة) ---- */
+.appic{--s:40px;width:var(--s);height:var(--s);flex:none;display:inline-grid;place-items:center;position:relative;font-style:normal;line-height:1;
+  border-radius:calc(var(--s)*.2237);font-size:calc(var(--s)*.54);
+  background:linear-gradient(160deg,var(--g1,#f4f5f8),var(--g2,#d5d9e2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 .5px rgba(0,0,0,.06),0 calc(var(--s)*.07) calc(var(--s)*.2) -2px var(--gs,rgba(15,39,71,.28))}
+.appic::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 50%);pointer-events:none}
+.ak-home{--g1:#d7ecff;--g2:#8cc4ff;--gs:rgba(0,122,255,.4)}
+.ak-journal{--g1:#fff1cf;--g2:#ffc55c;--gs:rgba(255,149,0,.42)}
+.ak-clients{--g1:#dcf7e3;--g2:#86dfa0;--gs:rgba(52,199,89,.42)}
+.ak-accounts,.ak-account{--g1:#e3e9f7;--g2:#9fb3de;--gs:rgba(15,39,71,.38)}
+.ak-review{--g1:#d9f7ef;--g2:#7fdcc4;--gs:rgba(0,150,120,.4)}
+.ak-reports{--g1:#eee1ff;--g2:#c39bf5;--gs:rgba(175,82,222,.42)}
+.ak-analytics{--g1:#ffe0ea;--g2:#ff9db8;--gs:rgba(255,45,85,.38)}
+.ak-dups{--g1:#e3e2ff;--g2:#a7a4f7;--gs:rgba(88,86,214,.42)}
+.ak-tasks{--g1:#d7ecff;--g2:#7fb2ff;--gs:rgba(0,90,220,.42)}
+.ak-settings{--g1:#f1f2f5;--g2:#c3c7d0;--gs:rgba(90,96,110,.4)}
+.ak-logout{--g1:#ffe1de;--g2:#ff9e96;--gs:rgba(255,59,48,.4)}
+.ak-look{--g1:#e6e3ff;--g2:#b3a6ff;--gs:rgba(110,90,230,.4)}
+.ak-acct{--g1:#d7ecff;--g2:#8cc4ff;--gs:rgba(0,122,255,.4)}
+.ak-conn{--g1:#dcf7e3;--g2:#86dfa0;--gs:rgba(52,199,89,.42)}
+.ak-team{--g1:#fff1cf;--g2:#ffc55c;--gs:rgba(255,149,0,.42)}
+.ak-lists{--g1:#eee1ff;--g2:#c39bf5;--gs:rgba(175,82,222,.42)}
+.ak-rem{--g1:#ffe9c9;--g2:#ffb659;--gs:rgba(255,140,0,.42)}
+.ak-sec{--g1:#ffe1de;--g2:#ff9e96;--gs:rgba(255,59,48,.4)}
+.ak-xl{--g1:#d9f7ef;--g2:#7fdcc4;--gs:rgba(0,150,120,.4)}
+.ak-bk{--g1:#e3e9f7;--g2:#9fb3de;--gs:rgba(15,39,71,.38)}
+
+/* ---- شاشة «المزيد»: شبكة أيقونات مثل شاشة الآيفون ---- */
+.appgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 8px;padding:14px 4px 8px}
+@media (min-width:640px){.appgrid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:30px 14px}}
+.appbtn{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink);position:relative;padding:4px 2px;line-height:1.3;text-align:center;-webkit-user-select:none;user-select:none}
+.appbtn .bdg{position:absolute;top:-4px;left:calc(50% - 44px);background:#ff3b30;color:#fff;border-radius:99px;min-width:22px;height:22px;font-size:12px;font-style:normal;font-weight:700;display:grid;place-items:center;padding:0 6px;box-shadow:0 0 0 2px #fff}
+
+/* ---- الشريط السفلي والجانبي ---- */
+.bnav a .ne{font-style:normal;font-size:23px;line-height:1.1;filter:grayscale(1);opacity:.5;transition:transform .32s cubic-bezier(.34,1.56,.64,1),filter .2s,opacity .2s}
+.bnav a.on .ne{filter:none;opacity:1;transform:scale(1.2) translateY(-1px)}
+.bnav a:active .ne{transform:scale(.86)}
+.side a{gap:10px}
+.setcat .appic{margin-inline-end:0}
+.setcat{min-height:70px}
+
+/* ---- أيقونة نوع الحركة ---- */
+.tx .ic.em{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 9%,white),color-mix(in srgb,var(--c) 24%,white));font-size:18px;line-height:1;border-radius:10px;width:36px;height:36px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 3px 8px -4px color-mix(in srgb,var(--c) 60%,transparent)}
+.modal h3 .tx{display:inline-flex}
+.typebar .tbem{font-size:24px;line-height:1;background:rgba(255,255,255,.22);width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none}
+.typebar{background-image:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 60%);box-shadow:0 10px 22px -14px rgba(0,0,0,.55)}
+
+/* ---- الأزرار: لمعة وتدرّج وظل مثل أزرار الآيفون ---- */
+.btn.pri{background:linear-gradient(180deg,#1d3d6e,#0f2747);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 14px -8px rgba(15,39,71,.7)}
+.btn.pri:hover{background:linear-gradient(180deg,#1d3d6e,#0f2747)}
+.btn.gold{background:linear-gradient(180deg,#dcb650,#c49a2c);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 14px -8px rgba(196,154,44,.9)}
+.btn.danger{background:rgba(255,59,48,.12)}
+.pmb{height:66px;border-radius:20px;font-size:18px;font-weight:700;letter-spacing:.2px;text-shadow:0 1px 1px rgba(0,0,0,.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.08),0 12px 22px -12px var(--sh,rgba(0,0,0,.5))}
+.pmb span{font-size:27px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.22))}
+.pmb.in{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(160deg,#3ccf6e,#1f8a4c);--sh:rgba(31,138,76,.9)}
+.pmb.out{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(160deg,#ff6a5c,#d92d20);--sh:rgba(217,45,32,.9)}
+.pmb.fee{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(160deg,#2bb5a8,#0f766e);--sh:rgba(15,118,110,.9)}
+.bigbtn .em{border-radius:22.37%;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 10%,white),color-mix(in srgb,var(--c) 30%,white));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 8px 16px -8px color-mix(in srgb,var(--c) 70%,transparent)}
+.bigbtn.v .em{border-radius:22.37%;width:72px;height:72px}
+.kpi.hl{background:linear-gradient(145deg,#1c3d70 0%,#0f2747 55%,#0a1a30 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 14px 26px -16px rgba(15,39,71,.9)}
+.kpi .l{gap:6px}
+.kpi.owe{background:linear-gradient(145deg,#fff7f5,#ffe7e3);text-decoration:none;color:inherit}
+.kpi.owe .l small{color:var(--tint);font-weight:600}
+.chip.on{background:linear-gradient(180deg,#1d3d6e,#0f2747);box-shadow:0 4px 10px -6px rgba(15,39,71,.8)}
+.cnt{background:#ff3b30;font-weight:700}
+
+/* ---- لمسة الآيفون: ضغطة مرنة + انتقال الصفحات ---- */
+.btn,.chip,.pmb,.bigbtn,.tile,.setcat,.appbtn,.srcbtn,a.card.kpi,.card.kpi[data-act],.keypad button,.eopt,.themebtn,.me,.calcb{
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1),opacity .15s,filter .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.btn:active,.chip:active,.eopt:active,.themebtn:active,.me:active,.calcb:active{transform:scale(.94);opacity:.8;transition-duration:.06s}
+.pmb:active,.bigbtn:active,.tile:active,.setcat:active,.srcbtn:active,a.card.kpi:active,.card.kpi[data-act]:active{transform:scale(.955);opacity:.9;filter:brightness(.96);transition-duration:.06s}
+.appbtn:active .appic{transform:scale(.88);filter:brightness(.85)}
+.appbtn .appic{transition:transform .3s cubic-bezier(.34,1.56,.64,1),filter .15s}
+.keypad button:active{transform:scale(.9)}
+#view.vin{animation:vin .34s cubic-bezier(.2,.85,.25,1)}
+@keyframes vin{from{opacity:0;transform:translate3d(-18px,0,0)}}
+.mback{animation:mfade .22s ease-out}
+@keyframes mfade{from{background:rgba(0,0,0,0)}}
+.modal{animation:sheet .42s cubic-bezier(.32,.72,0,1)}
+@keyframes sheet{from{transform:translateY(100%)}}
+@media (min-width:700px){.modal{animation:pop .3s cubic-bezier(.34,1.4,.64,1)}@keyframes pop{from{transform:scale(.92);opacity:0}}}
+.toast{transition:transform .45s cubic-bezier(.34,1.56,.64,1),opacity .25s}
+@media (prefers-reduced-motion:reduce){#view.vin,.modal,.mback{animation:none}}
+html{scroll-behavior:auto}
+html{overscroll-behavior-y:none}
+
+/* ---- اختيار خزينة السحب ---- */
+.srclist{display:grid;gap:8px}
+.srcbtn{display:flex;align-items:center;gap:12px;text-align:right;border:0;background:var(--fill);border-radius:16px;padding:12px 14px;min-height:64px;width:100%;color:var(--ink);font:inherit}
+.srcbtn .em{font-size:28px;line-height:1;flex:none}
+.srcbtn b{display:block;font-size:16px}.srcbtn small{display:block;color:var(--muted);font-size:12.5px}
+.srcbtn.on{box-shadow:inset 0 0 0 2px var(--gold);background:var(--gold-soft)}
+.ownsrc{box-shadow:inset 0 0 0 1.5px var(--gold),var(--shadow)}
+
+/* ---- ملخص كشف الحساب: المربعات الأساسية في سطر واحد ---- */
+.sumrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:12px;overflow:hidden;padding:0}
+.sumrow>div{padding:11px 4px;text-align:center;border-inline-start:.5px solid var(--line);min-width:0}
+.sumrow>div:first-child{border-inline-start:0}
+.sumrow small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.sumrow b{display:block;font-size:clamp(12.5px,3.7vw,19px);font-variant-numeric:tabular-nums;white-space:nowrap;direction:ltr;letter-spacing:-.2px}
+.sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
+@media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
+.stmt .z{color:var(--muted);opacity:.6}
+
+/* ---- كشف الحساب المطبوع ---- */
+@page{size:A4;margin:12mm 11mm 14mm}
+@media print{
+  html,body{background:#fff!important;font-size:12px;color:#000}
+  .card{background:#fff!important;box-shadow:none!important}
+  h2.sec{font-size:14px;margin:14px 0 6px;color:#0f2747}
+  .st-head{margin-bottom:10px}
+  .st-top{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px double #0f2747;padding-bottom:8px;margin-bottom:10px}
+  .st-org{display:flex;align-items:center;gap:10px}
+  .st-org img{width:46px;height:46px;border-radius:50%;object-fit:cover}
+  .st-org b{display:block;font-size:17px;color:#0f2747}.st-org span{display:block;font-size:11.5px;color:#444}
+  .st-title{text-align:left}.st-title b{display:block;font-size:18px;color:#0f2747;border:1.5px solid #0f2747;border-radius:6px;padding:3px 14px}
+  .st-title span{display:block;font-size:11px;color:#444;margin-top:3px;text-align:center}
+  .st-info{width:100%;border-collapse:collapse;font-size:12px}
+  .st-info th,.st-info td{border:1px solid #9aa3b2;padding:5px 8px;text-align:right}
+  .st-info th{background:#eef1f6;color:#0f2747;font-weight:600;width:17%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .st-info td{width:33%}
+  .st-info td.num{display:table-cell;direction:ltr;text-align:right;white-space:nowrap}
+  .sumrow{margin:10px 0 4px;border:1px solid #9aa3b2!important;border-radius:6px!important;grid-template-columns:repeat(5,1fr)!important}
+  .sumrow>div{padding:6px 4px;border-inline-start:1px solid #9aa3b2}
+  .sumrow small{font-size:10.5px;color:#333}.sumrow b{font-size:14px;color:#000!important}
+  .sumrow .bal{background:#eef1f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tblwrap{border:0!important;border-radius:0!important;overflow:visible!important}
+  .tbl.stmt{border-collapse:collapse;width:100%;font-size:11.5px;table-layout:auto}
+  .tbl.stmt th{background:#0f2747!important;color:#fff!important;border:1px solid #0f2747;padding:6px 5px;text-align:center;font-weight:600;font-size:11.5px;position:static;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tbl.stmt td{border:1px solid #9aa3b2;padding:5px 6px;text-align:center;vertical-align:middle}
+  .tbl.stmt td:nth-child(3){text-align:right}
+  .tbl.stmt td.n{text-align:center;white-space:nowrap}
+  .tbl.stmt tbody tr:nth-child(even) td{background:#f6f8fb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tbl.stmt tfoot td{font-weight:700;background:#e3e8f1!important;border-top:2px solid #0f2747;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tbl.stmt tr{page-break-inside:avoid}
+  .tbl.stmt thead{display:table-header-group}
+  .tbl.stmt .tbadge{background:none!important;color:#000!important;padding:0;font-weight:600}.tbl.stmt .tbadge .tdot{display:none}
+  .tbl.stmt .tbadge::after{content:" —"}
+  .tbl.stmt .neg,.tbl.stmt .pos{color:#000!important}
+  .tbl.stmt .xlb{display:none}
+  .st-close{margin-top:12px;page-break-inside:avoid}
+  .st-bal{display:flex;align-items:center;gap:12px;border:1.5px solid #0f2747;border-radius:6px;padding:8px 12px;font-size:13px}
+  .st-bal b{font-size:17px;margin-inline-start:auto}
+  .st-bal,.st-bal *{color:#000!important}
+  .st-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:26px;text-align:center;font-size:12px}
+  .st-sign i{display:block;border-bottom:1px dotted #555;height:34px}
+  .st-foot{margin-top:14px;font-size:10px;color:#555;text-align:center;border-top:1px solid #ccc;padding-top:6px}
+}
+
+/* ---- الوضع الداكن للإضافات ---- */
+@media screen{
+[data-theme=dark] body{background:linear-gradient(165deg,#0a1220 0%,#0d1524 50%,#0b1a1c 100%) fixed;background-color:#0c1320}
+[data-theme=dark] .card{background:rgba(21,31,49,.93)}
+[data-theme=dark] .top{background:rgba(10,22,38,.82)}
+[data-theme=dark] .bnav{background:rgba(12,19,32,.86)}
+[data-theme=dark] .fx-a{color:rgba(127,168,232,.13)}[data-theme=dark] .fx-b{color:rgba(231,200,112,.13)}[data-theme=dark] .fx-c{color:rgba(76,195,138,.11)}[data-theme=dark] .fx-d{color:rgba(255,123,114,.10)}
+[data-theme=dark] .appbtn,[data-theme=dark] .srcbtn{color:var(--ink)}
+[data-theme=dark] .appbtn .bdg{box-shadow:0 0 0 2px #0c1320}
+[data-theme=dark] .tx .ic.em{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 22%,#151f31),color-mix(in srgb,var(--c) 40%,#151f31));box-shadow:none}
+[data-theme=dark] .kpi.owe{background:linear-gradient(145deg,#2a1a1c,#3a1a1a)}
+[data-theme=dark] .srcbtn{background:var(--surface-2)}
+[data-theme=dark] .sumrow .bal{background:var(--in-soft)}[data-theme=dark] .sumrow .bal.neg{background:var(--out-soft)}
+[data-theme=dark] .btn{background:var(--surface-2);color:var(--ink)}
+[data-theme=dark] .btn.pri{background:linear-gradient(180deg,#2b5596,#1d3a66);color:#fff}
+[data-theme=dark] .btn.gold{color:#1a1400}
+[data-theme=dark] .chip{background:var(--surface-2);color:var(--ink)}
+[data-theme=dark] .chip.on{background:linear-gradient(180deg,#2b5596,#1d3a66);color:#fff}
+}
+@media screen{
+[data-theme=dark] .note.info{background:var(--info-soft);color:#cfe0fb}
+[data-theme=dark] .note.warn{background:var(--warn-soft);color:#f6dfa6}
+[data-theme=dark] .note.err{background:var(--out-soft);color:#ffc9c4}
+[data-theme=dark] .note.ok{background:var(--in-soft);color:#bfeed6}
+[data-theme=dark] .note a{color:#9cc2ff}
+}
+
+.gk{grid-template-columns:repeat(2,minmax(0,1fr))}
+.gk>.kpi.hl:first-child:nth-last-child(odd){grid-column:1/-1}
+@media (min-width:760px){.gk{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.gk>.kpi.hl:first-child:nth-last-child(odd){grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -811,7 +1022,7 @@ const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAACwCAIAAAAg1XMJ
 const LOGO_FULL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wAARCAGkAaQDASIAAhEBAxEB/8QAHQAAAQQDAQEAAAAAAAAAAAAAAAEDBAcCBQYICf/EAGQQAAECBQIDBgMDBAoJEAYLAAECAwAEBQYREiEHMUEIEyJRYXEUMoFCkaEVI1KxFiQzYnKCsrPB0RcYNUN0dZKitCUmNDc4RFNjZHN2g5TDxNInVVZltcIoRVRmhKOk0+Hw8f/EABoBAQADAQEBAAAAAAAAAAAAAAABAgMEBQb/xAA0EQACAgEDAgMGBQQDAQEAAAAAAQIDERIhMQRBE1FhIjIzcYHwBRSRobEjwdHhNEJSQ3L/2gAMAwEAAhEDEQA/APf0EEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEYtuodSFNrSpJ6pORAGUEEEAEEEEAEEEEAEEENTUy1Jy7kw+sIabSVKUeggB2CIVKqstWZNE1KqJQrYpOyknyI6GJsQmmsoBBBBEgIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIr69KFclJdduKyHWnKigFc1RJtZTK1IbZII3aewNljZXJYOxFgwREllENZRwnDXixQOJ0i8qnKelKtJKLc/SJ1Pdzck4DgpWjyz9obH32ju4oDjrwXqVRnkcQ+HjzlM4gUxOpXwxCBUWxzbWMYUvAAGdlDwnoRM4B9oym8WZf8j1Vtul3nKpIfkTlKX9PzLaBOdvtIPiT6jeMo2NS0T5/kyjZiWifP8l5wQQRsbBBBBABFa3/AF4zMz+S2FHumTl4g7KV0H0/X7R3daqKaTS5mcIyWk+EeajsB95ikFrU6tS1qKlqJUpR5knmY5OqswtK7ko3Fs15yhVBLmSZVzCXkDqPP3EXG06h5tDjagptYBSoHII84oKLK4eVgzEo5TnVZXL+Jv1Qen0P64p0tmHoYZ20EEEdxAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAR477VnA+cp86eKdlJelqnJrExUm5PKXAU7iaRjkUgePHMb/pZ9iRg8y3MNLadQlba0lKkLGQoHYgjqIztrVkdLM7a1ZHSzz/2be0XLcV6amiVx1pi8pRvK0gBKJ5sc3WxyBH2k9OY2O3oOPmv2guFtQ4DcSJOuW049KUebe+MpcwzkfBvJOVMZ66eYzsUnG+DHsrs+8bZLjHaaXXVNsXJT0pbqMoDjxY2dQP0F4OPI5HTfDp7nl1We8v3MaLnnw7OV+5b0EEEdZ1HD8SZsok5KVB2dWVqHokbfifwjiKNLoeffedQFsyrK3lJPIkDCR/lER0fElearKIzsljOPdR/qjWU1rurTrUwRu640yk+xBP648632rX6EnPco3NqTpkK/JOZ8K190r2Vt+vEaaH5JRROyygcEOoIP8YRhF4kmSXzBBBHsFQggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggAggggBt99uWZcedUENNpKlKPQCKnrl5z9UeWlh1ctKZ8KEHCiPMkb/SO6vlS021N6eRKAr21CKhji6qxp6USifKVuoyLocYnX0q8isqB9wdjFoWrcqa/KqDgSicZx3iRyUOih6RUEdRw/UoXEkJ5Fler22/pxGVFklJLswdFxY4cU/ipY1TtyeSkLeQXJV9X+95hIPduD2J38wSOsfMy0LquTgZxI+MaQpiq0iYXKz0mV+F9AVhxlR3GDjY9DgiPrTHh3tv8LUyU/T+INPbw3OKTI1FKU8nAD3TpPqAUH+CnzjTranhWx5Rw9XW8KyPKPYVkXjS7+tamXFR3g7IT7QcTv4kK5KQryUk5SR5iOgj57djnjCu0Lt/YbU31fkWvOASud0sTh2HsHAAk+oT5mPoSN436e5Ww1G9FqthqK34lMqE/IvfZU0pH1Bz/TETuijh6VAY1zmo+ozj+iOm4g0/4qjCZT88ovWf4J2P9B+kaVhHfcNngBlTbhUfTDgP6oxnHFkvkbnDRsKHLGbrMgyBnU8kkegOT+AjXx3XDqklyYeqbgIQ2C03tzJ5n6Db6xzVR1TSBY0EEVRxq4zscM5GTplLlhVb1rKgxSqSg5UtajpDiwOSAfvOw6kepKSisspKSiss7K4rwYo0/JUeUb+OuCoAqlpFCsHuwQFPOKwdDSc7qPM4SMqIEdCyHA0gPKSp3HiKRgE+giv+FHD2atCnTNUuCdNUvWtFL9VqKwM6seFhvGyWm8kJA25nrFiQjl7sRy1lhBBBFiwQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQBHn5Jqoyb0q8MtPJKT/XFN1qgzlDmFNzDZLWfA8keFQ9+h9IuyEUlK0lKgCk8wRsYxtpVnzBQTTa31hDSFOLOwSgZJ+gi0rLtlyjsuTU2kCbeGAjn3afL3MdKlmWlErWltppIGVKCQkADzMcLXeOnDe2yU1G9aI2sc22ppLyx/FRqMZwpjU9UmRKSXLLBjm+IFnyt/2XW7anNIZqcstgLKdXdrIyhYHmlQSoe0cG32peETjhQL0lAc4yph5I+8oxHb29xKs67VNt0S56PUHXBlLUvOIU4f4mdX4RtrhNYymV1wltnJ8karTJ23K1O02bBYqNOmVsO6FbodbUQSD6EZB9o+oXZ54nDipwzptUmHEmryn7TqCQcnvkAeP+OnSv+MfKPHXbPsv9jfFgVhhgNydwyqZjUkYBfR4HPrju1H+FDXY64imzuKCKJMLxTrmSmUOTsiYTlTSvrlSP4wjy+nk6L3W+GebRLwbnB8feD6NvsomWXGXEhTbiSlQPUGOXoNJVL0mrUV7xFDi0pV+klaQUn/8AvUR1nODAznG8es4JvJ6pSNGokzWKgmUbSUlJ/OrI2bAOCfeLmkZJmnSjMqwnS00nSkQS0jLyanlMMobU+suOFI3UrzMN1aqydDpk5U6hMIl5GTaU++8s+FtCRkk+wEZ1VKtZDZxPGTivTOEFmTNbnQHpxzLMjJ5wZl8glKfRI5qPQepEUn2XrBqt31mf4y3spc1WqotaaYl5OzTXIuoB+UYyhA6JBO+rMUo9O1Ptcce5WXV3rNty5JQ2fCZanoUConnhxwkA+qgOSY+iMhIS1LkZaRk2UMSkq2lllpsYS2hIASkDyAAEZVvx56/+q4+fmctb8aev/quP8kiCIT9Yp8s53T07LtuZxpU4AREpp1DyAttaVoVyUk5B+sdWUdRnBBBEgIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAIIIIAI0tfqNVYYUxQ6e1OVJaToVMulqXaO27igCrrnSkEnHTnG6giGCj7k4AVHiPlV9X/XZplwgqplH0yUggfohshalb/aWokxys52GuHLrQTKT9wyix9pM02sH6Kbj0g5U5Jk6XJuXQfJTiR/TCtVCUmDhqaYcPkhwGMXTVLlZMnRB7tZPAnEbsUXZbbb87as+1cMk2kr+GUnuZsAdAndKz7EE9BHmack5qlT70tNy70pPyrhQ406gtutLHMEHdJEfZ2Ka46dnqhcYaW5MIS1T7qYQfhqklGNZA2bewMqR+KeY6g8l/QJrNXJy3dEsZrPnBXL8uW5qTI0qtVqdqUjILLksicc71TJKdJCVq8QGANs42EaOVmn5GaYmpV1TM1LrS604k4KFpOUqHsQDGzuq1qtZVwT9CrcouUqci5odaV18lJPVJG4PUGNNHlycs+1yec8535Pr5w1vGX4gWJQbkljlNRlUOLH6DnJxP0WFD6R1UeUewveKqpY9cth45XRZsPM/wDNP5OPotK/8qPV0fQ0z8StSPcpnrgpBHjDts8XS2iX4dUp9OXUpmqspCjlKc5aZOPP5yD0CfOPWN63VJWRadYuGoLSmUpsst9Wo41EDwpHqpWEj1MfLi2pCqcbuL8kzP5enrjqXezhb2CGydTuPIJbSQPYRz9Za0lXHlnP1djSVceWe1extw0FocOf2RTjKBVblImUqI8SJUD80nPruv8AjDyi5L7rrtLkWpeWWUTEySCsc0oHPHruB98dLJSbFPk2JSVaSzLS7aWmmkDCUISMBIHkAAI47iNS3H5WWnm0lQl8pcx0Sev0I/GNZQddOmPY6a4KEVFFbnckncnmY6K0K69SqmwyXD8G+sIWgnYE8lDyOcRzsba2qW5VaxLNISe7QsOOKH2Ug5/HGI4K29S0mhdUEEEeuQEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAENvvtyzS3XnEttIGVKUcACI1VqstR5NczMrwgbADmo+Q9YqSvXHN158qdUUS6T4GUnZPv5n1jG25V/MHV1riIhBU1S2wsg479weH6DmfrHGT1cqNSUVTM46sH7IVpSPoNo18EcE7Zz5ZIYHkIORz1ggjIk2lPuKp0xQMvNuaf0FnUk/Qx2tF4hMTGlqpIDDh271G6D79RFbRMp9Knao5ok5dbxHMpGw9zyEbV2zi8RIIfac4IM8WLS/LNEYbXdNLbLkspoDM61jJYJ655p8lbclGPm0tKm1KSpJSpJIIUMEHyIj6/2nb07Q2ViZnCtKxn4dG6EHzyevtHgftfcK02JxC/Lsgwlui3IVzCUo5NzI3dTjpqyFj3V5RHW0uUfFxh9zzutp/+i+pn2LbqVQ+MCaUteJeuyTsuUk7Fxv8AOoPvhKx9Y+jcfJLgxXTbfFizKmF6EtVRhDh/eOK7tX+asx9bOm0bfh8s1teRfoZZg15HkPt036uQoFDsuWVhVUcM9N77900cIT9VnP8A1ccP2FrN/KN41+6XknuaTKiUZP8Axrxyo/RCP8+Kq7TN2qu/jTc76Xw7KyDop0vjklDI0qA/6zWfrG+4SdopPBnh5UKTQ6KJu5KlOrmHJubViXZRpShACQdSyACeYG/WOZ3RfUuc3sjndsX1GuXCPpZmMVBK0lKk6kkYIIyCI+W1U41cWuKlWYpbVfqz8zNqDbNOpA+HCz5aW8E+pUTjqYuOyuyBxGrMsxN3LesxQtfiMq1MOzL6B6kLCAfQEx2Q6t2PEItnVHqnN+xFs9hzVjUaafLvcuNFRyUtLKUn6dPpG5p1Kk6Sx3MowlpHUjmr3PWKbtvgnelmtJTR+L1df0jHcViUbnWD/FUoKT/FUItahP10NpYrktJmZSgEzUipXcuHr4F+JHtlQ9Y3gknnThnTGTfKwbqCCCNSwQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQQQQAQxOTbUjKuzLxIaaSVKIGTgQ/BjMAUpXq6/Xp0vu5S0nZpvOyU/1+ZjVRbVXsem1MqcaSZV9RyVtDY+6eX3YjiqjY1WkSotNCaaHJTR8X+Sd4822mxPL3JOfl0NOOaXniygj59BXg+wjaM0OWmFYbrdP/wCs1o/WI1LrLjCil1tbagcELSU/rjDnGKaXKB1LNmBzdVbpoT5pc1f1RKbs+ksEmbuCXwOYbKQfxJji8DyEOsSz0ysJYZcdUdgG0k/qi6lH/wAg7thNl0xQV3nxTid8rCnPwxiJRv5hS0StLpjrq1eFtJwgZ9hmNFS7AqM6pKpvTKMnfxeJZ+nT6xYFHt+RobemWa/OEYU6rdavr/QI6q1Y+FpQHKWmoFou1FbYeXuGWh4Wx5Z5k/hFW9p2w035wgrrTUt31TpaPyjJ6fmC291AfwkaxjrkRcUYrSFJKVAFJGCCM5EdEoKUXFlJxUouL7nxhk3/AIebl30rKe7cQ4FDphQOfwj7EV+tNUi16nWS4Esykk5NlZGQAlsqzj6R8muKFquWRft02+sACnzjzbZAwC2fE2R/EUmPoDxor70n2VqhPoUS7OUWUZKvR7ukKP3LMeb0bdasz2PO6R6FPPY+bDr7k06t95RU88ouLUeZUo5J+8mNpa9s1S8a/T6FRpVU1Up90NMtJ8+pJ6JAySegBManmY9+djLhC3blrG+anLoNXraMSRVupiU8/QuEZPoE+scfT0u6eDmoqds9JaPA/gZRODNvhtpLU3cEygGfqak7rP6CM/K2Og68zvHbVG9aTTytAeL7qdtDI1b+/KHLgqlFZHw1UdBOyu5Gok+4HMe8co9XLSbyGqMXcde7CR+Jj2JSVa0waR7cYqKwuCQ/xLOPzNOx6uO/1CG2+JbwV+cpzZT+9dIP4iNeus2y6d6A4n1Q5j9RiM6m2Jv9zcn5FX75IcT/AFxi7J9pIsddI8RKdMHEy09LHzI1p+8b/hHUyk7Lz7IelnkOtn7SDmKbeohUlTkhNy860kZIbVpcA9UK3+7MQpKfmac+H5V5bTo6p6+46xMeplH30MF8QRx1uXyzUCiWnwliaOyXBshf9RjsY7ITU1lEBBBBFgEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEEEAEEY64yBzABBBCbwAsEIcwkAZQRjnEGqAMoITeDf0gBYITcwYPnACwRjtC5EALBGOrEGsQBlBCAgwsAYOMtvJ0uIStPkoZEa5226Q8SV06WJPk2B+qNnvBgxDinygaxm3KSwQUU6WBHUtg/rjYttIZSEtoShI5BIwIygzBRS4AsEY6oXJMSBYITf0g3zAHzi7a9BVSuMr0/voq9MZmAempAU0R9yE/fF59oScXKdkmgNAkfFS9JZUPMaUKx/mRyPb9pjaf2EVFI/PrROyyjjmkBtQ/En746/tVSypPs1W/LlJSpl+moKfLDRGI81x0ytPOcdMrfkeMOGNmO8Qb/t6220KUioTSEPFP2WR4nVfRAV+EfXKSk2KfJy8pKtJZlpdtLTTaBhKEJGEpA8gABHgbsM2oKpxCrVwuJy3RpENNnydfVj+Qhf3x7+1Rf8Pr016vM06KGIavM0ty22xX5bfDc22D3bv9B9IqWfp0zTJlUvNNKbdT58iPMHqIvTVEOo02TqzHczbKXUcxnmk+YPSN7qFPdcnaUbBHfVHhusEqp82Cn/AIN8b/5Q/qjUKsGtJOA0woeYdEcTomuxJzEEddL8O6q6od65Lsp6nUVEfQCOnplhU2RIXMaptwf8JskfxR/TFo9POXbAycJQrZna64C2nu5YHxPLG308zFuyEoJCTZlg446GkhIW4cqPvDyUpbSEpSEpGwAGAIXMdtVKr+ZBlBCZMG/pGwFgjHBgAgDKCExBmAFghMwmqAMoIx1CFBzygBYIQ5MJgwBlBCAGAmAFgjHPtBABqELGBUE8ziMS4nz/AAgB6EzDQcSYygDLaDIjDEGIAyyPWMCT0xGWIXkN9oAa1mMkrHXP0gK0dTn6RiXcfLADwwRn9cLEcLWoZAjId55DEAOEkQajBCEQBlqEGoRhiPLfaz4z3jwqq1ry9r1FmUaqDEwt8Oyrb2opUgJ+YHGyjyi0Iub0ozttjVBzlwep9QhQcxWHZ9vGsX7wkt64K7MImKpOd/3zqGkthWl5aR4U7DZIizScAknaIaw8MtCSnFSXczjALSoqAIJScEA8jjP9IipePXG6ncG7VVMAtzNwzwUinSRPzq6uL8m0538zgDnt5T7Kdf4lXNxYn6jI1N1+lzbnxNwuzuVsOA8sDo6cYRpxgDfwjEaRqbi5GFnVRhYqkst/sfQfaDIEYAhQ2/CDEZHSZZT6xgdXSFxGW/lADeowoWMb84zjEqSk7kAwB5T7c0gJy1bLdSlS1CsFgJxz1tnb/NEdZ2yKcHuBM6UJITJTkm4Ankkd4Ef/ADRue0HR03IOGlOKNaHrvklL2+whDq1fggw/2nJBdX4E3m0gHUzLImgB5NuoWfwBjknH4j9P7HLOHxH5r+xV/YOpS5eybrqhBCZupoZTnr3bQJ/FyPWWox507FbBY4LIWlP7vVJtZJ64KU//ACx6LjTpliqKNOnWKoi6hBqEY6RCaY3NjPUIUEHlGAGIWAM4QxjGJWkHnvAGe3rBtDfep8/wgCkk7HeAM8j1jA6vOFxABuIAxJUIULHXn6R4Qme0zxJa43OWwmsywowuT8nBr4FrV3HxXd6dWM507Z5x7pqE/K0uRmZ6efal5OVbU6886oJQ2hIyVEnkABF51uGM9zCnqIW509iSHEnbcRlvFaWJx5sHiTWJikW5XUzNQZSpwMuMuMl1A5qRrA1Aem+N4sRTuB4Tn3EVaa2ZrGUZLMXke3EJqMMd6r0jMKWRnGREFh3UINYjHGeYgx7wBlqEGoRhp2hRtADkJiMd4IAXbrBCQQA33WeeIChKen4wjaisZKdPvDmn1gDDwg7JhConltCqQP0hDCngkkAZgB8Aq9oyCVecRO/9IVL5WcY/GAJKspBJVtDJdCvMw6G88iICyPP8IAZ1pzunb3hxKmzyRGKmtIzkfdCafWAHgoDYDaDXDaSEDkD7w6lQPQCAGy+nPIwnxHp+MPkZ5gGMdKR0TAGKHgsgYOTHh7t8/wB3rH/wWb/ltx7YmqvT5FwNTM9KsOEagh15KCR54JjxJ283W36zYjrTiHGlyk0pK0EEKGtvcERt0/xEcXXv+hL6fyX72Tgr+wDaWDj/AGT/AKS5Ha8UOJNG4V2nN3BWnMtt+BiWQod5NPEeFtPqep6AEnlFXdneu020+zLQq9WZxuUpki1NOvOr+yBMObAdSTgADckgR464mcQrk7RHESVZkZN9bbjvwtIpLZz3aSeaumtWNS1cgB5Ji6q12PPBSXUqmiCW8mlgjNt3l2mOKp5PVSoqyTv8PT5ZJ/zW0A+6ifNUfSPhpw1ovCy0pS3qM1+aaGt6YWB3ky6R4nF+p8ugAA2EczwH4J03g1aglUluZr06EuVGeA/dFjkhHUNpyQB13J3O1rY9RFLrdXsx4RfpOm8Na57yZjqA5CEKj7QxOVGSkCgTk5LMFedIedSjVjnjJhyXeYm2kvy77TzSjsttQUk4PmIxOzJX9a46cPbdupNsVS6ZKWrWtLamVailpasYStwDQg7jYkY64jbX5xQtPhnKy0zdNbZpyJpRSwgpU447jnpQgEkDIycYGRHiTiR2XLsn+KFbMlU6K7SanPOTHx0zUW21sJdWVEONk6ypOo8gc4HLO1j9p7gTXbtctOeoNQk5p2mU1FMclp6cbl1uBByHUlZCTnPiGc8ucb+HDK35OH8xfpm9HHB6bb4jWq7ZpvFFwSRtkNlw1DXhsDOMHrqztpxnO2MxFsPijaHE5qbctatsVAyhAfbCVNuN55EoWAcHBwcYjzZL9nisp7Mz9rKrdOTWnKoKzj4ofCBQAR3Bd5ZwM6uWvA9Yl9kjgfcFh3NWbgr03IMrXJ/BtSMrOtzClBS0qK1lslIA0YAzkknljeHCGlvJeN1znGLjs1uejbooq6pc9lKCSWadPPTyyOhEs42n8XY2910Zqu2vWqU40HET0k9LFHVQWgpx+MbYNgKCjuQMRko4BO228c+lb+p1459Tz32MnFp4ISbLiSlxioTbageYIXk5++Ljuu4HaFLyZbMq18U/3JmZ1ZSwwNClZWR56dI3G5G/Q13wSVTLfqPEO3ZealdLVzPzMq0HkkqbmGWnhpAO4BUobeRi2HZfvVKVrICvs9IrStMEn2M6l/TSTOYf4hNStRlpJdNmFmYmxKIebcbDajoQpSgVEZH5wYHzKwogbQy3xLadeRoprypYGbC3A6kqPctIdHdp+2VpXsBgjB8o3s1MSUm6G5qoyjDhGoJedSkkeeCYfLslLS7U25UGES6yCh0uJCFZ3GFE4OY228i2/maI34X7ZNYZpjyAptKwp1xKmEZdDZKnGyrZIOs4Hyg9Ya/siy8q8mVebROvCUXNKfkHAWnAlK1eAE6inDZBV8oUUpzvHXS1RkZppx2VmpZ1pr51tOJUE7Z3IO0Ny1Zpk46lmWqEm86R4UNvIUcewMR9Bv5nHTXE9mSlluzNJm2lpf7nu1PNZVgOZ0nVgnLKwE81HTjnEie4gMSr0+hNNmpgyT5aWW1owUBDi1LGT07pY0884846yoCUQhuZm3GWky6tSXXSEhBI05BPLIOPrEeUmJKfUsSc/LTBRgqDTiVke+CfKG3kMS4yc09frEtOiUNPmHXe6mXtYW20nDTjiMDWsZz3RyRsnUknAO2yN3yX+oPdtpWavjQQ6kJbykKwSSNSjqGEjdQBI2EbKampKQWhE3UJaXUoEpS66lBI64yREj4+Sbk0zap2X+FPJ9TidB6fNnHpDYb+ZxzHE9ibkm5iWpE46VvlnQHGxjZBBJ1YBy4kKTzScg8o6+k1FNVp8nPIbW2iZbS4G1/MnI5HG2YzlKjJT4WZWcl3w383dOpXpz54O0NS1Zpk0+hpioybrqj4UNvoUo+wBgwsrlnzBnf90u7/ANMf/Gx9GeLVrN3nw2uihzFSbprM5JuAzjpw2xp8Wpf70ad/TMfOadH/ANJd0f8A3x/8bH0Z4s2i5fPDq5beanUSbtRlFtJmFnCGzkKGr97lOD6Ex038xPN6FZjYvU8U9krh9KzfGBqpm6aM65Qkuutyso+tTs5lBb1ICkJy2NeSefLbfMfQfuumBHhns5dn657X4qSFwVubpctLUoOuNtylRamHJpSkKRgBBOEeLJKscgMeXt4P4+zFOoeZbPJ0dBBxqw443JSWgOgMZBIHIAQw2pKwfEAR5w+kbc8xgdohXjpCa/SM/fENlWD8ogALgSOR+kYfEAfZOPeMw5joIO8B+YQBiJhPUEQ4hYcG0GE+SfujL2gDHSfOCFJHUiCAGCsnMYjUo4ySfeI/w76jyz9YyTJOnnpH1gCUGFdVYgMvkfOYxYl1NnKlk+QB2h1x1DWCvbP1gCMZQjfWDAJVXVcOGdbGwSoj2hh2b1DCE6R59YAfbl9BB1Ew7nf/APmNejvHlYAJPqYdEo6eiR9YAmZPr98YKSVfaxGLLCkHKlZ8gDtD2B+jAEVz81jKic9AYb709M/fE879NobU0nOyE/dAEPvj5n74eaCnckEgD1h0I08kAfSMglR6QB89O3K2kcXKXqCVH8is7kf8c9Gl7QAxw24Fgcv2Oq/7qN525Rji5S/8Ss/zz0aPtA/7W/Av/o6f+6jvr4geBf71333LysyyqtxD7FMhb1DQy5VJvWppDzobSrRPKWRqOwOEnHrHk2sWZxF4L1ZmozlOrFvTjSihmoMqKUEnmEvIJScjpnfyj3x2UJlDfAO00kEkfE9P+UORbFWlafXKdM02oyTU3T5pBbel30hSHEnmCDGPjOEmsbZO19Grq4TzhpI8n9nHtXVC5K3JWhfTrbs3OKDUjVkpDZcc6NOpG2VcgoAb4BG+Y9hKWEnG/wB8fKTjLZKuE3FSrUimrcRLyjyJynOKOVJaVhxvfqUnw5/ex9QLMuBN2WhQa6kJxVJFmbIHIFaAoj6EmIvgliUeGX6G6ctVVnMTx/2+QF1CwiUg/mZ3mM/aZi6OyUkDgFbQGw7yb2G3++FxTHb5/uhYX/Mzv8pmLs7I+3AK2tvtzf8ApDkTL4KKVf8ANn8v8HiXtDoSe0BeGUJJ/KaNyB+g3F19vdtIqVhZAV+15zmP3zUUt2h/90BeH+Mm/wCQ3F19vgYqdhf4POfymo2XvQOOT9i75r+R2VYH9oPMK8OnUrw42/uiIg9gtkKr18BISnMpK8hj++ORs5X/AHAcx7q/+IiIHYIOK/fGd/2pK/zjkUl7k/mbQ+PV/wDk9vttFsk61HO2IydP5pfP5T19IbfSpZToVpAyDvziM6y5oXsD4Tvn0jjPYZ8xezglP9n+zcJTtPu4wOX5pyPqMWyrHiIj5c9nEE8frOx/6wc/m3I+orDS0DxqCgQMekdPU+8jzvwz4b+Z8+e3M2n+y3SMpSo/kVncjP8AfnY6vjMUq7HHDZGkYBp+xG37i7HL9ufbi3SP8Ss/zz0dZxnWk9jbhqPtaqfvj/iXY0XuwOaT/qXfIXsk6U8FeKQCQAS9yH/I1RVfY4Qkcc6JhKQfgpsZAA/vJi1uySR/YV4pZG+Xv9DVFVdjk6eOVFJ6SM3/ADJiX/3Ii/gffc9f9rZnHAK6dRz4pXY7/wC+W4o3sCJArN9YSB+15TkMfbdi8+1odXAC6VdCqV/0luKN7Av92b6/weU/luxlD4LOm3/mw+X+TXdvRCTe1oakpJ/Jr3MZ/vwjbXSlP9ofbo0pxrl9sbf7MXGq7ee17Wh/i13+eEbS6FpPYTt5PULl/wDS1xde5D5mU/jXfId7CCEil8SMADwynIYz4H4pDsspSOPlmEISD3z3ID/gHIuzsLPd3TOIoIzlMr/IfilOy0ccfLN/557+Yci/eZgvdo+f9yLO/wC6Vd/6Yf8AjY+jvFAZ4cXoCcj8kTu3/Urj5xThCu0q6RyN4f8AjY+kPFD/AGt702H9x53+ZXGV/MTp6H3bDwV2LG0njZK4SkH8lzXIDyRH0dVKhW5Wc+kfOTsW/wC3XK/4rmv1Ij6OKcCeY39or1Pvm34d8H6sb+DV+n+EIJVYPz49ocEwM7pJEZiYR5ERzneDaShOCoq9TGeT6/fCBxCtwM/SGXmy5ukkeYJ2gB443jAtdQoiIpl3BywfrCoZeztt/GgCR3SsfMYwIUnbJH1h1pDiRhZSr9cO/SAImCepgiSUpz8mfpBADAUsctX3QvfLHMY+kZF9PkYTv/3v4wBh3qv0jGC2+8OVJUT5w8H09Un6Q7qyMgGAIqJRJ3UVD0hwSjI6E+5h7eGnG1LVnIx5QBmnumwdOEjriAup5BUM90vy/GFDKvSAHdZPI/dGJcA5rA+sMuyi1jZYHpiI5knU8gkj0MATRMozjvBHm3tp1m6KXw7ppt9+bYpbs4UVR+TUUqSjR+bClJ3SgqznpkJB5xYlycZLBs+szNGrt106Qqktp72We16kakhQzhJG4IPPrGsT2iOEh2dvilLQRhSClwhQ8j4eUaQUk1LGTC6UJxcNWDx3bF3cU0dn+6VSE5V1261UJZv4wLcU400Uud8ltfzBvUGdWDgaumTFu9hquXbUHrml5yYnpq1mWUKaXMLU4huaKt0tqV5oyVAbbJPXe8m+0nwibaDKL0pKWgMBCUrCQPLGiMWu0rwhlWg2zeVLQ2nkhttxIHsAjEaym5JrTyctdMITjJ25x6nlDtxkq4uUsnn+RWf516NJx/P/AKN+Bn/R0/8AdRqu1DxLovFDiZ+VKA4t6lyUi3JomFIKO+KVLUpQB305XgZG+I6rtI29UqXwz4LOTUqttMpRzJv5H7m8UNLCD5HAP3HyjeKwoJnBY9UrpR3X+z1B2UmQvgLahwrP7Z5f4Q5F0CVQBuVR5N7MfaFsO2OFdOtu4601SalS3Hk4mG16XkLcUsKSpII+1gg77Rch7TXCbpe9M/8AzP8AyRyWQlqex63T3V+FH2lwjyv26Ka1LcSLdnEJwZqk6FHzLbywPwUI9S9mqc+K4FWO4peSmSLW/wC8cWn+iPHPa14p25xNvOjKtqaM7I0qTU05NhCkIcWteohOoAkAAb45k+UexuzlSZqi8D7LlptpTTxki+UKGCA44txOR/BUI1sTVUUzm6Zp9VNx4PPfb3VmoWH/AMzO/wApqLp7JascAra3P7pN/wCkLiku3o4DVLER1EvOK+9bX9Ubzsx9oKxLR4XStvXJWEUqoUx18gPNOKS+haysKSUpOT4iCOe3rBpulYKwnGPWTcnjb/B577Q3+6AvD/GaP5DcXV29iTUrCJGD8POfymo868U7vkr34q3DckklxFPn5/vWe9GFd2nSkKI6EhOcdMxaXa64s23xOuO3mbZmzPSdIlnUuTaUKShbjiknSnUASAEc8Y39I30vVA43OLhbvy1/JYEso/2g74ztlX/xERB7Befy9fGP/skr/OORxjHGW30dkt/h+XF/skM53Il9BwWjMd/32rljHhxnOemN477sEyT6Z2+KiW1fC93Ky4X0K8uKIHsMH6iM5pqEs+ZvVJSvq09ke10ZUfEDj2jJxKQ2v+Cf1RgubbQBqzk9MQw9UEd2vShR8J57dI4j2j5h9nD/AG/7O/w9z+acj6jl1IAwrePlt2c1aePtnH/3g5/NuR9Om30qwN8nYR09V7yPO/DPhv5ngftynVxapBzn/UVn+edjreM6R/abcNTjfVT/AOZdjkO3Gkp4s0jP/qVn+ediDxW4rW3Wuz7w7sqlzvxdakmpZyeShCgiW7tpadBUQAVEr5DPI+kaxTcYYOSySjZdl9iwOyVp/sK8UsnBy9/oaoqrscgHjlRdXL4Kb/mTE7gPxhoHD/hnxGotWccRUKgyXJBtKCr4hamVM6MjYEEpVv0z5Rw/Z+vmmcOeKVFrdZU4imIQ7LPutoKy0HGynXpG5AOMgb4zEuL9sqrIf0d+Of1Pdfa1CRwBukJxjVK8v8JbijOwN/di+v8AB5T+W7G77TfHKy63wwnLbodZbqdTq5lnEol216WmgtLutSlJAGQBgc94qrsjcWbc4YXPXm7mmjJSVXlmktzZQpaG1tqUcK0gkAhZ3x09YzjGXgtYOi22H5yMs7Jf5Op7eBJvW0M8/wAmu/z0bS6cf2itvHrql/8ATHIrftZcU7e4nXxSXbamVTlPpckWFTehSEuuKWVHSFAEgDG+NzmJ91cW7bd7K9rWDJzZmbiK0KmmUIViVSh9bniURjJ8OAM84uovTBY7mUrIeLa88o7vsLthdM4i5zsmV5fwH4pXstjPHuzR/wAe9/MOR1fZd4y29wpk76Zry3GzUJNt6U0IKu+dbDg7rbkVd4ME7bGOc7J8k9N8d7XcbQSiVExMPKHJCAwsEn0ypI+oizTWtszjJSVMVyn/AHNdOADtKugcheP/AI2PpBxQIHDe9N//AKnnf5lcfNniEt+x+0FXJ2fll66dcZny1yLjffh5OM/pJII949gcTu03w3neGNe/JVcE9UatT3paXkUMOJd1uIKPHlICQnVk5PTbMZ3RcnFo6OksjBWKTwecOxeccapb/Fc1+pEfRkqCsZOfePnl2J6XMzXF96baaUqWkaU+XnMbJ1lCUj3Jz9x8o+hK3AhWCDmM+p986Pw34P1MtI9YXuzvsqMETZRnw5HvDwnU43SoRzneYgaN8EQus+ZhwTTauWc+WIC+OiYARCio4IVj2h4BI8/rDXxAzun8YUPpPPIgB3boTGKnAPtCFI1DGNjDJYPQj6wAvfD9KCMe4V5j74IAYlUuPjUoAI8/OJIl09STGOT+9++M0FR5kb9MwAqWUJ3xv6xkohIyTtBg45D74DnG4TADJmFdABGJeWeuPYQ4tKQCdKT7GIhKs8h98APh5Y6594eaWpYyQMecQsn9FP3wBZHLA+sAbHfzhMe8QRMODO/3mAuuEHf/ADoA8u8ZeyVWuJ3EesXTKXNT5JifDQTLvSzi1o0NJQckHByU5+scJ/aF3F/7Z0r/ALG7/wCaPS0jVqou8ky5m5tU4anNNTEioqLLUglpRZdCcYGVBohY3UVqG+MCJTrqYl7RuN6pXLPzbUlV3WzMyzifiHUFaS20jSAEBZJSCMYGfEMFUdCtsSwmcEumok3KUTzp/aF3F/7Z0r/sbv8A5oB2C7izvedK/wCxu/8Amj0NU65NS1t2xLvXSpNfnUL7h1mbHwyPzgJdddxh0Npw2Af3RR+XfKd+a0mY4lOSMnXHv2qlxU8y+8A0AWfAy01jxFP7qpe+PlJOrCXjWeZH5Tp//P7lU8MOxjbdm1OXq9wVRdwT8soOMslgNSrawchRRklZHMZOPQxe112DQb3oM3RK9KCdp80PGhasEKHJaSN0qB3BEcBTLhmp6gVieplcnZmkGbkmu+de1zbbHeBMxM4Ay0FpJKU4GlKSsBOcBKxWp5FnzbqKzUW3kTE6KO53jifjG0kd2VOBJK1jKu7So4cwCdQ3iknKTy2bVquuGmMdikK/2CnTPuLoF5IRJKJKWqhJlTiB5FaFAK98CNM52D7hbQVKvSlAD/kbv/mj007WKubtS0JqeFQNSl2mqevIaVIGXSpxxSQNOQsuZXzCkhIONjBtyvXGuWWuQTOVioKpTK52XmjtK1BToStIC9ISEpK1FsEbNpxjVk38WzzMX0vTt+6VPw77GdBtypsVK6Ksa+thQWiSbY7mWKhy15JUsfvdgeueUeoviFhISCAkDAAAAEaPh87NTlrMKqaZxc4h+YaU7UNIecCX1gKOgkcgBt5bbYjoVtICjpSn6qOIynOUn7TOqmqFcfYWMnhTtx1hqcve16alYL0lTVuOgfZ713w/gjP1iPZfY4n71s23riYutiR/KsoiZclpiSUotas4wpKtxjB3A5xxNwWPe/FTtA1S3q2xouCZnSJxbST3MrKpxhxOf70G9Ok9cjqY+kVNp8vSKdJ06TZS3KSjKJdlGflQhISkfcBHROx1wjGL3PPpoj1Ns7LFseTql2G6em2GZWl3IpVwGYSt6fnWSGe6CVAtoaQdiVFJ1KJO3SJ9ldiC36Y8Zi7K7M1nwkCVk0GVaBIxkqyVnHPbA888o9VlKyklKMnHTMRFKfT8wI98iMfHnjGTsXRUJ50nkZ7sHNuVz9r3qpFGUvIQ5I6plKf0dQUEE+uB7R6qsDhxQuGlsy1v0GXW1JMkrUtZ1OPOH5nFq6qOB6AAAAARL1KPl98ZoeeT8qj9FGKyslPaTL1dNXU24LBuFSrS+aT75hh6nt92vClDwn16RjJuvqUoOk6cbE7f0RLUCtKgNJJGBvFDc+W/ZzTq4+2cP/eDn825H05QylODvkesfLThTXpXh5xpoVTr2uWlaVU1omyUkln521Ejn4Scn2MfSBvjDw5daQtN721pUMg/lJoHHtmOrqU3JNHl/h04xhJN9zxj24yVcWKTk7/kVn+edjouDvY6p12UK37nuK4nnKdU5ZubTTpJnu1YUM6VOqJ9jpAPkRFb9rC/KHfnFJE3QJ5qekJCQalDNMnLbiwpa1aT1A1gZ5ZBj3RwXk5incI7HlZlru32qRLBaFbFJKAcH6ERacpQqjjYpTVXd1M3JZSKCu7sIys7XFzFsXP+TqS8vJlJyXU+pgeSFhQ1Dy1b+ZMbSs9hK2nqDJsUm46hK1phJ76cmG0utTJO+7QI0Y5DSeXPJ3j1GHFpORgfWF79wdfxjDxp+Z2/kqN/Z5PFlx9kqhWkw3cN/wDEJmn0CTYl5Zz4WUIcdUlARpSVFW6tJIASo/dGQ7LvDri7JrrPCi9DLyrJDL8pNNLfDa8ddRS4gnnvkHfHlFp9rexnr24cy8yisSFPVRJr4o/lCZDLLwUkoKdZ2C9/DnnuOsct2MeHz1t0ev3EutUyeTVS1LJl6dNB9LIbKlEuEbBZ1bJ6DfrGqslo16tzldEPG8LRs+/chUfsI06UpFSNTuZc/WHZZaJPQwWZZh0jCVrAUVrwd8ZA94hWz2C0NzqHLku8vSaTlTFNle7WseWtZOn6JMewg64OR/GJDSlqT4hg+pMZePZ5nT+Ro29k8i3r2E6ZP1T4m1LkXSpFwjVJzrBmA3/AWFAkeis+8XNwb7Ptt8Hae+JNx6oVicSEzVRfASpaQchCEj5EZ3xkknmTgYtjBxyT98GD5D74iVs5LDZpDpaoS1xjuVHxl7O1r8Y2mpicU7Ta7Lt92zUpZIKtHRDiTstI3xuCOhEUNK9g2cceYanb3YEk0VElinq7xQJz9peAfvj2mokZ8SQfeG9ZI3I++EbZxWEyLOlqslqktzj+GPCe2+E1BNJt6WUkOqC5maeOp+ZWBgKWr06AAAdBzjtFMIX8wJPnmMNz0H3wZUB0H1ijbbyzeMVFYjwYmSQeRUIaclNAyFEj2jJx1YwQoH2MNa1HyPuYgkA2B5xnGGSfsj74MqPIb+hgDPeH0MoUM6iY1biJkZCkqI894a1LT6fUwBvwkJAAzgQb+caNMy+nksgfwolS048VaXAVJ8x0gDZHVnYJx6wRjsd8J++CAGlOIQMqWkD1MMqnpdI/dQfbeNFkCM0tOL+VtavZJgDdInGF/wB8Az0O0PhSSNiCPQxpUyEyvkyoe+0bSRkhKoKljLp5ny9IAfzAQcfKTDuR5wZHnAEFSCncoI+kYxsM+hhlaVFRUR+EARgCdhkxkhvKhrSQmHdx1gAPTeAHwUjYED0jLPr+MMBCz0MOpwkDb8IAXUDyJhM5PI4hcjzENqmGUDxOoH1gBzUPOAqA6/jEVdQYTsFFR9BDaZlpXJwD32gCaVpxzyPKIrupSlEhWkcoyCgoZCgR6GF1esAMZ84TMPnfYjaAH6QBAbpUo3UHqg3JMpnphtDTsyGwHHEJJKUqVzIGTgesbYFtPIAfSGc+ohcKPLMAP5HmICoecNIQQrJGwh3MANONIV/egT56YTATtjH0xD2R5iDUPOAGiQOZhtT7SdlOJz7w1UGVv92W0505zGuUw6jm2ofSAKD439luicTqq/cFBqKKLcL/AIpnvGiqWm1ctSgN0L81DIPUZ3ijR2H7+Wo6azbCvX4l3/8Aaj3VvyxvDqZZ5fytKP0jaN84rCZyWdFTZLU1ueYeFvYnkqFVJeq3vVpermXUHG6bJoUJdShuO8WrBWP3oAB65G0etghJAASMDbYQ3INOMNKS4nBJyN4l5ik5ym8yNqqYVLEEQSytJPgPvGJ26conlQAySAPeG1TDSdisfTeKGp597VPDK4uJti09i2kfEzlNnfilyPeBBmElBT4SSAVJzkAncE43jnuyHwhu3hwzcNSueUXICqBltmnrWlS/zZUS4sAkJ+bSBnOM+kenC+3qOMgH0hQ4k8lCNPEejQYPp4O3xu5JCkgeX0hQoHkREfPrC6VHoTGZuPkjriGnkFWNIPqIcSSAARvC5GIAhlKk80kfSEzEwrSgZUpI9zDDk5LAEKcBPoMwA1z5QhQrOdJMImdaV9sj3EOJeQrk4k/WAGyCnmCITIzEjPrCc94AZSk5yBnHpE1KxgbafpDGT6wZ9YAkhYPIwHSRvgj1iPueuYzQFA5xsYACy18yUJz6JgwR0MO59DBkQAzkeYgh/I84IAgScl3R1ugFfQcwIngg8jGJWlPNQH1hpbyFbBQx5wA8SBzIEIXEjrn2hgbdIMZgB7vEk7/iIyCgeRBiMVJR8ygPcxHfm28aULSVHy6QBLnJ2Wp0q/Nzb7UvLS6C4666sJQ2kDJUSdgAOseXbv7c1p0aouSlv0OerrbZKfii6mWacPmjIUoj1KRGq7bF7TNIs+i21KOqQK2849NaTutlnThHsVqBP8GLS4KcIqJw0s2mNIp8s5XZmXQ9PzzjYU6t1SQopCiMhCc6QB5Z5mNoxjGOqW+TjnZZOx1VvGOWcFanbns+rziJev0OpUVKiB8QhSZttHqrSAsD2SY9SsPtzDSHG1hSFgKB5bEZG0cBX+HNo3U/LP1e3KZNzMs6h5p9UulLiFpII8ScEjI5HIPURqON99VLhpw3q10U6Vl5idlXGUpRNJUWz3jqUknBB+15xV6ZNKCNIudcW7XlL0LaJA5kCMC82B84+m8eHZXtVcVbspEs5aViNzr8m1/qjNtSD0y2t3JOlCUqwgYxsSVHflHoy/8Aisxwr4bylyXJLpcqjzLLaZCWOnvptaNRbSTnSkHUSTnAHU4hKqSeBDqa5pyXCLFqLqnglLYJQNzt1jXkFJwRg+ojyKO0bxxXRTeCLAkf2IAd73vwbpT3Wfm195q0/v8ATjryj0fwg4qU3jBaDdcpzC5eYbWWJySWrWqXdABxn7SSCCDtkHzBhKuUVlk19TCx6VydVn1jNLa1/KhR9hHnziJxr4qy1+1i0rD4eCZNKUlLk68wt/vUqSFJWCChCAQdgSTEXhn2nrmXxBlrF4nW41RqrOLSyw+02tkocV8iVtqJBSvkFpOMke4eFLGSPzValpfy42PTEs38Mlx14aQkZJPQDckxpbQ4jWrf6p5Ns12UqvwBQJgyxJDevOncgA50nl5RwnHa9OI1popbdiWkivS82zMfHLWytz4fGkJ+VScZBUd88o8d9ne9+JNoS9xiwLRRcKZksGbK2HHO5KQvQPCtOM5V58otCrVFyyZ29X4dqhj79D6TxiVp/SEcdWb1lrRsJV1XOj4NMrItzE2yhPiS6pKctJST8xWdIGeceY5TtHcab2anK3ZnD6XdtuWWpOfhXJhR07kFetOpQHMIG0UjW5cGtnUQrwnyz2c282CSc/dEgOIVyUD9Yo/gLx4k+M9LnUPSSabcFN0malErKkKQrYONk76cggg7pOOeQYuAb8t4rKLi8M0hONkdUeB+p1OTo1PmahUJpmVkZVsuvPvKCUNoAyVEnkI8t3T267XplQclqBbtQrLKCQJlx5Mqhz1SkpUoj3A9o0vbgvGdlaZbVmyalpRVFqnJlCTjvUoUEtIPoVkn3SPKLz4TcI6DwutaRp8pISy6qWkqnp9bSVOvvEZVlRGQkHICRsAPPJjVRjGKlLfJzTssssddbxjllZWd237NuGfZk63R6lRFuqCEvgpmmgScAK0ALG/70x6dDiSRhQzHF1jhvaNwVKRqVRtumP1GQfRMS818OlLiFpIKTqTgkZA2OR6QcQ7+pHDW1J65K0tfwsthKWm8Fx9xRwltIP2ifoACTyiktMmtKNoa4Ju2SZ23r0hMx4tp/aK44Xo09W7P4eSzlAQpQQRJuzGrHMd5rTrI5HQIt/gD2kJbi8/OUOrU5NIuqSQXFyyVEtvoBwoo1eJJSSAUHJGc5O+JlVJLJWHVVzaiu/HqXokYOrT6ZxvGeoef3xRXab40V3gzQqHN0GUp0xMVKZcYWZ5C1pQEo1AgJUnfPnFSVjtN8ZZ6kruqh8O25O0JdAcVNTkq67rQOayrUnw890pIA6nnCNUpLKFnVQhJxeco9owhWkHBIzHjlrtZ33xBk5ST4ecO1zdYQ0FVB5xKn2WV+SNJSNJxkFagd8YOMx03BDtIV66r6mLCv2iM0q4wFhhTLamsuITqU0ttROFacqBBwcctwYl0ySyyI9XVKSS7/oelpod5pKRnGc7REKSOYI9xFadofifVuEnD9Ffo0rJTE6uealdE4lSmwlaVknCSDnwjrFIyXaO41XxSZadszhwh2UaZSJicVKuPIfdA8ZbBUkBOc4SCo+sRGuUllE2dTCEtD5PXEKkFWwBPtFIcAe0Y3xVmZ6hXBTWqTddPSXFsoCg2+hJ0rKUq8SFJOApBz5jqBv8AjxxduThtKUNm07WNfqFZdWw0pOtaWlpAISW0DUokEkbgeExDrkpaSyvg4eInsW3KJWgqyghJHWJWof8A+x4tne0zxn4dzMlO39YMs1RJpwI8MuuXUepSlzWtIVjJAUN8R69ti45C7repldpTpdp1SYRMMqIwdKhnBHQjkR5gwlBx3YqvjY2lyjbAg8jCFaU81AfWPFR7Yd6ruu47elLPkqvPtzLknTJeSbd1akOqSVOAFSl+EDZOnfO4EZynag4j2LddMkuKVoS9OpNQI8bUsph1pBIBcSdakrCcjKeePLaL+BMy/O1faPW1yPuMUubnJKWVNzcsw443LI2LykpJSgHzJAH1ijuz5xWu7iixcC7mt5FNRT3G0svssOtJWVatTRCySVJwDkee4i8p6a+Hp01NN6V90wt1O/hVhJUPocRSPZp423BxnlrlmK7K0+X/ACa5LpYTJIWBhxKyrUVKVn5R5RWK9lvBpOWLYrPOdvMuXMKBqO2/sIprj12hhwvn5G26DSkVm7Z9KVol1hSm2EqOEZSnxLWo8kjHmTuAa4Paa4rcOKhT3eJdhtS1DnV6Q5Ly6pdwDroOtSSoDfQrBOOkI1Sayis+qrhJxfbn0PXUkHWyQpBCD5jGDEwHzzHN1W+6JSbFmLzXM99QWpH8oJeaGS60U6k6R5nIAHmY8tU/tG8br/E1VrI4fSrtBYdU2D8OuYJI5pKytIUoAjISNoiNbkXsvhXhPdvyPZWc9YQkDmoD3ioeA/Fa4+J8jW03NaiqFP0d5Eu4s60IdWoFRSG3BqSUjBO5HiEWuvSlWxGDv7RWUXF4ZpCanHUiQh9KDjOx8hDofbP2se8QcjzgiCxsQpKuRB+sBIHMge8a7aAJUrcJJ9hAEtS2Sd1DPpBEXSr9E/dBAGHWFiWJRHVSj+EOCXbH2R9YA1bz/cI2PjOwEQlPuLHicUfrHQql2lgBTaCB5iIzlKl1cgpH8E/1wBoycnPODIjboo7YOVOqI8gMQ8imSyBugq9VGAPEvbhpb/8ArLrCElTDfxMqo42CzoWkfUBX3R7DsmrU+6LSotakloflqhKNPpWDn5kjI9wcgjoQY1/ErhnReJ9nz1t1RvumpgBbUw0kd5Lup+RxPqD06gkdY8jUix+0VwFcmKVarQrVAU4VtpYSiYYJP2g2shbZPUDbPnzjdYnBRzho4ZaqbnPGVLy7YPdYSlPJIHsIoztf/wC0LcP/AD0p/pCIp1ikdqHiNUZJVSnTbkgw8h7Li25VvKVBQ1NtEuODI+U7HlF59o6167fHB2r0SiyRn6w+5LKSwyUp16XkqWRqIAAAJ3MQoqE1ll52O2qeItbfqNdk9tI4A2gQkAqTMk4HM/EObxSnb5U8hqxGkpxJqVOqVjkV4aH8kmL57PltVezuD1t0SuybklVJVLwelnFAlGp9ah8pI3BB59Yx47cIGOMVkmkofblarKO/EyEy4CUJcwQUrxvpUDg45bHfGIRklbqZWdUp9KoLnCKQl7r7S66K1IMcPKKaYqWDCG0y7eks6NIT/sjlp29o6jsdcM7x4cNXe3dFIepbM6qVMs264hWtSQ4FEaVHGAUjeOGoNa7TvD6ksWtLWs3U5eTQGJWbdYRM6GxskB0OAEActYyBiPQXAqX4mSduVBfEyYYeqkzNl+XSlxCnGWykZQoIGhIBGQEk4ycxex4i0sGdEVKyLerK8+Cl7i7RHEriLxBqlp8I6NKLl6Y4tLk5MNpWpwIVoU4SshCEatgMEn8BTvFQcSW+LFhu8SmpBusB6WEq5I92NTImU/N3ZxkKJ8ucWLM8KeMHBLiTXqxw2prNYpFZWsp1BtwJQpZWEOIUpJSpBJAUDgj3IjSXjwf46XRdtr3Vc0iKzOofbcXLSTrITT2m3kq7vGoJyrc+HVy3OYvHSntjH7mFismmpas5+h7gqu8pP9cNO/yTHkHsHYMtfY665L9Tsey3GW3CsEZSsnIzzBjw5TeHPGjs/XhcDdh0JFao1VOlp8NJfQUBSi2VJ1pKFpCiDnY789oxrw4yjk7OozGyFmMpZ4LU7aTsw3wdaSznunKvLJexy06XCM/xgIq3hjdfaApdhW/LWjZVLmbdalwZKY7hslxBJOsnvh4iSSdhv0j0xWrMmeKfCRugXgz8BVqlItGbDWlXws2kA604ODhYzgHGCRHm226T2iOCEq7bdEoEvX6Gh1SpZaWkzLSNRySg60rQCdylWwJMXracNO2fUxvjJW+Juk12Oh7NnDDiJQOMtbui6raNHk6nJzKntKm+6LrjqFhKUpWogZCiPLEexwMctooHgX/ZkdqtaqnEpTDEhNtIEpIhSErl1pUflbbyEpKSc6lFRIEXgmZcHUH3EZWvMtzq6WChXtn6ni3tzyExTrwsW4g2VyyWHGduWtp1LmPqFfhHs+i1WRuSjyFVkXEPyM+yiYZcTuFIWAQfxjiuLPDmm8XbPmbfqh7klQelZptOVyzwzpWAeYwSCOoJ948r0O2u0dwPQ7Rbclfy1QULJZDCG5tgZOcoSohxvPMp5ZP1i6xZBLOGjFuVFspYbjLy7HukMt6leAe0eR+3u/MNWlaDDRIlVzz61gctaWfB+ClRqaRQ+0zfdfpc5V58W9T5OZbmdDym5dpWlQOFMtZW4DjGFHEegONPDCX4wWPM0B+YEtOIcEzJTKk6gy+kEDI5lJBKT1wc8xERSrmm2WslLqKpRjFr5nW8O5GRp1g2xLU5DaJFqmywZCBtp7pJz9c5z6x5FqLTVK7eEomkAI+ImEKmUN8tTkmS7n3+Y+phLcmu0xwtpCLSp1tt1SQlQWpSaLSJpLSOgQ4Fp8I6BY25chiLB7O/AC5LeuyocROIcwHbpnA53Mv3gcW0pz53HFJ8OojwhKdkgn0AskoZbfJlKTu0QUWsNN+mDQdvgYtGz/8ADZj+Zi8nW0u8GloWNSFW0QQdwR8HFb9sPhvdPEa3LalbWoz1TflJt5x5DS0J0JU1gHxqHWLlZt+Zd4at0dbPd1BVFEmUE/K4ZfRg9Oe0VbWiKNoxfjTeOyPNXYRUpVm3ckklIqDBA6Alnf8AUI0d4gNduW3igaSt2SKiOuZYg/hFi9kDhtdfD6g3PI3TRX6U7MzLDzHerbWHQGylWNCjjBA5+cay9OFV4THatt285KhvzVuNLky9ONuNhLWltTasgqCttjsDsYvqXiSeexhol4Faxw0bHtok/wBhuX3OPyxLfyHY7bgYsng1YgKiQKUztnlzjku200lrgzLaRg/liW/kOxT9g3R2hqJYVDkbetaVqlCfk0Gmzpk23ltMkeEagsbj9+PviFHVUl6l5WKvqG2m9uw84ESnbhbFMwA6+PigjllUnl3P6z6xZ/HvjvUeG9QpNs2xTW5+6KqhK096krS0lStCAEAgrWpQOBnAx1zGfZ27PNctet1K+r+mO9uuohYbZDocUx3hy4taxsVq5YTskZ332idpPgVddwXNQL7sQiardKShC5UqSlz82srbcRqISrBJBScZGOe8TmDmk+yKKNsaZSisNvPrgqHi+7x4meHFQVfUtSkW2XGFvIQJcPNL7waMBByDqIB57Ex6d7Kjxd4D2ekklTaHhz6fEOYigrxsrtGcV7Tn2q7TpWQp0uEOJpMv3TLs+4FpwMBR+XJV4lJHh2BOI9JdnS26vaXB+3aLX6Yun1aR75DrDhSpQBeWpJykkbhQPOFjWjG3PYnp0/Hct8Y7/M869kwD+z/xMPUNze//AONEbnt8oT+xqzF6RqTNzSQcbgFpOf1CNx2c+Fd4Wbxjvyt16hvyNKqSJgS0wtxtQdKpoLTgJUSMp33Ajc9sHhjdHEe2rbZtelOVOZkpt1TrTa0JKUrawFeIgYyMfWJ1LxU8kKEvyso43/2XNT/znDqVUrdSqOkknr+1xHmDsCpSqk3zqAP56S5/wHY9Q0mUnP2BSMm9LranhSkMrl1EakO9wElBwcZCtueIofsfcMrr4cU27Wrqor1MXOuyqmA6tCu8CEuBWNKjyKhz84zTWiSN5xburePP+CleI09dkt2vqvM2xTGKncstMJ+AlJpIUggSicEAqSMhOpQ35jMdNxGl+0ZxStpdv16wJL4FTzb4VLNtIcQtByCFF845kcuRMWR2huAlw3Rc1O4gWBMpYuyQDYcY7wNKeLf7m42pXh1geEpVsoY8sHj3bv7VFwy35HatlumPKHdrqCZVplQ6FWtbhSPdI9o1Uk0msbeZxyrcZTjPVhvtwy6OHfDGbqHZyp1hXaw9JTb9Odk5lGpKnGMuLKMEEglI0HnjaPOsnb3HfsyNzbVHlGq/aSXVPqDLPxLHqsoBDrRIG+NvU849YzspfS+Ey6exOU9N+qpYY+LDigz8VpCVOBWnOeZBxjV6R50lr37U9vNfkuYtNqqvJGhE85LNuq8grW24lJ9yPeKQbeeDoujGOnZppcr+5b3AvjvTuNVMnSJNVOrlO0Gbky53iClWQlxtXMpJBGDuD55Bi24879l3gfcXDuYr9y3d3TFZrSQ2mSaWlRaRrLilLKfCFFRGEpzgD1wPRxaT6j6xlYoqXs8HT07m607ORnG8Y6RDq2lYJQRq6Axq1zLpOCrT6AYihsbyW0KT8o1jntziRHLFaiclRz55h5E5MI5PL+pzAHRwRoU1SZAxqSfUpggDbImkK2OQTD2fQxCle7zqUoBXIAxO8oATJ8oNz1ggyBz2gAzCLcSj5jiMFPtIBJWMDy3jjXOJ1lOrJ/Zhbox0NTY2/wA+JSb4IckuWdgZpPRKj+EYKmSeSR9Y0FPu236tLTk1T67S5yWkka5l2Wm23UsJwTlZSTpGATv5GNhIT8rVZKXnpGZampKZbS6y+yoKQ6gjIUkjYgjrEYCafBKLiiSTjPtC6x1EYQKCwglCFKONgBzgSYOTbLaiCTkdAIZVU0j5W1H1JxGvcStvUXQUnmSoYiJIVCUqso3NyE3Lzco5nQ/LuJcQrBwcKSSDuMQBtVVFxRBCED6Zh1FUP22h/FMaV6oybE5LSTs3LtzkyFKZYW6kOOhPzFKScqA645RKAKuQJ9t4A3Lc8w6oJyQo7AERL7tR6ffHOIqMhS6jT2ajNsSr066WZRt9YQqYdwToQD8xwCcDoI6hKkq5EH2gBsNHbJEYuSqVnJUc+0PwQBDVJuD5VA/hEaY/a4Bd2zy65ja5HLMaqrNuuuI0tLKEp5gbQBGVOoGNKVH8IbVOrOcJA/GIxGDvtGvrFcpduyK56sVGTp0kkhJmJx5LTYJ5DUogZ9IBvHJukzyhjKQfYw4Jxs/MCD7ZjWS0wzNsMzEu6h2XeQHG3W1BSVpIyFAjmCCDmHHFJabcdcUENNp1LWs6UoA5kk7AepgDdtMrdSFIHhIyDyh5MmrG6wPaOftriDaVfdTTqTdFFn59tOFS8pPNOuDHPwpUTHVjflBrHJCafA03LJaUVAkkjG8O7+UBg8oEiEgAk7Ab5hkzbY5BR/CHHfE0sDckYxGvKVJ5pIPqIAfM4fsoA94RM2oc0pP4QxyMJAFN9qu1K7f/AAwZpVuUp+o1BNTYfLDJTnu0pcBVuQNsj747zgtR523+FNoUmqSq5apSNOaZmJdzGptYG4ONo6g464h2WeQ2vc+EjnjYRbU9OkzVSVjs7vY2H0/GEwT1jmZXiTZs9VRSZW7KC/VCrSJRqoNKdKvLSFZz6R08Q1gupJ8MMY6CDO3KFjFSkpHiIHuYgkX1Ag59BDfxDWop1j36RmFpX8qgfYwBiWsnOcRiWiOWIdMEAR1AoBURhI5mIyppA+VJJ+6NgSMEHBB6RqXZdba1AIUUjkcdIAyVNrPIJH4womz9pCT7RqqnV6fRJdD9TnpaSYW4llLky6ltKlqOEpBURuTyETSMZzAZJgm0dUqH4w+2oO50HOOfpGshyXcU26FJBVjmAOYgDZhonmQIYeprb6ivUpKjzx1iUHUHrj32jMb8oA1C6OsfI6k/whiI66bNJ+wFfwVRvoWAOa+Ge3BRgjoTBHQLYbcVqI39IIA18KFFHIkexjDJ9IN85zADvfOEYLiv1Rgd+e/vGOT5RknUo4SCT6CAEIyCOhjzzxz4f2lTHOHHwVrUOV+Lu2SYf7iQaR3zagvUhWE+JJxuDsY9GJlnVH5ce5isONFp1i4F8PTTJJ2b/J90yc5Ndzj8ywgL1OHJGwyOXnF63iRh1EdUHtk2dxWpQrasW8BQ6LTaWJilzXeiRlUMBzDDmNWkDOMnn5xV1ocRLssPgnZ9yTNpSDlm0ylySJpaqifj1MlKEmYQ0EaNO+Qkq1Ec8chfV50t6ds25JSTbW/NzNOmWWm04ytamlBKR6kkCKmuKy6/N9kxq1WKTMOXELelZUyA0953qe71I54yMHr0i0Wmt/MrZFqWY7YTO/4icRkWTK0VmnyCanXK/MiVpsoXgw24rQVqcccIOhtKRknBPIAbxrbV4j1lV4y9p3bTqTLVKflXZuQm6PPGZl5gNlPeNkKSlSFpC0ncEEZwdsRqOMNgTdxSVlVuWo0lW5m2JjvXqJP6AieYcaDbrYK/B3gwlSdW2UxlYX5IRcQmpHg+1ajLLCh+UphiUYmSs4HdoQyVKKSM5UVAbDY5iMR0kuU9fp9+hcZAIwcH3iiOF0kzY3Ey+eHTrQTIzC/2RURPIBh9WH20+iHRy8jFxOVob92z7FRil+OdKuiaXQLxsqR+JuyguPMNsNYCn5aYbKFg5O+lWhY9jEQ328y9uUlNdh3hvKtX3xdvS+SgOUui/wCtqjk7g92dU06nPmshOfIGJ1d4nXrZ0mzcVwWXT5C0fi2pZ9DdTLtQlUOOBtLy0JR3RGVJylKyQDzjeWBb6+HvDOm23TUoXUZGRUA64coem1JKlLV6F1RJ9IoSv2zc988NlyM5al6zt+juHZ6bq1Q7uUDiHkKcEs0l3u3AQDpSlAAG5ORvdYk/Qwm5Qhtzz9S4eMYxf3BkeVyOD/8ASuR1j98rZ4q0+yfgUKamaK7VvjO8OpJQ8G9GjGMHOc5+kaPihRKjW7y4XTtPknpmVpNdXNTjrYGGGjLrSFqyeWSBtGrvdisW7xbt6+ZO36lW6UijzFHm2aWhLsxLqU6lxDndlQ1JOCDg7RVYaSNJNxba80dnQb5cq3Ey6LPMklpqiScnNpmg6SXi+F5SU4wnGnnk5zHIo4t3Nc0xV52zLeok5QKXMuygdqlWMs/UVtEpc7hAQoJTqBSFLIyR0ENcO5W4neLl8XTVbdmqRT6tTqe3JpmnEKWrui4CF6CQleCCU5OMjcnOONt+wWeHyqvRqpweYvJlc8/M02sSstJuqcadWVpafLykqQpBUU53BGMRKSKynNpP5/67HoSx7ukL8tKkXHTAtMlUmA8hDgwts8lIVjqlQIPqI1nEriA3w9okrNIkHanValONU6nU9pYQqamXCdKdR2SnAJKjyAMbS0ENSNuUyW/I8nQlpaGqmSa0qZlVHcoSpKUpO5O4AyY5DjPaFWuWnW5VLeZamq3bFXZq8vJvOd2mbCApK2tZ2SVJWcE7ZAiixq9DaTkoZXJBa4iXPbty2/SL/t2kyspcT5lJGoUmdXMNtTOkqSy6lxtJBUAQFJyCRjaOB4vsXA/x1sCRk7coVSlG5afmafLT88tDb7gabC1up7tQQpGfDgKzk/LHTVli6OLtzWW3MWhUbboFuVRusTcxVnWe9feaSoNstIaWvIKlZKjgYG0b27rdqtQ43cOq1LyTrlKp0jVG5qaSBoZU4hAQDvnxEHHtF1hP9TGSlKON8ZR3NOly3Iy3fyrEvM90jvWmTrQ2vAylKiBkA5AOBt0EU1xJlE8ROMtrcPKkparXlqY7X6hJpUUpn1pc7tpteOaAfEU8jF7FhXQg/hFS8ULNuNm7Ld4hWfJtz9corLslN0p10NflCScOVISs7JWlXiTnY/TBrB7mtqbidLN8KbHnFU5blp0dDlNeRMSrkvKoZWytBBSUqQAcZA2zg9RGnvjiXU7avWiWpR7fTVanW5GYmZZSpnuUIcaWkfnFaTpb0qUoq3OwABJiJKcTrur01KSVJ4XXBJvLdQJmZrzjUrLS7eRrUFJUpThxnASnc46RIr1u1Wa46WbXGZF1dIkqNUJd+bGNDbjimyhJ3zk4P3RKW/tFW01/T23XYfubiTV7NoFuNVKkSkzedee+DlqXLTuJbvgCpay+tOQ2hA1E4zvgCFtbiNWP2YS1p3bTaTLVKflnZunzdHnjMy8wGynvGyFpSpC0hSTyIIzg7YjXcabAm7qVatckKNJV+YtudW+5RZ3QG5+Xcb0OIBX4QsYSpOrbIh3h9ISBuITUjwdZtNhlhY/KcyzJsTBWcDu0NslSikjOVFQHLY5htpyQ3PXjO336G4uy4uIkrUKim27QpczTae2HBMVKplpc8dOooZQ2hWnHy5cIyemN41NycSJm4uAk3els0xT3x9Jdme5emQwqVT3awtWrB1KbIOwxqxsRHI1iVuSq3ndUlc1uXhWG3ZopoQpk+ZSkolSgaS6ttxBCwrUVlYUf0R0O7sOyq3J9mdNnTkkqWuBVFnJH4Z0gYdX3oSCc4wdSd/IxOEkiuqUnJLPD++DccEKpXJ7hzQf2QUKXp0lK0iTMrOioiYVNo7kZcWnSC2cBJwSrmd9o5RPGW46tQpm8aLbFJes1lLjzTcxVy1UpuXbJ1PNtaShOQklKFKyQOmY6/hLOzlV4eU63KvbFbozlMpUvTphVRaQ2l5Ya7tzusKJUBj5iADqGOsVXavD9dkUBm16rwTlLnq1P1sStalmZL4efb1Hu3HnHSFtqwQFZSrlkZhhZeSG5qMcPt99j0FRqpKV2kU+qyDneyM/LtzLDmMam1pCkn7iIqrjm/M1uq2DYDc2/KSN21JxuousLKHFyjLfeLaChuNewPoIt2mSHwlMkmESsvJpaZQgSrGO7YwkeBOABpHIYA2HKOA4vWJWbnk6FWbaWw3ddrzwqNPEwcNP7aXGFnoFp2z0I9cxWOFI2tTcMffqTprg9YE7Q00V2zaJ+TkpCUttyiEKRjkQ4kBYPrnPrBfN9vWa/b1DolM/Kdx1xxUvTpFUx3LSUNI1OOuuYOltCccgScgCOb/srXlNS/wAJJ8IrlarxGnTPOsNyDa/NUwFnKB6JyREniHbtwKuSyL3o1NRUqlbofZnKU0+lCn2JhsJc7la8ArQoZAVjUPKJSefaKOS0t1ry7E6h8Ra+xecpZ96UmSp9SqUs5NU6bpk2t+Vmg3jvG/GlK0OJBCsEEERDneIl01G+botG2Lbps1OUNuUeVO1GfUyypLzZUEkJQpWvIwMbYBJI2BgSdNuG/wDifbd01K3Zy3aJa8tNCXaqS2vipyYfSEE6G1KCG0pHMnJJ5RtrOoFUp3GbiLWpqRdapVSZpSZWaVjQ8Wm1BwJ6+EkA5icJfoQnN4WXjP7Y/wAnKI44XTUrLnb0pVlyhoFGSsVNmcqJRNKcZ2mEsJSgpUls5AUsjVg4Ajtr64mNWlZtFuaTpy6nLVSckWG2Ur0OFuZIwpOdioAjAJAJ6jnHCW7ZlwSfZ+vq336TMt1qfXWjLShA1uh5xZaxvjxAjG8R+LknP0ngbYUqqTP5SlKjQWjLOrCPzyCgFsq3A8QwTviJxFv6ldU4xbb7HZucSbqtq7bfp12W9T5GkXHNGRkpuQqC5hcvMlJUhp9KkJGVAEakZAPnHX3RWLxbmZGTtW3pGeW8hS36hU54sS0uQdkaUJU4tR57AAAc+kV9WKddPFe77RZm7SqFu0G3KoKxOTNSeZK5h5tKg2yylpatSdSiSs4GBDnEdu4kX/KNT1LuyqWMunANMWw73S1zveHV8QUuIXo0adPiCeefSuFlFtUknzj79DteG/EB+9KNWVT9LTTa3Qp56m1CTQ93raXmwFZQvA1IUlSSCQDvFfSnG+9Ktw0Y4iU+yaf+x+XlVzc4y/VCJl1tskOlhIbKcJ0qIKykqwdhsTtuBtnVe05biA1UaK/S0VGsrm5OXdmviSWlS7YH50klZBBSSSdwdyME620LNr0h2UX7WmaVMNXCaFPSwkFae8Lqy7oTzxk6h16xOIpkarGl8n/o6DizdFCd4fW7W5y35Ov0ypVKmKl5eeGEo79xIQ7yPiSF5x13EbTiRfQtKdodFpVLYqNy19x1MpLvzXwzDaG06nXnXMHShII2AJUTgRx982hXanwVsKjSlLmHqrITFDXMyyQNbQZU2XSd8eHBz7RseM3D6ar1xWldkpbknc6KEZhicoc0Gz8VLvAZU33ng7xCkhQBxncZEQktvqTKU8Nr0/2bKy77n5y7Jm0bmplMlK6mS/KEs/S5wzUrNsBYQvBUlKkLSopykjcEEGNbJ8S7uuiv3GzaVt0adpVuVBVNmUz9UVLzcw4jGtTaA2pKE7+ErPix0jY8OKZJGszU5I8KGLOlky+hM881KszL6ioam+7Z1EIwAclQyQNusV1xTt1+5KrVFUHhtcdK4ih7u6dcsg42xLrAUND7r6HAFI07lC0lXSJSWSHKagnn7/T+x6PHKDAjBhp9thpL6g48lCQtaRgKVjc46ZOYVSwjGo4z6RkdRmFEcifviUgIUNQHPzjXGYA5JJ94RE24g7aceUAbWCIAqCsbtjPoYIAhQQ8JdXUge28ZCXSOZJgCPGxl2e6b3+Y84aDaEnISM+cZAlPIkQBIHODENB1QHIH8I1F3ztXkLUrU5QmJd2sS0o69KMzIKm3HUpKkpUEkHBxjY9YEN4WTeQYyMRRt18dZ+W4P2rdttUyXqFfuNDapanr1FOUtKdmRsQfAlpwc+ePaOhrnFB15/hnLW01LzTt6vpf1TOpQakEs9684AkjxAFKRnbJ5RbQzPxofx+52tXme8eDKT4G+fqY1vKNLL3ZMucYapZVVk5RuTdpTVUpcy2FJddAX3b6FnOCUq0kYA2O+Y5HhdxQ/Z5W7slp5hmnU+RBn6S/v+26cHHGi8rJ562VcsDChtDS+SfFjnBZGTBziphxBux/gVNcRmKXTzMpDlRYk1JXhVPS7gE+LPeFoFeeXLaJXFTisqyJO1JyjyzVTlqon8pzhIP7Xpae77x4YPzfnkYzkc9onQ84Id0Usss/MSZJGpxSsbJH4xy1Tuh1rinbVn0qWlpiXmqfMVWpvu6lKZl0kIZ0YIAK3DzOdgcRYYZaSAO7TpTvgCKtYLqSecdjg724q2bw7Uw3ctelpGZfGpqWwp19Y8w2gFWPXGIcsridaPEVt9VtVyWqC5f8AdmAFNvNeqm1gKA9cYiuuzTRZa5qNWeJFTbRM3NcVTmtUy6kLXLsNuFDbKM/KkBPT08ouX9jdNlqs5Wm6bJCrOM/DrnUMpS8pvOdBVjJGQDjMWkorbuZ1ynPEtsMm4gxFLMX9xEuy77xt216dQJdu26qmXcqVT70tqZKEqS2lCDlTp8ZKtkgBO2TE/iPxVcoV5SVm0uq29SJ9yTNQm6rcL+iXlmirShCEBSS64ognGoAAZOYaHnBPjRxkt+XTqeQPI5jYxTXDDieu6Lirlrz9RoFUqVMl2pxupUB7XLTbDiindOpRbcSoYKdRGFAiJl2VHipJprlUpK7WlaVTUrdlZScQ/MPT6EJ1ErcSpKWSrBAACsdTEaXnBPipx1IthS0NIUtakoQkZUpRwAB1JjCXmGZthqYl3W3mHUhbbragpK0ncEEbEEdRFPXdftTuzs+zl2W/LSbKqjQ3JxxqdWsd00plXeBJSDlY3Cc4B64ifwDN1jh5bYrbdCRSE0eSFOMgt4vFHdD92CxpB06fl656Yhp2yQrU5qK8slrQijpSo+Q6x5xluPFUu41GqUO7eHtBpctMOsSUhX5r9tzwbUUlxwh1PcJWQdPhUcYJzFqWbxSolzcM6ffc7MS9JpbzJXMLmn093LLSstrSXORAWCArrt5wcGuRG6EnhHZ4HlHH3xxUs7hwlj9k9elZB2YGWWDqcecHmltAKiPXGI21sXra97JmVW3XqbVkyqkpfMhMpdDRVnAVpO2cHHsYpzs5UiWu5+7eJFVabmbjqtZmpVp55IWZSVZVoQy3n5RtvjntEqPLYnN7KHcsux+K9m8R+/TbNelp5+XGXZYhTT7Y8y2sBWPXGI7LGI1T9EpUtWk1oUqTNZLKpcTqWUh4tEglGvGcZA29Iq9i/b0v64LklrMXQaZRLfnFU1c9VZd2aXOTKAC4EIQtAQhOQNRJJPIRGM8E6nFJS3foXLjeET8oituG1/z16S1ak6xKNyNxW/Pqp1SlpdwrZKwNSXGyd9C0nIzuNxFaUni1xEq/DF3iI1K24xS6YH3JqQ0vKenWmXVJcUherDJ0pOkEKyQSSAQInQyHdFJP72PSuMQYig6lxWvm3qXbl51OXoSrRrU3KsLprbbnxsmzMnDThe1aFrGUlSQkDfAJ5x2HEziJWbNq9l0+kUyTnn7gqi6ctuYdLYB7pSkqCx8oCgCdleEEAZxEaHwFbHDZZkEVGm9bzs/iBbNBvI0KdpV0qdl5OcpTDrCpWZQjWG1pWtWtKhkBWQcjcR192N33MVGWlrWVQZKn9yXH6jU0OzCwvOzaGEFAxjcqK/TENJKsTTeDonk6XTtz3jCOQ4T3tPXrI16SrsnJM123Kq7SpxUlqMu8pISpLrercBSVDYkkEGONta8OI3Eim15+gM2zSjSatO09D0628/8AFllwhKQhKx3Y04Clkqyc4SBzaGPFWE13LQrtcp9sUWfrFVmUytNkGVPzDygSEIHM4G59hGdFrEjcNIkatTJhMzT59lMxLvJBAcQoZBwd/viu6fxIdungBU78FNlEzbVLnHXqdMgusF5jWlaD+kgqQfoYmVTiOzZ3BaQvifkWBmmSjyJGWIabU88lAQ0nOyEalAZPJIPlE6Hx3I8WPOdsZLGxGvrdqUm8pJin1mXU/Ly02zPNJS4pGHWlakHKSORAOORikVca6jba6VUa5dnD2tU6cmmZacptBm/23JB1QQFtqLqu/CFKGoaU7ZIjt+JvEGpW1dlrWnR36LTJyvpmHDVa2FKl2g1p/NoSFJ1uKKtgVAYHXMNDTI8aDi2y3cb+8BGeYjnLU/ZKimlNzvUp2oJcUEPUpLiGnWttKihwkpUd8gEjyMOXddUpZdrVe4aiVGSpUs5NOhI8SgkZ0j1JwB7xXG+DXVtlnQDnCY2xFS2nU+LNflqRXpoWlKSFQ7p9dGW1Md+xLrwf9khRBdCTnGjSTtkc4nX5ftclbyoljWlLyC7hqcs7PvTdRC1S8jKNkJKyhBClqUo6UpBA8zE6d8FPEWNWCzD7QvWKot2+Llo3EOUsa9kUyZmapJuTtLqtLbcZbf7o/nWnGlqVpWAQoEKII8jEes3zeE/xWq1iW4zRZZErSZepCpT6HHCzrWtKgWkqHeZwnAykDBJJ2ENLHirGfoW8NhBgZ5RQ9t35xQvdNwU2ltWvT6tas05IT8xNMvPMz8ynKkhlKVpLTZRoJKiogqwBtmLE4UX4eJXD+iXOZMSrs82oPS6V6g06hakLAJ5jUk49IOLQjapPCO1MNPtd6jH2huIQuqPIAe8YkqPNRMVNCBgjn0giYWkKOSkZhsy6ehI/GAI8EPGXVnZQx6iCAHsmDJjXIqCx8yQoem0bRDSlJSo+HPQ8xAGGTBk+cPdwOpMZBCR0EANNgqVnoIfgxAB5EwB594XcK67QOJVTbqskE2fbS5426pSkkO/HOJccwAcju0hTe4HzmF4L8Lrgtm/am9XJUoolsSrtHtxxSgrvpZ6YW8pwAEkFKO7b3xsmL7mZhMqyp1YyOQA5kxq3K4vcNNJA81HMXdjZhGiKx6FX9oCzroqyLduGyJX4i5qauYkdIUlP7Wm2VNLWSSPkVoX/ABY53i1wir0hblpylgS2uYlqW7ak4pKkoKZB9CUqeOSM6FI1bb+Mxc7lTmnObukeSRiIq1qcOVqKj6nMFNrBMqIyy/M2Urb9OlbeZt9thJpDUoJAM9CyEd3p/wAmKO4O8Ja21JXHIXzKYl2KZ+xKmlSgovU5KnFF7YnGvWgb4P5sRcLbzjXyLUn2MSm6m8j5glY9sGIUmk0WlVGTTfYqrgBZF00JdcrN6SxarZalaJKlSgork5RvSl0EE/uiyVee0WPRLgr8/dtx0yftpyQo9O7n4CqqfStNQ1JyvCBunSY38rM/EoKkoKcHG/WH8Hz+6Dll5YhXoSSZRFFpV38DqzW5Oj2xNXTYdTnHKhKt0x1tM7THXDlxotuEBbZO4IO0d1al13fdFXeXULMdt23EMHu1VOaQZ557IxhpsqSlAGclRznGI7zQDz394XSAMYAEHLPKEa9PD2Kt4aW3VaJefFOeqEk5LylYrbc1JOrIIfaDCUlQweWRjfEam+7KqUjxLlb6pttS10ScxTRS6lSl9yH0BCytt9nvfAojJSUkg45Rc3dp6be0clPcSrLpteFBm7tojFZKw38G7OIS4FnkkjOyj5HBiVJ5yisoRUdLZDsNc3MTM9MTFhMWpJ4QlnU5L/FTG5KtaGQUoSNsZWSTnYRTK7Eq1cnrplbwsCrXNdE3OTIp9WnJxIpLMsonuCjLmGghOMpDZUSPu9QiW0pKlrCEgZPpHNUDiHZNzVd2lUa6aRUqm1nVLS04hayBzIAO4HXGcQUmstIidcWlGT/g4O1rJrKOzjLWdNS3wteXbrtPUw8oeB5SFpAJBI5kb56x0XBWpVZVl0ehVe1KxRX6JTpaTdcqHdBt9xCNCw3oWolPhB1EAHV6RZKUJRjSkD2iBSa3S68y+9Sp+Unmpd5cu6uVdS4lDqfmQSk7KGRkRDllMsq0mmn2wUHadnVfhZJzlsvcMG7tkGZp92l1aT+DClsuLK0tzAeKVJUgqI1DUCMY5Rd9Ap5mrWk5Wr0KnU9brQL9LYKXpdok50g6QFeedPP74LovO3bKlGpu4q3T6Uw6rS2ucfS33h6hIO5PtEqj3FS7hpbVUo9QlKjT3v3OYlHkuNq8wCNsjyiZNvdiEIwelP6D1Oo1OpCXBT5CUkw4QV/Dspb1Ecs6QMxSUhRrv4I3PcSqFbUxdFi12cXUkytOebTOUyYc/dEhCyA42ojIwcj9dk3JxQtO0p1qSr1zUelTjoCkMTc0lCyk8iQTsPU4Eb9uaE2y2808l1l1IWhbagpKwdwQRsQYhNrklxjJ7PdHCW/eF33TXEuTlkv29bjTK8O1aZR8Y89lOkJZbKglA3yVHJ2xHF0SnXPwort2MSFqTtyW7Xak5VpR2mzLKHpV10DvGnUOqT4dQyFgnbmIsVXEuy01/wDY+q66IK0XO6+CM4jvO8/Qxn5v3vP0jpJpcvLMuvzDjbLLSStxxxQQlCRzJJ2AHmYnLXYrpUt9W677Fa8J7Rq9CVdFfuJtiXrt1VI1B+TYc7xEm2E6GmtY2UoJ5kbZO0cZa1i3FIdmSt2rM0p5u4ZiTqbbciVJ1qU664WxnOPEFA8+sWxbt+2jd82/KW9c9Jqk2yNS2ZWZS4tKf0sDcj1GRG4q9TpduUx6p1uqSVNpzJAXMTbobQCeQycDJ6DrDU8kKuDWU9sNfqU9xBsyvVjgpalCkaY8/V5N6jqflUqTqbDJR3pJJx4cHO/tmM+PczOy118JpmmyaZ6dbuRa2ZZTwaDx7hR06yCEkjkTtnGYt+1q/bd4yKp6gVmSq0qhWhTko+lxKFfoqxyPoY0vEKa4fUiat6pXnUqbT5ilzRnKaqbnO5Ie0lJUlORr2O+QREqTzuiJQjoeH5fscg5Sbp4ocRrQq9Vtiatu27TddnUpqEwyuZnZpSNCAlLSlBKEgklRO/LEa7iTbtUqXE5x25LUr92WUqntIpkjSphKWGJoKPemYbLrYUSNOFKJSB0i8KRVqbXqaxUaVOys9ITA1NTMq6lxtweYUk4MaKvcS7MtmrNUms3TR6fU3cFMtNTaELGeRIJ2z0zjMQpPOyJlXHTu+TheAFjVOxjfDU9QWaHKVCtfFyMmw8l1pDBZbwlKhz0kFJ2G4OMjBOz4EWxV7VoVzS9YkXJN6auSozrKXCklbLjgKFjBOxH1i0Eq1JCkkKSRkEHnHFyPFe0avW10OmXLRpmsJKkmUanELd1DmAAdyOoGYOTlklQjDSs8Fa2ZYdx03sw3Ba01SXmrgmZSrNtSSlIK1qdcdLYyDjxBQ69Y3lx8M568OAdJs91TchW2aXI938QApLU0wltQSvGcp1J0nGdiecWauZdcGCsgHoNo1iazTl1ddIE/LKqyGRMqkw6C8GicBZRzCc7Zhrb3+oVMUsPywV3RpitzL9OlXuCknIT4cbE5OvvSKZNkZGtxpaApxfUpGkHlkiOh4orYmmJWnVfhzN3jQJhKlOqlW2H1yzoOE/mXFJVuM+NJ25R2SVqSfCoiHBMrHPCvcRGrfJbw9ms/wVrwOtatWZalcbmqfNyMlMVF+ao9DmpoPOyMqUjQypeVBJKgTpyQnVz5xPfp1X4v8HqnS7lorlsVWuSj8s5JuOh4yxyQ2skcwcJVjniLDYeDygjGk4+kS0sDqT9IOWXkKtJaexUFo3TxEkKXRqDUeHbxqkmGZWZqf5SYTT1towlTyFAlwkpGQjRnJwSBvEq/bZuCl8SaDxEtumflpcrT3aRUaUh5DLzkutYcS40pZCSpKhulRGQdjFrhtKckJGYyIyIat84I8LbDZTlGoNy31xWo97VygvW7SbdkZiWp8lNvtuTUy8/gLcWG1KShASMAaiSd4n0y2Kux2gbiuJyRcTRZm3ZWTamyU6VvJeUpSMZzkAg8sRagT5E7QYPpDUyVWl+uSq+EtsVe37i4ozNSkXJZirXE5OSS1lJD7JaQkLGCdsgjfBjPs7WzVrQ4R0Sj1yRckanLuzSnJdwpKkhUw4pO6SRulQPPrFgTtTVKOd2Gcq56lHYiNY7VJpzbvNA8kDEHJvYRrSafln9zeveBWcjfzjDJjmlEqOVEk+Z3jNEw618jih9YqaHRZMGTGlRU30YyUrHqIkIqyT87ZHqDAGyyfOCEBJGQRg8oIAhU2V71zvVDwIO3qY3MYJbSgAJSEgfo7QviHUH3gBYIwW6lpOV5A++GFTyB8qVH32gCV0gEQFTrh+UJT+MMLfdVzWr74AjViZ71/uknwNc/Uxro2K5ZpecpwfNO0MrkT9hY9lQBEgh4yr2cBsqP73eH0Ut9XPQj3Of1QBCgjbIpKB87ile20SESMujk0knzVv8ArgDKVa7lhCMbgZPvD0Y6R0JH1g8Q8j+EAZRR/Frjrb9vCVptMuhqVrMpXJKXn2ksrKkS4fSJhJJQRjRnON/LeLsW6GwCoEE9MZjkOINtvXpTKXJsTSJYyNWkqkVupKgpLDwcKAByJxgHpFo4zuZ2qTi1A2FrXxb1/Sc4/bdWROsML7lx1lC0lpRTkfOkb4OesVfxFtm0uGXA+p2szIflF+qtOyMjLvoS7OVOfezpUSACtzWrWVfZCemBFxz0++1LTDzTK33G0KWhhsgKcIBIQCrYEnbfbePOFvzXEUXfNXldHCqs1WvkKZp7bdTlES1Jlz9hlKlklavtuHc8hgRaHmjO14STWW++DrOLbNYoPAi1rXnp1w1Gqv0m36hNIWdSg4pCHsK/fBKk56gmJ/aHtym29wemKvRpKWp8/Z6mJ+kuy7YQZZTTqBpSRySpBKSORB3jacQLbqvE/hmmVDC6LcOWKjKMTjiXPhJtlYWhC1IyCMp0kp6KzHNXjM3pxht6XsydsqftyUnXmTXKhOTLK2UsIWla25fQsqdKynAJCQAd4mL4+ZWaxlY5WxaN4W5OcQLYlqdLV2coktOqbXOOSSR3z0uRlbKVndsqyBrGSBkdYr7sx0uUodtXpS5BkMyMjdtSlmGgSQhtBQlIydzgAc4tGvV2YotIVMUqhztYmWihKJCTU2hwpyASC4pKcAeZ9oqjgebst2duGnVqxatTpatV2eq6Z56ZlltMIdwpCFhDhUVeHGwIyecQvdaLSSVsWWS/Y1EbvSYvefWp6otyCZNszakliSZSStamwR4CrPiVnkkchFb8EG0VKt8RrqpMt8NaFfqza6UhKNDcx3TXdvTKE9EuLGx+1pzEDjQm/LquGXt9iy6rU7AZSl2eFPnZdhdWXsQypS1goZB+YYysjGwixbCrtarDb0pVrDnLVlpJttEqmYmpd5C07jSgNE6QkAbHbB2huohNOzjGPQ1MzRbP4W0e8LmrBS8xUn3J+pzVQSh1x7UAlLA8O6cAIQ369Y13Ay2qpSODNIpFWEzT5t9qYWhpKsPSLLy1qabBOcKQhQwOh26Rw1bHECv8RDWa7wvrFUoVFeJodLZqEohhKxkfFvBSzrdP2QRhAPU7xctKr9en7Vm6rOWhPSFXZS6W6M9NMrefKR4QHEnQNZ2yTt1hLKREGnLOMJejKr4tWxbNk8EjYVJpqJqpVVCabRpQoSqZmpxRB78kDJUk5cU5tj0yIsyvWLLXjZtPty4ZqZeYbEqqc7lwATimdJUheQdTa1JyodR1inLRd4i0645+7Lk4UVqsXZOJUy083UpNuXp0tnaXl0qWSkHmpR8Sjz2i2b+q97ydgtztpWsuaumdQhCZJ55o/AKUnKlrJUEr0HbAOCcdMxLT2WRBxacmu3GHwcZfzUlWuL3DWiW9LMprVvzaqpUX5ZsJ+Bp/dlHdLI5d6SAlHXGcYidVpdq7O0bb9FqLaX6Zb1vu1liXcSFIVNuPhkOFJ2JSgHBPIkkRrOFouezQxTV8KrhLtSmku1auz1Vk3Hph1RwuYdCV5IAJwhPIDA9esv8Atmt0e/6DxBtqlqqzspJO0qp0tl1Lb0xKrUFpW0VkJK0LGdJIyDsYcPBXlavVZNZcEq1anaMsibpraJcXbTp+SqTbSQlL5l0pdacUBsVJypOrng4jrK5QLbs+tV3iNUZafnag7KsypKJdU2uXZScBDDSElQClK1KxnPM4AjnaDRbgvrihT73rdEmaBSKBIvSlKkZ5xtU088+R3r60tqUlCQlISE6iTudo2dYuW+7Ru6qKetucue1J1La5BVG7lMzIrCcLacQ4tOtKj4gsHbODEPsiywk21tnbb0Oc7P78sug3zc9NDDFEq9ZmJ+TpbS0lUmlLaQpLiE7NOLUkqLfNORmF7PNuU24eDstVqzJS1Qn7wU/P1Z2YaCzNKddWNKieaUoASByAG0bnhRa9Yp9Tve5bipzdLmrtnm5lNIQ4l0yzTbQbBcUnwlxYyVYJA23Mc1Zy714PW+/ZcnZM/cctJPPfkOoycywhhTC1qWhuYK1pU0UFWCQFAgbRL3zgiK06XJbbnCpuiq0bsrXVTZedfEzSau/a8tN6j3iJczaWUnVzyltzSD6CO/4y2JRqPwWrcjTJFiS/YzI/G0t1hsJXKvS4C0LSobhR0nJ66jmHZPglMO8CahYs/UGvy5VO9npmebBLaZ9bvfhY6lKVhI8yBGuup2/+JFnOWRMWTN0Wp1NtEnVq2/MsLkmmcjvXGSlZW6VpBCUlIxq35ROU3t5ldLUcSXK2/f8A0dRWeJKaHw+oteVKKna1WpeWTT6Yz887OPNpUltPkMklR+ykExwNg2hOWrxzSqrTRn7jqtrOz9VmwDpcmFTiBpQPstoSlKEjyTnrFpXJwetW6m6GmoS04F0JosSDktOuy62UFKUkBTakncJAiv5bgLKU/i/I1OWl6yqgS1HyJpytTCz8YJkKSglThWU6BkoPgPXeIi44ZacZuSbWcY++C6oIVYUlWChQJ35QmlRHQfjGR1GTay2tKxzBzG6SQQCOR3jSaB1JPvDiXVt40LIA6A7QBuDyhI1qJ11ONRCh6iH0T6TgKQR6g5gCZBEYzzQSSNRPliGVzyz8iQn1O8AJVpbv5fvEjK2t/cdY56N0t5xzIUskHp0iOZdpXNAB9NoA1sETVSKT8qyPcZhlUm6nkEq9jADEEPtSb7pOGyMdVHETGqT/AMK59E/1wAzL1FbDQRpCgORJ5QRsBT5YDHdA+pJggDZwHpCA5xgGEUFKQQCEkjGecAQJt7vXNIPhTt9Yj4iSuScT8uFD05xHUko2UCPcQARiDvmFPLbnAATsBn2gAg5w6iVdX9jA9dofTIK+0sD2GYAbl04BUeZ2h+M+4UkAJwQIwIKeYIgAggg5c+UAEENl5A+1n23jBUz5J++AMJhWVgeQhr6QKKlEqODmEzAC7QmB5QuMwmIANvKDA8sRmhpa/lST9IfTIuK+YhI++AMZYZKjiH+XSM0SpaSQF567iAtrHTPtAGGx6QsEEAGB5QgxC8+W8ZBtZ6Y94AGR+d5fZ/piT0hpDRQrVq6Y5Q4CeogAxBzgBBMEAGMHEKRkjMIpQTuogD1hhycaTyJUR5QBk8NknpDWBDLk4VgYQAB5mEEyOoP0gB+EwM8oxDqFclD6xkIAWCDlCavLMAMzKdkq8jiI8TVpK0lPLP1iOZZQ5EH8IAag+kZKbUnmk484wgBdoIIyS0tw4SkmAMMwvOJSJFZ+cgD03MKqQUPlWD7jEARNoQmH1SrqPsZ9t4ZIIO4++ADMEIB0jJKVLOEgn2gDJpfdr9DziZDCJJxW6sJHrziUJcoSAFA48xAGGIIyLawflz7GCAJEL0hBC9IADCYBGDgj1hTCdIAZ+FZKidAh5KQgYSAB6CFggAEEIIXrACQQQCAIs4UttjAwpR2IiASVczn3h+bWFvEdE7QxtABBiDaDaADEHWCDeADAJ9Y2rbDbY2QM43PONcwnvHkDGd8mNrAAYXpCQsABgg84OkAIQFcwDGAbRk7Q5CDrz5wAAY5bQGCCAFMHQQQCAE5iGJtRbZyglJ1DcGH4ZmxmXVvywfxgDWEknckwQGD3gBIWDaCAA7iFClJ5KIhNoNoAmpwpIPmIyhqXOWx6HEOwAQQQmRACxipCVcwDGWYIAyYabBPgGR57xJiM2rSsH6RJMAJBBBACmEICvmAPuIUwkAMmVZBzoG3TpDwASMAADyhT1hB5QAp5QkKeUEAIYIUwQBHXOMo+3q/g7xHXU/0G/qoxAggCQudfX9vSP3ohjWonUVqKhsDqOYQwQBJbnnkYyoLH74b/AHxKbqLasBaVIPnzEayCAN2H2inV3iCnzBhFPjfAKj90RJdvQ2D9o7mHYAzU6s8sD8YwUSr5lE/WCCAG1MIV0wfMbQ0qXUPlUD6HaJMEAQVJUj5kkevSMdYzjIJ8hE9R0pJ8og8usAY5J6ffBg8ir7oy2gzACBIBCvtDkYfRNOo5KyPJW8M7wbwBOTPg/Ogj1G8PpmGljZafqcRqoRWCBtneANoubaQSNeT5J3hhdQPJDePVRiHzgzADqph1Y3WfptGCFqQcpUoHOdjGPWDMASUTridlAKH3GH0TrasBQUk+u4jX5g3gDbh1CkghaSMdDCheeST+qIEh+7KP73+mNhAGOFHmQPaELaVAhQ1A/pbxnBAEdcm0vcApP70wwqQWPlWFe+0T4IA1K2XGwdSCB58xGKUqUSEpJPoMxuIQbZ94A17ck4rdWEj15xIRItp+clR+4RJ6QsAN9w2BsgD22jEsfoqI9DvD3SEgCOW1joFfwYwJx823vtEuAjII6QBFGVcgT7RmllR5kJ9BvD4PhggBsMIHMaveM9AHLI9jCwsAY4UM7gj1EGog7pP03jKCAMFOoSMlaQPUwwuebHygrPpsIdmGu9aUMbjce8aqAJCp11fLCP4P9cMFatRVqVq88wgEHnADyZp5JPjz/CGYeTUP0m/8kxCHUQuIA2PxzJ5lQ90wRrYIAbgjJSFJ5jbzjAnb3gAG+8LDiGHHPkQSIkIpzh+ZSU/jAEOHGUd44B05mNiiQaSd8q94eSy2kYCEgeggBiCHlMj7Jx6GG1IUnpkekAYwQQAE8gT7QAQRmGVHyEZhkDmSYAhzCsIx5mI0bdTKCnSUAiI65FB+QlJ+8QBAAg2h9co6jOBqH72GCMbY3gA2ghCtKeZEYF0dBADnrCdRiGS4o9ce0Y/UwBJgzDAcUOufeHA6DzGIAz5wbwgUFciIySlSjhIJPpACZgMSESTiueE+8SESTY+YlX6oAZkP3ZX8H+mJ8YpbQgYSkAekZfWACCE3HMfdBmAFghFLSgZUoAepiOudbT8uVH0gCTCY8R9RGvVOOr5EJHpDJWvVnWrPnmANvCxrETjqcZIUPWJCJ9B+ZJSfTeAJZ5QkYoeQ5nSsH0jIkDntABCw0Xkjlkxgp1RHl7QA+M7wRF3PU5jIOKB5594AkQsMh/YZH3Q4HEq5H74AygEJ0gz5CAA/jGsmm+7eO2ytxGzwT1+6EU2hYwpII9YA0+0HtGxXItHcZSfSGFSKxnSUn8IAiEdYXaM1suN/MkiGxttABBDqWHFDIbOIIAWJcm0jSV6RqzjOIIIAldISCCAF6wkEEALCQQQAhSCoZAP0hcYgggAhYIIAQwQQQARGqABlVkgZ23+sEEAaaCCCACCCCACCCCAFSApaQepEdDgJGAAB6QQQAQdYIIAPOCCCAFhOYgggDUujDixz3PP3jAQQQAGAwQQAYzAYIIAPKJLBJRk74MEEAO52hYIIAITO8EEABOIBvBBADrPzKHpmHoIIAWDpBBAB5wkEEAL0jHu0agrSnVyziCCAFggggD//2Q==';
 const monoHtml = big => big && LOGO_FULL ? `<div class="logo-full"><img src="${LOGO_FULL}" alt=""></div>` : LOGO ? `<div class="mono logo"><img src="${LOGO}" alt=""></div>` : `<div class="mono">م س</div>`;
 
-const APP_VER = '1.0';
+const APP_VER = '3.9';
 
 /* ====== أدوات عامة ====== */
 const $ = (s, r = document) => r.querySelector(s);
@@ -820,7 +1031,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const latin = s => String(s ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
   .replace(/٫/g, '.').replace(/[٬،]/g, ',');
 const r2 = n => Math.round((+n || 0) * 100) / 100;
-const fmt = n => r2(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+/* السالب يُسبق بعلامة اتجاه (LRM) حتى تظهر الإشارة قبل الرقم داخل النص العربي لا بعده */
+const fmt = n => { const s = r2(n).toLocaleString('en-US', { maximumFractionDigits: 2 }); return s.charCodeAt(0) === 45 ? '\u200e' + s : s; };
 const money = (n, cls = '') => `<span class="amt ${cls}">${fmt(n)}</span>`;
 const today = () => new Date().toLocaleDateString('en-CA');
 const addDays = (d, k) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + k); return x.toLocaleDateString('en-CA'); };
@@ -928,19 +1140,40 @@ const IC = {
 };
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
+/* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
+const EMO = { home: '🏠', tasks: '📋', journal: '📒', clients: '👥', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
+  acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
+const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
+const txEm = t => (TYPES[t] || {}).em || '•';
+/* الخلفية الهندسية المتحركة: مربعات ومثلثات ودوائر تتحرك ببطء خلف المحتوى (تحويلات فقط = خفيفة على الجهاز) */
+const FX_SHAPES = { sq: '<rect x="14" y="14" width="72" height="72" rx="14"/>', ci: '<circle cx="50" cy="50" r="38"/>', tr: '<path d="M50 10 92 86H8z"/>', dm: '<path d="M50 6 94 50 50 94 6 50z"/>', hx: '<path d="M50 6 88 28v44L50 94 12 72V28z"/>', pl: '<path d="M40 10h20v30h30v20H60v30H40V60H10V40h30z"/>' };
+function bgfxHTML() {
+  // [الشكل، مملوء؟، يمين%، أعلى%، الحجم، اللون، مدة الانجراف، مدة الدوران، dx، dy]
+  const L = [['sq', 0, 6, 8, 74, 'a', 26, 60, 40, 60], ['ci', 1, 78, 5, 58, 'b', 31, 0, -50, 70], ['tr', 0, 44, 16, 66, 'c', 28, 75, 60, -40], ['dm', 1, 88, 30, 44, 'd', 24, 50, -40, -60],
+    ['ci', 0, 16, 38, 96, 'b', 36, 0, 70, 40], ['sq', 1, 62, 44, 40, 'c', 22, 44, -60, 50], ['hx', 0, 84, 62, 82, 'a', 33, 90, -70, -50], ['tr', 1, 8, 66, 50, 'd', 27, 66, 50, -70],
+    ['pl', 1, 38, 72, 36, 'b', 25, 80, -40, -50], ['sq', 0, 58, 86, 60, 'd', 30, 70, 50, -60], ['ci', 1, 26, 90, 34, 'a', 23, 0, 60, -40], ['tr', 0, 72, 20, 38, 'b', 29, 55, -30, 60],
+    ['dm', 0, 30, 54, 56, 'c', 34, 85, 40, 50], ['hx', 1, 50, 30, 30, 'a', 21, 64, -50, -30]];
+  return `<div class="bgfx" id="bgfx" aria-hidden="true">${L.map(([sh, fill, x, y, sz, col, d, sp, dx, dy], i) =>
+    `<span class="fx fx-${col}" style="right:${x}%;top:${y}%;width:${sz}px;height:${sz}px;--d:${d}s;--dl:-${i * 2.3}s;--dx:${dx}px;--dy:${dy}px"><svg viewBox="0 0 100 100" class="${fill ? 'f' : 'o'}" style="--sp:${sp || 0}s">${FX_SHAPES[sh]}</svg></span>`).join('')}</div>`;
+}
+const fxOn = () => LS.get('fx', 'on') !== 'off';
+function applyFx() { const old = document.getElementById('bgfx'); if (!fxOn()) { if (old) old.remove(); return; } if (!old) document.body.insertAdjacentHTML('afterbegin', bgfxHTML()); }
+/* لمسة اهتزاز خفيفة عند الضغط (على الأجهزة التي تدعمها) */
+const haptic = (ms = 8) => { try { if (LS.get('haptic', 'on') !== 'off' && navigator.vibrate) navigator.vibrate(ms); } catch (e) { } };
+
 /* ====== أنواع الحركات ====== */
 const TYPES = {
-  IN_CLIENT: { n: 'وارد من عميل', s: 'وارد من عميل', d: 1, c: '#13734a', ic: 'in', hint: 'اختر العميل الذي دفع', client: 1 },
-  TRANSFER: { n: 'تحويل عهدة', s: 'تحويل عهدة', d: 0, c: '#24467a', ic: 'swap', hint: 'من الخزينة إلى زميل، أو رد للخزينة، أو بين الزملاء', lines: 1 },
-  GOV_FEE: { n: 'رسوم بإيصال', s: 'رسوم بإيصال', d: -1, c: '#a1740b', ic: 'receipt', hint: 'مدفوعات بإيصال على ملف العميل', client: 1, lines: 1, list: 'govFees' },
-  OP_EXP: { n: 'مصروف مباشر', s: 'مصروف مباشر', d: -1, c: '#c2571a', ic: 'route', hint: 'مصروف على ملف العميل بدون إيصال: انتقالات وتصوير وغيرها', client: 1, lines: 1, list: 'opExp' },
-  OFFICE_EXP: { n: 'مصروف عمومي', s: 'مصروف عمومي', d: -1, c: '#9b2c2c', ic: 'building', hint: 'مصروفات تشغيل المكتب', lines: 1, list: 'officeExp' },
-  IN_OWNER: { n: 'وارد من الأستاذ محمود', s: 'وارد من أ. محمود', d: 1, c: '#0e7490', ic: 'bank', hint: 'مبلغ استلمته من الأستاذ محمود' },
-  PERSONAL: { n: 'مصروف شخصي', s: 'مصروف شخصي', d: -1, c: '#7c3aed', ic: 'out', hint: 'مصروف شخصي للأستاذ محمود — لا يدخل في مصروفات المكتب' },
-  OUT_OWNER: { n: 'مسحوبات الإدارة', s: 'مسحوبات', d: -1, c: '#6b3fa0', ic: 'out', hint: 'مبالغ مسحوبة لصالح أ. محمود' },
-  CLIENT_REFUND: { n: 'رد مبلغ لعميل', s: 'رد لعميل', d: -1, c: '#be185d', ic: 'undo', hint: 'إرجاع جزء من مدفوعات العميل', client: 1 },
-  FEE: { n: 'أتعاب مستحقة', s: 'أتعاب', d: 0, c: '#0f766e', ic: 'chart', hint: 'أتعاب المكتب المتفق عليها للعميل — تُسجَّل على حسابه ولا تحرّك الخزينة', client: 1 },
-  OPENING: { n: 'رصيد افتتاحي', s: 'رصيد افتتاحي', d: 1, c: '#57606a', ic: 'flag', hint: 'رصيد مرحّل لحساب أو لعميل' }
+  IN_CLIENT: { em: '🤝', n: 'وارد من عميل', s: 'وارد من عميل', d: 1, c: '#13734a', ic: 'in', hint: 'اختر العميل الذي دفع', client: 1 },
+  TRANSFER: { em: '🔄', n: 'تحويل عهدة', s: 'تحويل عهدة', d: 0, c: '#24467a', ic: 'swap', hint: 'من الخزينة إلى زميل، أو رد للخزينة، أو بين الزملاء', lines: 1 },
+  GOV_FEE: { em: '🧾', n: 'رسوم بإيصال', s: 'رسوم بإيصال', d: -1, c: '#a1740b', ic: 'receipt', hint: 'مدفوعات بإيصال على ملف العميل', client: 1, lines: 1, list: 'govFees' },
+  OP_EXP: { em: '🚗', n: 'مصروف مباشر', s: 'مصروف مباشر', d: -1, c: '#c2571a', ic: 'route', hint: 'مصروف على ملف العميل بدون إيصال: انتقالات وتصوير وغيرها', client: 1, lines: 1, list: 'opExp' },
+  OFFICE_EXP: { em: '🏢', n: 'مصروف عمومي', s: 'مصروف عمومي', d: -1, c: '#9b2c2c', ic: 'building', hint: 'مصروفات تشغيل المكتب', lines: 1, list: 'officeExp' },
+  IN_OWNER: { em: '👤', n: 'وارد من الأستاذ محمود', s: 'وارد من أ. محمود', d: 1, c: '#0e7490', ic: 'bank', hint: 'مبلغ استلمته من الأستاذ محمود' },
+  PERSONAL: { em: '🛍️', n: 'مصروف شخصي', s: 'مصروف شخصي', d: -1, c: '#7c3aed', ic: 'out', hint: 'مصروف شخصي للأستاذ محمود — لا يدخل في مصروفات المكتب' },
+  OUT_OWNER: { em: '💸', n: 'مسحوبات الإدارة', s: 'مسحوبات', d: -1, c: '#6b3fa0', ic: 'out', hint: 'مبالغ مسحوبة لصالح أ. محمود' },
+  CLIENT_REFUND: { em: '↩️', n: 'رد مبلغ لعميل', s: 'رد لعميل', d: -1, c: '#be185d', ic: 'undo', hint: 'إرجاع جزء من مدفوعات العميل', client: 1 },
+  FEE: { em: '💼', n: 'أتعاب مستحقة', s: 'أتعاب', d: 0, c: '#0f766e', ic: 'chart', hint: 'أتعاب المكتب المتفق عليها للعميل — تُسجَّل على حسابه ولا تحرّك الخزينة', client: 1 },
+  OPENING: { em: '🚩', n: 'رصيد افتتاحي', s: 'رصيد افتتاحي', d: 1, c: '#57606a', ic: 'flag', hint: 'رصيد مرحّل لحساب أو لعميل' }
 };
 /* الصلاحيات الثلاث: full = الصلاحية الكاملة، sup = أدمن / مشرف، staff = محاسب / محامي */
 const ROLE_NAMES = { full: 'الصلاحية الكاملة', sup: 'أدمن / مشرف', staff: 'محاسب / محامي' };
@@ -1012,6 +1245,7 @@ const idbTry = p => Promise.race([p, new Promise((_, r) => setTimeout(() => r(ne
 async function loadState() {
   let st = null, fromLS = false;
   try { st = await idbTry(IDB.get('data')); USE_IDB = true; } catch (e) { USE_IDB = false; }
+  if (typeof st === 'string') { try { st = JSON.parse(st); } catch (e) { st = null; } }
   if (!st) { st = LS.get('data', null); fromLS = !!st; }
   D = st ? { ...st, clients: st.clients || {}, txs: st.txs || {} } : seedData();
   D.users = D.users.map(normUser);
@@ -1039,7 +1273,7 @@ async function loadState() {
   if (fromLS || D.sv !== 2) {
     // أول تشغيل بعد التحديث: تحميل كامل من الشيت مرة واحدة لضمان تطابق الجهاز، ونقل البيانات لمساحة التخزين الواسعة
     D.cursor = ''; D.rev = ''; D.sv = 2;
-    if (USE_IDB) { try { await IDB.set('data', D); LS.del('data'); LS.del('archive'); if (a == null && A.ver !== '1') await IDB.set('archive', A); } catch (e) { } }
+    if (USE_IDB) { try { await IDB.set('data', JSON.stringify(D)); LS.del('data'); LS.del('archive'); if (a == null && A.ver !== '1') await IDB.set('archive', A); } catch (e) { } }
   }
   LS.del('lastSync');
   VER++;
@@ -1053,12 +1287,14 @@ function saveQueue() {
 function saveData() {
   if (!USE_IDB) { LS.set('data', D); return Promise.resolve(); }
   const n = RECENT.length;
-  return IDB.set('data', D).then(() => { if (n) { RECENT.splice(0, n); LS.set('recent', RECENT); } }).catch(() => { LS.set('data', D); });
+  /* البيانات تُكتب كنص JSON واحد: أسرع عدة مرات من نسخ عشرات آلاف الكائنات داخل قاعدة التخزين، ولا تجمّد الواجهة */
+  let blob; try { blob = JSON.stringify(D); } catch (e) { blob = D; }
+  return IDB.set('data', blob).then(() => { if (n) { RECENT.splice(0, n); LS.set('recent', RECENT); } }).catch(() => { LS.set('data', D); });
 }
 function persist(now) {
   clearTimeout(_saveT);
   saveQueue();
-  if (now) saveData(); else _saveT = setTimeout(saveData, 250);
+  if (now) saveData(); else _saveT = setTimeout(saveData, 600);
 }
 function persistArchive() { if (USE_IDB) IDB.set('archive', A).catch(() => { }); else LS.set('archive', A); }
 let _remT = 0;
@@ -1068,7 +1304,7 @@ function changed() { VER++; persist(); clearTimeout(_remT); _remT = setTimeout((
 const userById = id => D.users.find(u => u.id === id);
 const accById = id => D.accounts.find(a => a.id === id);
 const accGone = a => !!a && a.type === 'custody' && +a.active === 0 && D.users.some(u => u.account === a.id && +u.deleted);
-const accName = id => { const a = accById(id); if (!a) return id ? id : '—'; if (!accVisible(a)) return 'حساب خاص'; return accGone(a) ? exColleague(D.users.find(u => u.account === a.id)) + ' - ' + String(a.name).replace(/^عهدة\s+/, '') : (a.type === 'treasury' ? trsLabel(a) : a.name); };
+const accName = id => { if (id === OWN_EXT) return 'خارج الخزائن (من أ. محمود مباشرة)'; const a = accById(id); if (!a) return id ? id : '—'; if (!accVisible(a)) return 'حساب خاص'; return accGone(a) ? exColleague(D.users.find(u => u.account === a.id)) + ' - ' + String(a.name).replace(/^عهدة\s+/, '') : (a.type === 'treasury' ? trsLabel(a) : a.name); };
 /* الخزينة الخاصة: حساب (غير العهدة) له مسؤول محدد، لا يظهر إلا له */
 const accPrivate = a => !!a && a.type !== 'custody' && !!a.userId;
 const accVisible = a => !accPrivate(a) || (!!ME && a.userId === ME.id);
@@ -1078,6 +1314,11 @@ const trsLabel = a => accPrivate(a) ? String(a.name) : String(a.name).replace(/^
 const visAccounts = () => D.accounts.filter(accVisible);
 /* حركة لا تخص إلا حسابًا خاصًا بغيري: تُخفى من القوائم (وتبقى محسوبة في رصيد العميل إن وُجد) */
 const txHidden = t => { const f = accById(t.fromAcc), o = accById(t.toAcc); const hf = f && !accVisible(f), ho = o && !accVisible(o); if (!hf && !ho) return false; return !((f && !hf) || (o && !ho)); };
+/* مصدر «وارد من أ. محمود»: خزينة حقيقية يُخصم منها، أو EXT = من خارج الخزائن (لا خصم) */
+const OWN_EXT = 'EXT';
+const ownSrc = t => !!t.fromAcc && t.fromAcc !== OWN_EXT;
+/* حركات وارد من أ. محمود لم يُحدَّد بعد من أي خزينة سُحبت (المرحّلة من الإكسيل مستثناة) */
+const ownNoSrc = () => activeTx().filter(t => t.type === 'IN_OWNER' && !t.fromAcc && !isXL(t) && +t.approved !== 2 && t.category !== 'تحويل داخلي');
 const hashCode = s => { let h = 5381; const t = 'msj|' + String(s); for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) >>> 0; return 'h' + h.toString(36); };
 const delCodeSet = () => !!((D.lists || {}).delCodeH || [])[0];
 const delCodeOk = c => ((D.lists || {}).delCodeH || [])[0] === hashCode(String(c).trim());
@@ -1085,7 +1326,13 @@ const clientById = id => D.clients[id];
 const clientName = id => { const c = D.clients[id]; if (!c) return id ? 'عميل غير معروف' : ''; return c.name; };
 const isPend = t => t.approved !== '' && t.approved != null && (+t.approved === 0 || +t.approved === 2);   // غير معتمدة (بانتظار أو مرفوضة)
 const isQueue = t => t.approved !== '' && t.approved != null && +t.approved === 0;
-const activeTx = () => Object.values(D.txs).filter(t => !+t.deleted);
+/* الحركات الفعّالة تُحسب مرة واحدة لكل تغيير في البيانات (VER) بدل إعادة المرور على كل الحركات في كل استدعاء */
+let _atx = null, _atxVer = -1, _atxD = null;
+const activeTx = () => { if (_atx && _atxVer === VER && _atxD === D.txs) return _atx; _atx = Object.values(D.txs).filter(t => !+t.deleted); _atxVer = VER; _atxD = D.txs; return _atx; };
+/* ترتيب الحركات بالتاريخ ثم وقت الإدخال — مقارنة نصية مباشرة (أسرع كثيرًا من localeCompare) */
+const txKey = t => t.date + (t.createdAt || '');
+const byNew = (a, b) => { const x = txKey(a), y = txKey(b); return x < y ? 1 : x > y ? -1 : 0; };
+const byOld = (a, b) => { const x = txKey(a), y = txKey(b); return x < y ? -1 : x > y ? 1 : 0; };
 const isPriv = () => ME && ME.role !== 'staff';          // مشرف أو كاملة
 const isAdmin = () => ME && ME.role !== 'staff';         // إشراف: دمج العملاء ومراجعة التكرار
 const isSup = () => ME && ME.role === 'sup';             // أدمن/مشرف: صلاحيات محدودة (لا تقارير ولا مراجعة تكرار)
@@ -1112,7 +1359,7 @@ function calc() {
     const cx = (isXL(t) && !xlInBal(t)) ? () => ({}) : ca;   // حركات الإكسيل لا تدخل في رصيد العميل (المدفوعات القديمة لم تكن مربوطة بالعملاء)
     switch (t.type) {
       case 'IN_CLIENT': inA(t.toAcc); if (t.clientId) cx(t.clientId).paid += a; break;
-      case 'IN_OWNER': inA(t.toAcc); break;
+      case 'IN_OWNER': if (ownSrc(t)) outA(t.fromAcc); inA(t.toAcc); break;   // الوارد من أ. محمود يُخصم من الخزينة التي سُحب منها
       case 'TRANSFER': outA(t.fromAcc); inA(t.toAcc); break;
       case 'GOV_FEE': outA(t.fromAcc); if (t.clientId) cx(t.clientId).fees += a; break;
       case 'OP_EXP': outA(t.fromAcc); if (t.clientId) cx(t.clientId).ops += a; break;
@@ -1143,10 +1390,23 @@ const accBal = id => r2((calc().acc[id] || {}).bal || 0);
 const accPend = id => r2((calc().acc[id] || {}).pend || 0);
 const accBalR = id => r2(accBal(id) - accPend(id));
 /* حركات العرض في القوائم والتقارير: بدون ما يخص خزينة خاصة بغير المستخدم */
-const listTx = () => D.accounts.some(x => !accVisible(x)) ? activeTx().filter(t => !txHidden(t)) : activeTx();
+let _ltx = null, _ltxVer = -1, _ltxMe = '';
+const listTx = () => {
+  const me = ME ? ME.id : '';
+  if (_ltx && _ltxVer === VER && _ltxMe === me && _atxD === D.txs) return _ltx;
+  const a = activeTx();
+  _ltx = D.accounts.some(x => !accVisible(x)) ? a.filter(t => !txHidden(t)) : a; _ltxVer = VER; _ltxMe = me; return _ltx;
+};
 const pendTxs = () => activeTx().filter(isPend);
 const queueTxs = () => activeTx().filter(isQueue);
 const pendOf = id => pendTxs().filter(t => t.fromAcc === id || t.toAcc === id);
+const EXP_T = ['GOV_FEE', 'OP_EXP'];
+/* عملاء عليهم رصيد مستحق وكان لهم تعامل خلال آخر k شهر */
+const owingRecent = k => { const d = new Date(); d.setMonth(d.getMonth() - k); const lim = d.toLocaleDateString('en-CA'); return owingClients().filter(o => (cliStat(o.c.id).last || '') >= lim); };
+const owingClients = () => activeClients().map(x => ({ c: x, b: cliStat(x.id).bal })).filter(o => o.b < -0.004).sort((a, b) => a.b - b.b);
+/* تنبيه الاعتماد: عملاء عليهم مستحقات ضمن حركات مصروفات على وشك الاعتماد */
+const owingWarn = arr => { const seen = {}; arr.forEach(t => { if (t.clientId && EXP_T.includes(t.type)) seen[t.clientId] = 1; }); return Object.keys(seen).map(id => ({ id, b: cliStat(id).bal })).filter(o => o.b < -0.004); };
+const owingMsg = list => list.map(o => `• ${clientName(o.id)}: مستحق عليه ${fmt(-o.b)} ج.م`).join('\n');
 const cliStat = id => calc().cli[id] || { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, n: 0, last: '', bal: 0 };
 
 /* ====== الأرشيف ====== */
@@ -1267,7 +1527,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261114-150000';
+const BUILD = '20261116-120000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1291,7 +1551,7 @@ async function apiPost(action, payload) {
 }
 function queue(action, payload, meta = {}) {
   Q.push({ id: uid('Q'), action, payload, meta, at: nowIso() });
-  persist(true);
+  persist();   // الطابور يُحفظ فورًا (سريع)، والبيانات الكاملة بعد لحظة حتى لا تتأخر الواجهة عند الحفظ
   paintSync();
   scheduleFlush();
 }
@@ -1332,7 +1592,7 @@ async function flush() {
         opDone(op, res);
         Q.shift(); recent(op);
       }
-      persist(true);
+      persist();
       paintSync();
     }
   } finally { FLUSHING = false; }
@@ -1627,14 +1887,14 @@ function paintNav() {
   const r = route().name;
   const on = h => (r === h || (h === 'clients' && r === 'client') || (h === 'accounts' && r === 'account')) ? 'on' : '';
   $('#side').innerHTML = `<a class="cta" href="#entry">${icon('plus', 18, 2.2)} حركة جديدة</a>` +
-    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${icon(i, 19)} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}${h === 'tasks' && tkMyOpen().length ? ` <span class="cnt">${tkMyOpen().length}</span>` : ''}</a>`).join('') +
-    `<hr><a href="#" data-act="logout">${icon('logout', 19)} تسجيل الخروج</a>`;
+    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${appic(h, 28, h === 'accounts' && !isPriv() ? '👛' : '')} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}${h === 'tasks' && tkMyOpen().length ? ` <span class="cnt">${tkMyOpen().length}</span>` : ''}</a>`).join('') +
+    `<hr><a href="#" data-act="logout">${appic('logout', 28)} تسجيل الخروج</a>`;
   $('#bnav').innerHTML = `
-    <a href="#home" class="${on('home')}">${icon('home', 22)}الرئيسية</a>
-    <a href="#journal" class="${on('journal')}">${icon('list', 22)}${isPriv() ? 'اليومية' : 'حركاتي'}</a>
+    <a href="#home" class="${on('home')}"><i class="ne">${EMO.home}</i>الرئيسية</a>
+    <a href="#journal" class="${on('journal')}"><i class="ne">${EMO.journal}</i>${isPriv() ? 'اليومية' : 'حركاتي'}</a>
     <a href="#entry" class="plus ${on('entry')}"><span>${icon('plus', 24, 2.4)}</span>حركة</a>
-    ${isPriv() ? `<a href="#clients" class="${on('clients')}">${icon('users', 22)}العملاء</a>` : `<a href="#account/${myAcc()}" class="${on('accounts')}">${icon('wallet', 22)}عهدتي</a>`}
-    <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'analytics', 'settings', 'dups', 'review', 'tasks'].includes(r) ? 'on' : ''}">${icon('menu', 22)}المزيد</a>`;
+    ${isPriv() ? `<a href="#clients" class="${on('clients')}"><i class="ne">${EMO.clients}</i>العملاء</a>` : `<a href="#account/${myAcc()}" class="${on('accounts')}"><i class="ne">👛</i>عهدتي</a>`}
+    <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'analytics', 'settings', 'dups', 'review', 'tasks'].includes(r) ? 'on' : ''}"><i class="ne">${EMO.more}</i>المزيد</a>`;
 }
 function route() {
   const h = decodeURIComponent(location.hash.slice(1) || 'home');
@@ -1643,7 +1903,7 @@ function route() {
   return { name: parts[0] || 'home', arg: parts[1] || '', arg2: parts[2] || '', q: new URLSearchParams(qs || '') };
 }
 const go = h => { if (location.hash.slice(1) === h) render(); else location.hash = h; };
-let _pendingRefresh = false;
+let _pendingRefresh = false, _navAnim = false;
 function softRefresh() {
   paintSync();
   if (!ME) return;
@@ -1670,10 +1930,17 @@ function render() {
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
-  $('#view').innerHTML = '';
-  fn(r, $('#view'));
-  if (fn === vHome) opsHomeCard($('#view'));
-  labelTables($('#view'));
+  const vw = $('#view');
+  vw.innerHTML = '';
+  try { fn(r, vw); if (fn === vHome) opsHomeCard(vw); }
+  catch (e) {
+    /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
+    console.error(e);
+    vw.innerHTML = `<div class="card pad" style="text-align:center;margin-top:20px"><div style="font-size:40px">⚠️</div><h2 style="margin:8px 0">تعذّر عرض هذه الصفحة</h2><p class="small muted" style="direction:ltr">${esc(String(e && e.message || e)).slice(0, 200)}</p>
+      <div class="row wrap" style="justify-content:center;margin-top:10px"><button class="btn pri" data-act="go" data-h="home">الرئيسية</button><button class="btn" data-act="app-update">تحديث البرنامج</button></div></div>`;
+  }
+  labelTables(vw);
+  if (_navAnim) { _navAnim = false; vw.classList.remove('vin'); void vw.offsetWidth; vw.classList.add('vin'); }
   if (!isPriv()) {
     $('#view').querySelectorAll('a[href^="#client"]').forEach(a => { const s = document.createElement('span'); s.innerHTML = a.innerHTML; a.replaceWith(s); });
     $('#view').querySelectorAll('[data-h^="client/"]').forEach(e => { e.removeAttribute('data-act'); e.removeAttribute('data-h'); e.style.cursor = 'default'; });
@@ -1743,6 +2010,7 @@ function txTitle(t, acc) {
   const parts = [];
   if (t.type === 'TRANSFER' && acc) parts.push(txSign(t, acc) > 0 ? `وارد من ${accName(t.fromAcc)}` : `صرف إلى ${accName(t.toAcc)}`);
   else if (t.type === 'TRANSFER') parts.push(`${accName(t.fromAcc)} ← ${accName(t.toAcc)}`);
+  else if (t.type === 'IN_OWNER' && acc && t.fromAcc === acc) parts.push(`سحب أ. محمود إلى ${accName(t.toAcc)}`);
   else if (t.category) parts.push(t.category);
   else parts.push((TYPES[t.type] || {}).n || t.type);
   return parts.join(' · ');
@@ -1752,14 +2020,16 @@ function txRow(t, acc) {
   const s = txSign(t, acc);
   const sub = [];
   if (t.clientId) sub.push(`<b style="color:var(--ink-2)">${esc(clientName(t.clientId))}</b>`);
-  if (t.type !== 'TRANSFER') { const a = t.fromAcc || t.toAcc; if (a) sub.push(esc(accName(a))); }
+  if (t.type === 'IN_OWNER') { if (t.toAcc) sub.push(esc(accName(t.toAcc))); if (isPriv()) sub.push(t.fromAcc ? 'من ' + esc(accName(t.fromAcc)) : (isXL(t) ? '' : '<b style="color:#b45309">لم تُحدَّد خزينة السحب</b>')); }
+  else if (t.type !== 'TRANSFER') { const a = t.fromAcc || t.toAcc; if (a) sub.push(esc(accName(a))); }
   if (t.description) sub.push(esc(t.description));
   if (t.receiptNo) sub.push('إيصال ' + esc(t.receiptNo));
   if (t.type === 'GOV_FEE') sub.push(t.receiptUrl ? '📎 بصورة' : (receiptPending(t.id) ? '⏳ الصورة قيد الرفع' : 'بدون صورة'));
   if (t.place) sub.push(esc(t.place));
+  for (let i = sub.length - 1; i >= 0; i--) if (!sub[i]) sub.splice(i, 1);
   const amt = Math.abs(+t.amount);
   return `<div class="tx" data-act="tx" data-id="${t.id}">
-    <div class="ic" style="background:color-mix(in srgb,${m.c} 12%,white);color:${m.c}">${icon(m.ic, 19)}</div>
+    <div class="ic em" style="--c:${m.c}">${m.em || ''}</div>
     <div class="grow"><div class="t1 ell">${esc(txTitle(t, acc))}</div><div class="t2 ell">${sub.join(' · ') || tBadge(t.type)}</div></div>
     ${isPend(t) ? (+t.approved === 2 ? '<span class="pendb" title="غير معتمدة">❌</span>' : '<span class="pendb" title="لم تُراجع بعد">⏳</span>') : ''}
     <div class="a ${s > 0 ? 'pos' : s < 0 ? 'neg' : ''}" ${t.type === 'FEE' ? `style="color:${m.c}"` : ''}>${s > 0 ? '+' : s < 0 ? '−' : t.type === 'FEE' ? '' : '⇄ '}${money(amt)}</div>
@@ -1772,7 +2042,8 @@ function txDetails(id) {
   const can = canEdit(t);
   const rows = [
     ['النوع', tBadge(t.type)], ['التاريخ', dLong(t.date)], ['المبلغ', `<b>${money(t.amount)}</b> ج.م`],
-    t.fromAcc && ['من حساب', esc(accName(t.fromAcc))], t.toAcc && ['إلى حساب', esc(accName(t.toAcc))],
+    t.fromAcc && [t.type === 'IN_OWNER' ? 'مسحوب من' : 'من حساب', esc(accName(t.fromAcc))],
+    t.type === 'IN_OWNER' && !t.fromAcc && !isXL(t) && isPriv() && ['مسحوب من', '<b style="color:#b45309">لم تُحدَّد الخزينة بعد</b>'], t.toAcc && ['إلى حساب', esc(accName(t.toAcc))],
     t.clientId && ['العميل', `<a href="#client/${t.clientId}" data-act="mclose">${esc(clientName(t.clientId))}</a>`],
     t.category && ['البند', esc(t.category)], t.receiptNo && ['رقم الإيصال', esc(t.receiptNo)],
     t.type === 'GOV_FEE' && ['صورة الإيصال', t.receiptUrl ? `<a href="${esc(t.receiptUrl)}" target="_blank" rel="noopener">فتح الصورة على Drive</a>` : (receiptPending(t.id) ? 'قيد الرفع على Drive…' : '<span class="muted">لا توجد صورة</span>')], t.place && ['المكان', esc(t.place)],
@@ -1781,10 +2052,11 @@ function txDetails(id) {
     !+t.deleted && t.type !== 'OPENING' && ['المراجعة', isPend(t) ? (+t.approved === 2 ? '<b style="color:#b91c1c">❌ غير معتمدة</b>' : '<b style="color:#b45309">⏳ بانتظار الاعتماد</b>') : `<b style="color:#0f766e">✔ معتمدة</b>${t.approvedBy && userById(t.approvedBy) ? ' <span class="muted small">— ' + esc(userById(t.approvedBy).name) + '</span>' : ''}`],
     +t.deleted && ['الحالة', `<span class="neg">محذوفة — ${esc(t.deleteReason || '')}</span>`]
   ].filter(Boolean);
-  modal(`<h3><span class="ic" style="color:${m.c}">${icon(m.ic, 20)}</span> تفاصيل الحركة</h3>
+  modal(`<h3><span class="tx" style="padding:0;min-height:0;cursor:default"><span class="ic em" style="--c:${m.c}">${m.em || ''}</span></span> تفاصيل الحركة</h3>
     <dl class="dl">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
     <div class="acts">${isPriv() && !+t.deleted && t.type !== 'OPENING' ? (isPend(t) ? `<button class="btn pri" data-act="tx-approve" data-id="${t.id}">${icon('check', 17)} اعتماد</button>${+t.approved === 2 ? '' : `<button class="btn danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`}` : `<button class="btn" data-act="tx-unapprove" data-id="${t.id}">إلغاء الاعتماد</button>`) : ''}
       ${isPriv() && isXL(t) && t.clientId && (TYPES[t.type] || {}).client && !+t.deleted ? `<button class="btn" data-act="xl-bal" data-id="${t.id}">${xlInBal(t) ? 'إلغاء احتسابها في رصيد العميل' : 'احتسابها في رصيد العميل'}</button>` : ''}
+      ${isFull() && t.type === 'IN_OWNER' && !+t.deleted ? `<button class="btn gold" data-act="own-src" data-id="${t.id}">${icon('bank', 17)} ${t.fromAcc ? 'تغيير خزينة السحب' : 'تحديد خزينة السحب'}</button>` : ''}
       ${can && !+t.deleted ? `<button class="btn pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 17)} تعديل</button>
       <button class="btn danger" data-act="tx-del" data-id="${t.id}">${icon('trash', 17)} حذف</button>` : ''}
       ${can && !+t.deleted && t.type !== 'OPENING' && t.type !== 'TRANSFER' ? `<button class="btn" data-act="tx-retype" data-id="${t.id}">${icon('edit', 17)} تغيير التصنيف</button>` : ''}
@@ -1816,13 +2088,13 @@ function vHome(r, el) {
   const scope = mine ? txs.filter(t => t.fromAcc === myAcc() || t.toAcc === myAcc() || t.userId === ME.id) : txs;
   const month = scope.filter(t => t.date >= ms);
   const sum = (arr, types) => r2(arr.filter(t => types.includes(t.type)).reduce((a, t) => a + (+t.amount || 0), 0));
-  const recent = scope.slice().sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt)).slice(0, 8);
-  const hello = `<h1 class="pg">مرحبًا، ${esc(honorific(ME))} <small>${dLong(today())}</small></h1>`;
+  const recent = scope.slice().sort(byNew).slice(0, 8);
+  const hello = `<h1 class="pg">مرحبًا، ${esc(honorific(ME))} 👋 <small>${dLong(today())}</small></h1>`;
   const quick = mine ? '' : `<div style="margin-bottom:6px">${entryPicker()}</div>`;
   let body = '';
   if (mine) {
     const b = accBal(myAcc());
-    body = `<div class="card mybal"><div class="l">${icon('wallet', 18)} رصيد عهدتي</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)} <small>ج.م</small></div>
+    body = `<div class="card mybal"><div class="l">👛 رصيد عهدتي</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)} <small>ج.م</small></div>
       ${reviewLine(myAcc())}${entryPicker()}</div>`;
   } else {
     const offA = officeTrs(), mainA = mainTrs();
@@ -1834,17 +2106,18 @@ function vHome(r, el) {
     const noPhone = activeClients().filter(x => !x.phone).length;
     const dupN = (D.dups || []).filter(d => !d.status).length;
     const negs = cust.filter(a => accBal(a.id) < 0);
-    body = `<div class="grid ${isSup() ? 'g2' : mainA.length ? 'g3' : 'g4'}">
-      <div class="card kpi hl"><div class="l">${icon('bank', 16)} خزنة المكتب</div><div class="v ${trs < 0 ? 'neg' : ''}">${money(trs)} <small>ج.م</small></div></div>
-      ${mainA.length ? `<div class="card kpi hl"><div class="l">${icon('bank', 16)} الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span></div><div class="v ${trsMain < 0 ? 'neg' : ''}">${money(trsMain)} <small>ج.م</small></div></div>
-      <div class="card kpi"><div class="l">${icon('bank', 16)} إجمالي الخزنتين</div><div class="v ${r2(trs + trsMain) < 0 ? 'neg' : ''}">${money(r2(trs + trsMain))} <small>ج.م</small></div></div>` : ''}
-      <div class="card kpi"><div class="l">${icon('wallet', 16)} العهد لدى الفريق</div><div class="v">${money(custTot)}</div></div>
-      ${isSup() ? '' : `<div class="card kpi"><div class="l">${icon('in', 16)} وارد العملاء — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v pos">${money(inc)}</div></div>
-      <div class="card kpi"><div class="l">${icon('out', 16)} المصروفات — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v neg">${money(exp)}</div></div>`}
+    body = `<div class="grid gk">
+      <div class="card kpi hl"><div class="l">🏦 خزنة المكتب</div><div class="v ${trs < 0 ? 'neg' : ''}">${money(trs)} <small>ج.م</small></div></div>
+      ${mainA.length ? `<div class="card kpi hl"><div class="l">🔐 الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span></div><div class="v ${trsMain < 0 ? 'neg' : ''}">${money(trsMain)} <small>ج.م</small></div></div>
+      <div class="card kpi"><div class="l">🧮 إجمالي الخزنتين</div><div class="v ${r2(trs + trsMain) < 0 ? 'neg' : ''}">${money(r2(trs + trsMain))} <small>ج.م</small></div></div>` : ''}
+      <div class="card kpi"><div class="l">👛 العهد لدى الفريق</div><div class="v">${money(custTot)}</div></div>
+      ${isSup() ? (() => { const L = owingRecent(1), tt = r2(L.reduce((s, o) => s - o.b, 0)); return `<a class="card kpi owe" href="#clients?f=owing1" style="grid-column:1/-1"><div class="l">⚠️ عملاء آخر شهر عليهم رصيد <span class="badge" style="margin-inline-start:6px">${L.length}</span><span class="sp"></span><small>عرض القائمة ←</small></div><div class="v ${tt ? 'neg' : ''}">${money(tt)} <small>ج.م</small></div></a>`; })() : ''}
+      ${isSup() ? '' : `<div class="card kpi"><div class="l">📥 وارد العملاء — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v pos">${money(inc)}</div></div>
+      <div class="card kpi"><div class="l">📤 المصروفات — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v neg">${money(exp)}</div></div>`}
     </div>
     ${trsBreakdown()}
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));margin-top:12px">
-      <div class="card" style="grid-column:1/-1"><h2 class="sec" style="margin:14px 14px 6px">${icon('wallet', 18)} أرصدة العهد</h2>
+      <div class="card" style="grid-column:1/-1"><h2 class="sec" style="margin:14px 14px 6px">👛 أرصدة العهد</h2>
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${cust.map(a => { const b = accBal(a.id), p = (c.acc[a.id] || {}).pend; return `<a class="card kpi" href="#account/${a.id}"><div class="l">${esc(a.name.replace('عهدة ', ''))}</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)}</div>${p ? `<div class="small" style="color:#b45309">⏳ ${money(p)} بانتظار الاعتماد</div>` : ''}</a>`; }).join('') || '<div class="empty">لا توجد عُهد.</div>'}</div>
       </div>
       <div class="grid" style="align-content:start">
@@ -1854,13 +2127,14 @@ function vHome(r, el) {
         ${negs.length ? `<div class="note err">${icon('alert', 18)}<div>عهد بالسالب: ${negs.map(a => `<b>${esc(a.name.replace('عهدة ', ''))}</b> (${money(accBal(a.id))})`).join('، ')}</div></div>` : ''}
         ${FAILED.length ? `<div class="note err">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings">التفاصيل</a></div></div>` : ''}
       </div>
-    </div>`;
+    </div>
+`;
   }
   if (mine) { el.innerHTML = hello + reminderBanner() + installBanner() + body; return; }
-  el.innerHTML = hello + reminderBanner() + installBanner() + quick + body + queueSection() + `
-    <h2 class="sec">آخر الحركات</h2>
+  el.innerHTML = hello + reminderBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
+    <h2 class="sec">🕘 آخر الحركات</h2>
     <div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
-    ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>`;
+    ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>`);
 }
 function bigBtn(em, title, hint, c, h, cls) {
   return `<button class="bigbtn ${cls || ''}" style="--c:${c}" data-act="go" data-h="${h}"><span class="em">${em}</span><span class="tx"><b>${title}</b>${hint ? `<small>${hint}</small>` : ''}</span></button>`;
@@ -1871,8 +2145,8 @@ function entryPicker() {
   const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
   const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
   return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm">
-      <button class="pmb in" data-act="pick-open" data-g="in"><span>➕</span>وارد</button>
-      <button class="pmb out" data-act="pick-open" data-g="out"><span>➖</span>صرف</button>${isPriv() ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button>` : ''}</div>
+      <button class="pmb in" data-act="pick-open" data-g="in"><span>📥</span>وارد</button>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${isPriv() ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button>` : ''}</div>
     <div class="eplist"></div></div>`;
 }
 function mainPair() {
@@ -1885,20 +2159,41 @@ function typeTile(k) {
 
 /* ====== المزيد ====== */
 function vMore(r, el) {
-  el.innerHTML = `<h1 class="pg">المزيد</h1><div class="card">
-    ${navItems().filter(([h]) => !['home', 'journal', 'clients'].includes(h)).map(([h, l, i]) => `<div class="lrow" data-act="go" data-h="${h}"><div class="av">${icon(i, 19)}</div><b class="grow">${l}</b>${icon('fwd', 18)}</div>`).join('')}
-    <div class="lrow" data-act="logout"><div class="av">${icon('logout', 19)}</div><b class="grow">تسجيل الخروج</b></div></div>`;
+  const items = navItems().filter(([h]) => !['home', 'journal', 'clients'].includes(h));
+  el.innerHTML = `<h1 class="pg">المزيد</h1>
+    <div class="appgrid">${items.map(([h, l]) => `<button class="appbtn" data-act="go" data-h="${h}">${appic(h, 62)}<span>${l}</span>${h === 'review' && queueTxs().length ? `<i class="bdg">${queueTxs().length}</i>` : ''}${h === 'tasks' && tkMyOpen().length ? `<i class="bdg">${tkMyOpen().length}</i>` : ''}</button>`).join('')}
+      <button class="appbtn" data-act="theme-toggle">${appic('look', 62, themeIsDark() ? '☀️' : '🌙')}<span>${themeIsDark() ? 'الوضع الفاتح' : 'الوضع الداكن'}</span></button>
+      <button class="appbtn" data-act="logout">${appic('logout', 62)}<span>تسجيل الخروج</span></button></div>`;
 }
 
+/* للمالك فقط: عُهد سُحبت منه ولم تُحدَّد خزينة السحب */
+function ownSrcCard() {
+  if (!isFull()) return '';
+  const L = ownNoSrc().sort(byNew);
+  if (!L.length) return '';
+  const tot = r2(L.reduce((s, t) => s + (+t.amount || 0), 0));
+  return `<div class="card ownsrc" style="margin-bottom:12px"><h2 class="sec" style="margin:14px 14px 4px">🏦 مبالغ سُحبت منك — حدد الخزينة <span class="cnt">${L.length}</span><span class="sp"></span><small class="muted">${money(tot)} ج.م</small></h2>
+    <p class="small muted" style="margin:0 14px 8px">هذه المبالغ سجّلها الفريق «وارد من الأستاذ محمود» ولم تُخصم من أي خزينة بعد. اختر الخزينة التي خرج منها كل مبلغ.</p>
+    ${L.slice(0, 20).map(t => `<div class="rvrow">${txRow(t, '')}<div class="rvb"><button class="btn sm gold" data-act="own-src" data-id="${t.id}">${icon('bank', 15)} اختيار الخزينة</button></div></div>`).join('')}
+    ${L.length > 20 ? `<div class="totbar"><span class="small muted">و${L.length - 20} حركة أخرى تظهر بعد تحديد هذه.</span></div>` : ''}</div>`;
+}
+function owingCard() {
+  let L = owingClients();
+  if (isSup()) { const d = new Date(); d.setMonth(d.getMonth() - 3); const lim = d.toISOString().slice(0, 10); L = L.filter(o => (cliStat(o.c.id).last || '') >= lim); }
+  if (!L.length) return '';
+  const tot = r2(L.reduce((s, o) => s + o.b, 0));
+  return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">${icon('alert', 18)} عملاء عليهم رصيد مستحق${isSup() ? ' <small class="muted">(آخر 3 شهور)</small>' : ''} <span class="badge" style="margin-inline-start:6px">${L.length}</span><span class="sp"></span><small class="muted">الإجمالي ${money(-tot)} ج.م</small></h2>
+    <div style="max-height:320px;overflow:auto;padding:0 6px 8px">${L.map(o => `<a class="lrow" href="#client/${o.c.id}"><b class="grow">${esc(o.c.name)}</b><span class="num neg">${money(-o.b)}</span></a>`).join('')}</div></div>`;
+}
 function trsBreakdown() {
   const mainA = mainTrs();
-  const mainCard = mainA.length ? `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">${icon('bank', 18)} الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span></h2>
+  const mainCard = mainA.length ? `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">🔐 الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span></h2>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${mainA.map(a => { const v = accBal(a.id); return `<a class="card kpi" href="#account/${a.id}"><div class="l">${esc(trsLabel(a))}</div><div class="v ${v < 0 ? 'neg' : ''}">${money(v)} <small>ج.م</small></div></a>`; }).join('')}</div></div>` : '';
   return mainCard + officeBreakdown();
 }
 function officeBreakdown() {
   const trsAccs = officeTrs();
-  if (trsAccs.length > 1) return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">${icon('bank', 18)} خزنة المكتب</h2>
+  if (trsAccs.length > 1) return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">🏦 خزنة المكتب</h2>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${trsAccs.map(a => { const v = accBal(a.id); return `<a class="card kpi" href="#account/${a.id}"><div class="l">${esc(trsLabel(a).replace('خزنة المكتب — ', ''))}</div><div class="v ${v < 0 ? 'neg' : ''}">${money(v)} <small>ج.م</small></div></a>`; }).join('')}</div></div>`;
   const m = {};
   listTx().forEach(t => {
@@ -1907,7 +2202,7 @@ function officeBreakdown() {
   });
   const rows = Object.entries(m).filter(([, v]) => Math.abs(v) > 0.004);
   if (!rows.length) return '';
-  return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">${icon('bank', 18)} خزنة المكتب حسب طريقة الدفع</h2>
+  return `<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:14px 14px 6px">🏦 خزنة المكتب حسب طريقة الدفع</h2>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${rows.sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="card kpi"><div class="l">${esc(k)}</div><div class="v ${v < 0 ? 'neg' : ''}">${money(v)} <small>ج.م</small></div></div>`).join('')}</div></div>`;
 }
 
@@ -1920,9 +2215,9 @@ function reviewLine(id) {
 function queueSection() {
   const xu = isFull() ? xlPending().txs.length : 0;
   const xuBanner = xu ? `<div class="note warn" style="margin-top:12px">${icon('info', 18)}<div>فيه <b>${xu}</b> حركة جديدة من الإكسيل لم تُرحَّل. <a href="#settings/xl">${gw('رحّلها', 'رحّليها')} من الإعدادات</a></div></div>` : '';
-  const q = queueTxs().sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt));
+  const q = queueTxs().sort(byNew);
   if (!q.length) return xuBanner;
-  return xuBanner + `<h2 class="sec">${icon('check', 18)} حركات تحتاج الاعتماد والمراجعة <span class="cnt">${q.length}</span><span class="sp"></span><a href="#review" class="small">فتح المراجعة ←</a></h2>
+  return xuBanner + `<h2 class="sec">✅ حركات تحتاج الاعتماد والمراجعة <span class="cnt">${q.length}</span><span class="sp"></span><a href="#review" class="small">فتح المراجعة ←</a></h2>
     <div class="card">${q.slice(0, 15).map(t => `<div class="rvrow">${txRow(t, '')}<div class="rvb"><button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button></div></div>`).join('')}
     ${q.length > 15 ? `<div class="totbar"><a href="#review">عرض الباقي (${q.length - 15}) ←</a></div>` : ''}</div>`;
 }
@@ -1941,7 +2236,7 @@ function newForm(type, keep) {
     receiptNo: '', openTarget: 'acc', fromAcc: k.fromAcc || '', toAcc: k.toAcc || '', lines: [blankLine(type)], back: k.back || ''
   };
   if (type === 'TRANSFER' && f.mode === 'in') { f.fromAcc = 'TRS'; if (!priv) f.lines[0].toAcc = myAcc(); }
-  if (!f.fromAcc) f.fromAcc = (type === 'TRANSFER' && priv) ? 'TRS' : myAcc();
+  if (!f.fromAcc && type !== 'IN_OWNER') f.fromAcc = (type === 'TRANSFER' && priv) ? 'TRS' : myAcc();
   if (!f.toAcc && ['IN_CLIENT', 'IN_OWNER', 'OPENING'].includes(type)) f.toAcc = priv ? 'TRS' : myAcc();
   return f;
 }
@@ -2004,6 +2299,14 @@ function accField(label, field, val) {
   return fld(label, `<div class="chips">${opts.map(([v, l]) => `<button class="chip ${val === v ? 'on' : ''}" data-act="f-set" data-k="${field}" data-v="${v}">${l}</button>`).join('')}</div>
     <small class="help">رصيد عهدتك الآن: ${money(accBal(myAcc()))} ج.م</small>`, { req: 1 });
 }
+/* وارد من أ. محمود: الخزينة التي سُحب منها المبلغ (يُخصم منها ويُضاف للمستلم) */
+function ownSrcField() {
+  const trs = visAccounts().filter(a => a.type === 'treasury' && +a.active !== 0 && a.id !== F.toAcc);
+  return fld('مسحوب من أي خزينة؟', `<select class="inp" data-f="fromAcc"><option value="">${isFull() ? 'اختر الخزينة…' : 'يحددها الأستاذ محمود لاحقًا'}</option>
+    ${trs.map(a => `<option value="${a.id}" ${F.fromAcc === a.id ? 'selected' : ''}>${esc(trsLabel(a))} — ${fmt(accBal(a.id))}</option>`).join('')}
+    <option value="${OWN_EXT}" ${F.fromAcc === OWN_EXT ? 'selected' : ''}>خارج الخزائن (من أ. محمود مباشرة)</option></select>`,
+    { req: isFull(), help: 'يُخصم المبلغ من هذه الخزينة ويُضاف للحساب المستلم.' });
+}
 const fld = (label, inner, o = {}) => `<div class="fld ${o.cls || ''}" ${o.id ? `id="${o.id}"` : ''}><label>${label}${o.req ? ' <b class="req">*</b>' : ''}</label>${inner}${o.help ? `<small class="help">${o.help}</small>` : ''}</div>`;
 const chipsRow = (k, vals, cur, opt = {}) => `<div class="chips ${opt.scroll ? 'scroll' : ''}">${vals.map(v => `<button class="chip ${cur === v ? 'on' : ''}" data-act="f-set" data-k="${k}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}${opt.more || ''}</div>`;
 
@@ -2018,6 +2321,7 @@ function formHTML() {
     <button class="chip ${F.date === addDays(today(), -1) ? 'on' : ''}" data-act="f-set" data-k="date" data-v="${addDays(today(), -1)}">أمس</button></div>`, { req: 1 }));
   // الحسابات
   if (t === 'IN_CLIENT' || t === 'IN_OWNER') parts.push(accField('يدخل المبلغ إلى', 'toAcc', F.toAcc));
+  if (t === 'IN_OWNER' && isPriv()) parts.push(ownSrcField());
   if (t === 'TRANSFER' && F.mode === 'in') parts.push(fld('من', `<div class="cp-sel"><div class="av">${icon('bank', 18)}</div><div class="grow"><b>خزينة المكتب</b>${isPriv() ? `<div class="small muted">رصيد الخزينة: ${money(accBal('TRS'))} ج.م</div>` : ''}</div></div>`));
   else if (['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'OUT_OWNER', 'PERSONAL', 'CLIENT_REFUND', 'TRANSFER'].includes(t)) parts.push(accField(t === 'TRANSFER' ? 'من حساب' : 'يُصرف من', 'fromAcc', F.fromAcc));
   if (t === 'OPENING') {
@@ -2052,7 +2356,7 @@ function formHTML() {
     <div class="f2 st" style="margin-top:10px">${fld('الخدمة', `<select class="inp" data-f="service"><option value="">—</option>${list('services').map(s => `<option ${F.service === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>`)}
     ${fld('مرجع المشروع / الملف', `<input class="inp" data-f="projectRef" value="${esc(F.projectRef)}" placeholder="للربط لاحقًا بمشروع التأسيس">`)}</div></details>`);
 
-  return `<div class="typebar no-print" style="background:${m.c}">${icon(m.ic, 22)}<b>${F.editId ? 'تعديل: ' : ''}${entryName()}</b><span class="sp"></span>
+  return `<div class="typebar no-print" style="background:${m.c}"><span class="tbem">${F.type === 'TRANSFER' && F.mode === 'in' ? '🏦' : m.em}</span><b>${F.editId ? 'تعديل: ' : ''}${entryName()}</b><span class="sp"></span>
       ${F.editId ? '' : `<button class="btn sm" data-act="entry-change">تغيير النوع</button>`}</div>
     <div class="card pad form" id="eform">${parts.join('')}</div>
     <div class="savebar"><div class="tot"><small>${m.lines && F.lines.length > 1 ? `الإجمالي (${F.lines.length} بنود)` : 'المبلغ'}</small><b id="ftotal">${money(formTotal())}</b> <small style="display:inline">ج.م</small></div>
@@ -2124,7 +2428,8 @@ function clientField() {
   return fld(F.type === 'IN_CLIENT' ? 'العميل الذي دفع' : 'العميل', `<div class="cp-sel"><div class="av">${esc(initials(c.name))}</div>
       <div class="grow"><b>${esc(c.name)}</b><div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span>` : '<span class="badge warn">بدون رقم موبايل</span>'}
       · الرصيد: <b class="${st.bal < 0 ? 'neg' : 'pos'}">${money(st.bal)}</b>${ar ? ` · ${ar.n} حركة في الإكسيل` : ''}</div></div>
-      ${F.editId && F.type !== 'OPENING' ? '' : ''}<button class="btn sm" data-act="cp-clear">تغيير</button></div>
+      <button class="btn sm" data-act="cp-clear">تغيير</button></div>
+    ${EXP_T.includes(F.type) && st.bal < -0.004 ? `<div class="note err" style="margin-top:8px">⚠️<div><b>العميل عليه رصيد مستحق للمكتب: ${fmt(-st.bal)} ج.م</b><div class="small">يجب مراجعة الإدارة والتأكد من الموافقة قبل صرف أي مبلغ على هذا العميل.</div></div></div>` : ''}
     ${!c.phone ? `<div class="note warn" style="margin-top:8px">${icon('phone', 18)}<div class="grow">هذا العميل مرحّل من الإكسيل بدون رقم. إضافة الرقم الآن تمنع تكراره مستقبلًا.
       <div class="row" style="margin-top:6px"><input id="cp-phone" class="inp ltr" type="tel" inputmode="tel" placeholder="01xxxxxxxxx" style="max-width:200px;min-height:38px">
       <button class="btn sm pri" data-act="cp-addphone">حفظ الرقم</button></div><div id="cp-phone-msg" class="small"></div></div></div>` : ''}`, { req: 1, id: 'f-client' });
@@ -2135,7 +2440,7 @@ function clientSearch(qs, limit = 8) {
   const digits = raw.replace(/\D/g, '');
   const k = nkey(raw);
   const c = calc().cli, ast = archIndex().st;
-  const act = id => Math.max((c[id] || {}).last || '', (ast[id] || {}).last || '') || '';
+  const act = id => { const a = (c[id] || {}).last || '', b = (ast[id] || {}).last || ''; return a > b ? a : b; };
   let res = activeClients();
   if (raw) {
     res = res.map(x => {
@@ -2287,14 +2592,26 @@ async function saveEntry(again) {
     if (isNaN(a) || (t === 'OPENING' ? a === 0 : a <= 0)) return bad('[data-f="amount"]', 'أدخل المبلغ');
     const row = { ...base, amount: a, payMethod: F.payMethod || '' };
     if (t === 'IN_CLIENT' || t === 'IN_OWNER') { if (!F.toAcc) return bad('[data-f="toAcc"]', 'حدد الحساب'); row.toAcc = F.toAcc; }
+    if (t === 'IN_OWNER') {
+      if (isFull() && !F.fromAcc) return bad('[data-f="fromAcc"]', 'حدد الخزينة التي سُحب منها المبلغ');
+      if (F.fromAcc && F.fromAcc === F.toAcc) return bad('[data-f="fromAcc"]', 'خزينة السحب هي نفسها الحساب المستلم');
+      row.fromAcc = F.fromAcc || '';
+    }
     if (t === 'OUT_OWNER' || t === 'PERSONAL' || t === 'CLIENT_REFUND') { if (!F.fromAcc) return bad('[data-f="fromAcc"]', 'حدد الحساب'); row.fromAcc = F.fromAcc; }
     if (t === 'OPENING' && F.openTarget === 'acc') { if (!F.toAcc) return bad('[data-f="toAcc"]', 'حدد الحساب'); row.toAcc = F.toAcc; }
     rows.push(row);
   }
+  // تذكير: العميل عليه رصيد مستحق — لا يُصرف عليه إلا بعد مراجعة الإدارة
+  if (needClient && F.clientId && EXP_T.includes(t)) {
+    let cb = cliStat(F.clientId).bal;
+    if (F.editId) { const old = D.txs[F.editId]; if (old && old.clientId === F.clientId && EXP_T.includes(old.type)) cb = r2(cb + (+old.amount || 0)); }
+    if (cb < -0.004 && !(await ask(`<div class="note err" style="margin-bottom:10px">⚠️<div><b>العميل «${esc(clientName(F.clientId))}» عليه رصيد مستحق للمكتب: <span class="amt neg">${fmt(-cb)}</span> ج.م</b></div></div>
+      <p style="margin:0">${isPriv() ? 'هل توافق على صرف هذه المعاملة على العميل قبل سداد المستحق؟' : 'يجب <b>مراجعة الإدارة</b> والتأكد من موافقتها على صرف هذه المعاملة قبل التنفيذ.<br>هل تمت المراجعة والموافقة على الصرف؟'}</p>`, isPriv() ? 'نعم، احفظ' : 'نعم، تمت المراجعة — احفظ'))) return;
+  }
   // تنبيه الرصيد السالب
-  const out = rows.filter(x => x.fromAcc).reduce((s, x) => s + x.amount, 0);
+  const out = rows.filter(x => x.fromAcc && x.fromAcc !== OWN_EXT).reduce((s, x) => s + x.amount, 0);
   const hideBal = !isPriv() && (accById(F.fromAcc) || {}).type === 'treasury';   // عضو الفريق لا يرى رصيد الخزينة
-  if (out && F.fromAcc && !hideBal) {
+  if (out && F.fromAcc && F.fromAcc !== OWN_EXT && !hideBal) {
     let cur = accBal(F.fromAcc);
     if (F.editId) { const old = D.txs[F.editId]; if (old && old.fromAcc === F.fromAcc) cur += +old.amount; }
     const after = r2(cur - out);
@@ -2327,7 +2644,7 @@ async function saveEntry(again) {
 }
 
 /* ====== اليومية ====== */
-const J = { period: 'all', from: '', to: '', type: '', acc: '', q: '', limit: 300 };
+const J = { period: 'all', from: '', to: '', type: '', acc: '', q: '', limit: 150 };
 function periodRange(p, from, to) {
   const t = today();
   switch (p) {
@@ -2341,6 +2658,14 @@ function periodRange(p, from, to) {
   }
 }
 const PERIODS = [['today', 'اليوم'], ['yest', 'أمس'], ['week', 'آخر 7 أيام'], ['month', 'هذا الشهر'], ['lmonth', 'الشهر الماضي'], ['all', 'الكل'], ['custom', 'فترة محددة']];
+/* نص البحث لكل حركة يُجهَّز مرة واحدة ويُعاد استخدامه مع كل حرف يُكتب في البحث */
+let _hay = new WeakMap(), _hayVer = -1;
+function txHay(t) {
+  if (_hayVer !== VER) { _hay = new WeakMap(); _hayVer = VER; }
+  let h = _hay.get(t);
+  if (h === undefined) { h = nkey([clientName(t.clientId), t.category, t.description, t.place, t.receiptNo, accName(t.fromAcc), accName(t.toAcc)].join(' ')); _hay.set(t, h); }
+  return h;
+}
 function journalTxs() {
   const [a, b] = periodRange(J.period, J.from, J.to);
   const qk = nkey(J.q), qd = latin(J.q).replace(/\D/g, '');
@@ -2351,11 +2676,11 @@ function journalTxs() {
     if (J.type && t.type !== J.type) return false;
     if (J.acc && t.fromAcc !== J.acc && t.toAcc !== J.acc) return false;
     if (qk) {
-      const hay = nkey([clientName(t.clientId), t.category, t.description, t.place, t.receiptNo, accName(t.fromAcc), accName(t.toAcc)].join(' '));
+      const hay = txHay(t);
       if (!hay.includes(qk) && !(qd && String(t.receiptNo || '').includes(qd))) return false;
     }
     return true;
-  }).sort((x, y) => (y.date + y.createdAt).localeCompare(x.date + x.createdAt));
+  }).sort(byNew);
 }
 function journalArch() {
   if (xlDone()) return [];
@@ -2391,7 +2716,7 @@ function vJournal(r, el) {
   const groups = {};
   const arch = journalArch(), { ci: aci } = archIndex();
   const feed = txs.map(t => ({ d: t.date, k: t.createdAt || '', t })).concat(J.type === 'ARCH' || !J.type ? arch.map((x, i) => ({ d: x[aci.date], k: '', x, i })) : [])
-    .sort((p, q) => (q.d + q.k).localeCompare(p.d + p.k) || (q.i || 0) - (p.i || 0));
+    .sort((p, q) => { const x = p.d + p.k, y = q.d + q.k; return x < y ? 1 : x > y ? -1 : (q.i || 0) - (p.i || 0); });
   const shown = J.type === 'ARCH' ? feed.filter(f => f.x) : feed;
   shown.slice(0, J.limit).forEach(f => (groups[f.d] = groups[f.d] || []).push(f));
   const aSum = k => r2(arch.reduce((n, x) => n + (+x[aci[k]] || 0), 0));
@@ -2485,18 +2810,31 @@ function vOld(r, el) {
 
 /* ====== العملاء ====== */
 const CJ = { q: '', f: 'all', limit: 80 };
+let _clRep = null;
+function exportClRep() {
+  const R = _clRep; if (!R) return;
+  const sm = k => r2(R.rows.reduce((s, r) => s + r.p[k], 0));
+  csvDownload(`${R.name}_${R.from}_إلى_${R.to}.csv`, [['م', 'العميل', 'الموبايل', 'عدد الحركات', 'وارد', 'مصروفات', 'أتعاب', 'الرصيد'],
+    ...R.rows.map((r, i) => [i + 1, r.x.name, r.x.phone ? '="' + r.x.phone + '"' : '', r.p.n, r2(r.p.inc), r2(r.p.exp), r2(r.p.fee), r2(r.bal)]),
+    ['', `الإجمالي (${R.rows.length} عميل)`, '', sm('n'), sm('inc'), sm('exp'), sm('fee'), r2(R.rows.reduce((s, r) => s + r.bal, 0))]]);
+  toast('تم تنزيل ملف Excel');
+}
 function vClients(r, el) {
   if (r.q.get('f')) { CJ.f = r.q.get('f'); }
-  const sup = isSup(); if (sup && CJ.f !== 'month' && CJ.f !== 'quarter') CJ.f = 'month';
+  const sup = isSup(); if (sup && !['month', 'quarter', 'owing', 'owing1'].includes(CJ.f)) CJ.f = 'month';
   const c = calc().cli, ast = archIndex().st, SAB = isPriv() ? saBalances() : {};
   const act = id => { const a = (c[id] || {}).last || '', b = (ast[id] || {}).last || ''; return a > b ? a : b; };
   let arr = CJ.q ? clientSearch(CJ.q, 500) : activeClients().sort((a, b) => act(b.id).localeCompare(act(a.id)));
   const td = today(), mo = +td.slice(5, 7), mStart = td.slice(0, 8) + '01', qStart = td.slice(0, 5) + String(Math.floor((mo - 1) / 3) * 3 + 1).padStart(2, '0') + '-01';
+  const dBack = k => { const d = new Date(); d.setMonth(d.getMonth() - k); return d.toLocaleDateString('en-CA'); };
+  const d3 = dBack(3), d1 = dBack(1);
   const pa = id => xlDone() ? ((c[id] || {}).last || '') : act(id);
   const filt = {
     all: () => true, nophone: x => !x.phone, debt: x => (c[x.id] || {}).bal < 0, credit: x => (c[x.id] || {}).bal > 0,
     new: x => !String(x.createdBy).includes('ترحيل'),
-    month: x => pa(x.id) >= mStart, quarter: x => pa(x.id) >= qStart
+    month: x => pa(x.id) >= mStart, quarter: x => pa(x.id) >= qStart,
+    owing: x => (c[x.id] || {}).bal < -0.004 && pa(x.id) >= d3,
+    owing1: x => (c[x.id] || {}).bal < -0.004 && pa(x.id) >= d1
   };
   arr = arr.filter(filt[CJ.f] || filt.all);
   const counts = Object.fromEntries(Object.entries(filt).map(([k, f]) => [k, activeClients().filter(f).length]));
@@ -2507,7 +2845,8 @@ function vClients(r, el) {
     activeTx().filter(t => t.clientId && t.date >= from).forEach(t => { const o = ps[t.clientId] || (ps[t.clientId] = { n: 0, inc: 0, exp: 0, fee: 0 }); const a = +t.amount || 0; o.n++; if (t.type === 'IN_CLIENT') o.inc += a; else if (t.type === 'GOV_FEE' || t.type === 'OP_EXP') o.exp += a; else if (t.type === 'FEE') o.fee += a; });
     const rows = arr.map(x => ({ x, p: ps[x.id] || { n: 0, inc: 0, exp: 0, fee: 0 }, bal: (c[x.id] || {}).bal || 0 }));
     const sm = k => r2(rows.reduce((s, r) => s + r.p[k], 0)), cr = r2(rows.filter(r => r.bal > 0).reduce((s, r) => s + r.bal, 0)), db = r2(rows.filter(r => r.bal < 0).reduce((s, r) => s - r.bal, 0));
-    rep = `<div class="card pad" style="margin-top:12px"><div class="row" style="gap:8px;flex-wrap:wrap"><b>${CJ.f === 'month' ? 'عملاء هذا الشهر' : 'عملاء هذا الربع'}</b> <span class="small muted">من ${from} إلى ${td}</span><span class="sp"></span><button class="btn pri sm no-print" data-act="print">${icon('print', 16)} طباعة التقرير</button></div>
+    _clRep = { name: CJ.f === 'month' ? 'عملاء_الشهر' : 'عملاء_الربع', from, to: td, rows };
+    rep = `<div class="card pad" style="margin-top:12px"><div class="row" style="gap:8px;flex-wrap:wrap"><b>${CJ.f === 'month' ? 'عملاء هذا الشهر' : 'عملاء هذا الربع'}</b> <span class="small muted">من ${from} إلى ${td}</span><span class="sp"></span><button class="btn pri sm no-print" data-act="print">${icon('print', 16)} طباعة التقرير</button><button class="btn sm no-print" data-act="clrep-export">📊 تصدير Excel</button></div>
       <div class="kpis" style="margin-top:10px"><div><small>عدد العملاء</small><b>${rows.length}</b></div><div><small>إجمالي الرصيد لهم</small><b class="pos">${money(cr)}</b></div><div><small>إجمالي المستحق عليهم</small><b class="neg">${money(db)}</b></div><div><small>صافي الأرصدة</small><b class="${cr - db < 0 ? 'neg' : ''}">${money(r2(cr - db))}</b></div></div></div>
       <div class="print-only cl-rep"><table class="tbl stmt"><thead><tr><th class="c">م</th><th>العميل</th><th>الموبايل</th><th class="c">حركات</th><th class="n">وارد</th><th class="n">مصروفات</th><th class="n">أتعاب</th><th class="n">الرصيد</th></tr></thead><tbody>
       ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(r.x.name)}</td><td>${esc(r.x.phone || '')}</td><td class="c">${r.p.n}</td><td class="n">${fmt(r.p.inc)}</td><td class="n">${fmt(r.p.exp)}</td><td class="n">${fmt(r.p.fee)}</td><td class="n"><b class="${r.bal < 0 ? 'neg' : ''}">${fmt(r.bal)}</b></td></tr>`).join('')}</tbody>
@@ -2517,9 +2856,10 @@ function vClients(r, el) {
     <h1 class="pg no-print">${sup ? 'عملاء هذه الفترة' : 'العملاء'} <small>${sup ? arr.length : activeClients().length} عميل</small><span class="sp"></span><button class="btn pri sm" data-act="client-new">${icon('plus', 16)} عميل جديد</button></h1>
     <div class="filters card pad">
       <div class="search">${icon('search', 18)}<input class="inp" data-cj="q" value="${esc(CJ.q)}" placeholder="ابحث بالاسم أو رقم الموبايل"></div>
-      <div class="chips scroll">${[['all', 'الكل'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عليهم مستحقات'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => !sup || x[0] === 'month' || x[0] === 'quarter').map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
+      <div class="chips scroll">${[['all', 'الكل'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
     </div>
     ${rep}
+    ${['owing', 'owing1', 'debt'].includes(CJ.f) && isPriv() ? `<div class="card sumrow" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>👥 عدد العملاء</small><b>${arr.length}</b></div><div class="bal neg"><small>⚠️ إجمالي المستحق عليهم</small><b class="neg">${fmt(r2(arr.reduce((t, x) => t - Math.min((c[x.id] || {}).bal || 0, 0), 0)))}</b></div></div>` : ''}
     <div class="card ${per && isPriv() ? 'no-print' : ''}" style="margin-top:12px">${arr.slice(0, CJ.limit).map(x => {
       const s = c[x.id], a = ast[x.id];
       return `<div class="lrow" data-act="go" data-h="client/${x.id}"><div class="av">${esc(initials(x.name))}</div>
@@ -2531,7 +2871,7 @@ function vClients(r, el) {
 }
 
 function clientStatement(id) {
-  const txs = activeTx().filter(t => t.clientId === id).sort((a, b) => (a.date + a.createdAt).localeCompare(b.date + b.createdAt));
+  const txs = activeTx().filter(t => t.clientId === id).sort(byOld);
   let bal = 0;
   return txs.map(t => {
     const a = +t.amount || 0;
@@ -2555,10 +2895,15 @@ function vClient(r, el) {
   const wa = waNumber(c.phone);
   const saAll = mineOnly ? [] : saFor(c.id), sa = saAll, old = mineOnly ? [] : oldFor(c.id).slice().reverse();
   const types = ROLE_TYPES[ME.role].filter(k => TYPES[k].client);
-  el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</b><div class="small muted">كشف حساب عميل — ${dLong(today())}</div></div></div>
-    <div class="print-cl"><div>اسم الحساب :- <b>${esc(c.name)}</b></div>${st.length ? `<div>تاريخ فتح الحساب :- ${st[0].t.date}</div>` : ''}${c.phone ? `<div>الرقم :- ${esc(c.phone)}</div>` : ''}${c.address ? `<div>العنوان :- ${esc(c.address)}</div>` : ''}</div>
+  const balTxt = s.bal < -0.004 ? 'مستحق على العميل' : s.bal > 0.004 ? 'رصيد دائن للعميل (تحت الحساب)' : 'الحساب مسدَّد';
+  el.innerHTML = `<div class="print-only st-head">
+      <div class="st-top"><div class="st-org">${LOGO ? `<img src="${LOGO}" alt="">` : '<div class="mono">م س</div>'}<div><b>مكتب محمود سالم</b><span>للمحاسبة والمراجعة وتأسيس الشركات</span></div></div>
+        <div class="st-title"><b>كشف حساب عميل</b><span>${dLong(today())}</span></div></div>
+      <table class="st-info"><tr><th>اسم العميل</th><td><b>${esc(c.name)}</b></td><th>رقم الموبايل</th><td class="num">${esc(c.phone || '—')}</td></tr>
+        <tr><th>تاريخ فتح الحساب</th><td class="num">${st.length ? st[0].t.date : '—'}</td><th>آخر حركة</th><td class="num">${st.length ? st[st.length - 1].t.date : '—'}</td></tr>
+        <tr><th>عدد الحركات</th><td>${st.length}</td><th>${c.address ? 'العنوان' : 'نوع العميل'}</th><td>${esc(c.address || c.kind || '—')}</td></tr></table></div>
     <div class="row no-print" style="margin-bottom:8px"><a href="#clients" class="btn ghost sm">${icon('back', 16)} العملاء</a></div>
-    <div class="card pad">
+    <div class="card pad no-print">
       <div class="row wrap" style="align-items:flex-start">
         <div class="lrow" style="padding:0;border:0;cursor:default"><div class="av" style="width:52px;height:52px;font-size:18px">${esc(initials(c.name))}</div></div>
         <div class="grow"><h1 class="pg" style="margin:0">${esc(c.name)}</h1>
@@ -2575,12 +2920,12 @@ function vClient(r, el) {
         </div>
       </div>
     </div>
-    <div class="grid g4" style="margin-top:12px">
-      <div class="card stat"><small>إجمالي المدفوع من العميل</small><b class="pos">${money(s.paid + Math.max(s.opening, 0))}</b></div>
-      <div class="card stat"><small>الأتعاب المستحقة</small><b style="color:#0f766e">${money(s.chg)}</b></div>
-      <div class="card stat"><small>الرسوم الحكومية</small><b>${money(s.fees)}</b></div>
-      <div class="card stat"><small>مصروفات العملية + المرتجع</small><b>${money(s.ops + s.refund)}</b></div>
-      <div class="card stat" style="background:${s.bal < 0 ? 'var(--out-soft)' : 'var(--in-soft)'}"><small>${s.bal < 0 ? 'الرصيد: مستحق على العميل' : 'الرصيد: تحت حساب العميل'}</small><b class="${s.bal < 0 ? 'neg' : 'pos'}">${money(Math.abs(s.bal))}</b></div>
+    <div class="card sumrow">
+      <div><small>💰 المدفوع</small><b class="pos">${fmt(s.paid + Math.max(s.opening, 0))}</b></div>
+      <div><small>💼 الأتعاب</small><b style="color:#0f766e">${fmt(s.chg)}</b></div>
+      <div><small>🧾 الرسوم</small><b>${fmt(s.fees)}</b></div>
+      <div><small>🚗 مصروفات</small><b>${fmt(s.ops + s.refund)}</b></div>
+      <div class="bal ${s.bal < -0.004 ? 'neg' : ''}"><small>${s.bal < -0.004 ? '⚠️ عليه' : '✅ له'}</small><b class="${s.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(s.bal))}</b></div>
     </div>
     <div class="tiles2 no-print">${types.map(k => `<button class="btn" data-act="go" data-h="entry/${k}?client=${c.id}&amp;back=client/${c.id}"><i class="tdot" style="background:${TYPES[k].c}"></i>${TYPES[k].n}</button>`).join('')}</div>
     <h2 class="sec">كشف الحساب <span class="small muted">(الأحدث أولًا)</span></h2>
@@ -2590,9 +2935,12 @@ function vClient(r, el) {
       <tbody>${st.map((x, i) => [x, i + 1]).reverse().map(([{ t, cr, dr, bal }, no]) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="c">${no}</td><td class="num">${t.date}</td>
         <td>${tBadge(t.type)}${isXL(t) ? ` <span class="xlb">إكسيل${xlInBal(t) ? ' • محتسبة' : ''}</span>` : ''} ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${t.category && t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
         <td class="small src">${esc(accName(t.fromAcc || t.toAcc).replace('عهدة ', ''))}</td>
-        <td class="n neg">${dr ? fmt(dr) : '.00'}</td><td class="n">${cr ? fmt(cr) : '.00'}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td>${isPriv() && t.type !== 'OPENING' ? `<td class="no-print" style="white-space:nowrap"><button class="btn sm" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف">${icon('edit', 15)} تصنيف</button> <button class="btn sm danger" data-act="tx-del" data-id="${t.id}" title="حذف">${icon('trash', 15)}</button></td>` : (isPriv() ? '<td class="no-print"></td>' : '')}</tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="4">الإجمالي</td><td class="n">${fmt(st.reduce((a, x) => a + x.dr, 0))}</td><td class="n">${fmt(st.reduce((a, x) => a + x.cr, 0))}</td><td class="n">${mineOnly ? '' : fmt(s.bal)}</td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr></tfoot></table>`
+        <td class="n neg">${dr ? fmt(dr) : '<span class="z">—</span>'}</td><td class="n pos">${cr ? fmt(cr) : '<span class="z">—</span>'}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td>${isPriv() && t.type !== 'OPENING' ? `<td class="no-print" style="white-space:nowrap"><button class="btn sm" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف">${icon('edit', 15)} تصنيف</button> <button class="btn sm danger" data-act="tx-del" data-id="${t.id}" title="حذف">${icon('trash', 15)}</button></td>` : (isPriv() ? '<td class="no-print"></td>' : '')}</tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="3">الإجمالي (${st.length} حركة)</td><td class="src"></td><td class="n">${fmt(st.reduce((a, x) => a + x.dr, 0))}</td><td class="n">${fmt(st.reduce((a, x) => a + x.cr, 0))}</td><td class="n"><b>${mineOnly ? '' : fmt(s.bal)}</b></td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr></tfoot></table>`
       : '<div class="empty">لا توجد حركات لهذا العميل في التطبيق بعد.</div>'}</div>
+    ${mineOnly ? '' : `<div class="print-only st-close"><div class="st-bal ${s.bal < -0.004 ? 'neg' : ''}"><span>الرصيد الختامي في ${today()}</span><b>${fmt(Math.abs(s.bal))} ج.م</b><span>${balTxt}</span></div>
+      <div class="st-sign"><div>المحاسب المسؤول<i></i></div><div>ختم المكتب<i></i></div><div>توقيع العميل<i></i></div></div>
+      <div class="st-foot">صدر هذا الكشف من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · برجاء مراجعة الكشف وإبلاغنا بأي ملاحظات خلال 15 يومًا من تاريخه.</div></div>`}
     ${sa.length ? `<h2 class="sec">كشف حساب المحاسب الذكي</h2>
       <div class="note ${sa[sa.length - 1].bal < 0 ? 'warn' : 'info'}" style="margin-bottom:10px">${icon('info', 18)}<div>الرصيد الحالي: <b>${money(Math.abs(sa[sa.length - 1].bal))}</b> ج.م ${sa[sa.length - 1].bal < 0 ? 'مستحق على العميل' : 'له (تحت الحساب)'} — هو الرصيد الرسمي للعميل حتى 11/11/2026، وأي حركات جديدة في البرنامج بعده تُضاف عليه.</div></div>
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>البيان</th><th class="n">مدين</th><th class="n">دائن</th><th class="n">الرصيد</th></tr></thead>
@@ -2602,12 +2950,12 @@ function vClient(r, el) {
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>المحاسب</th><th>البيان</th><th>المكان</th><th class="n">وارد</th><th class="n">نثرية</th><th class="n">رسوم</th></tr></thead>
       <tbody>${old.map(x => `<tr><td class="num">${x[0]}</td><td>${esc(x[1])}</td><td>${esc(x[7])}</td><td>${esc(x[8])}</td><td class="n">${+x[2] ? fmt(x[2]) : ''}</td><td class="n">${+x[4] ? fmt(x[4]) : ''}</td><td class="n">${+x[5] ? fmt(x[5]) : ''}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="4">الإجمالي (${old.length} سطر)</td><td class="n">${fmt(r2(old.reduce((a, x) => a + (+x[2] || 0), 0)))}</td><td class="n">${fmt(r2(old.reduce((a, x) => a + (+x[4] || 0), 0)))}</td><td class="n">${fmt(r2(old.reduce((a, x) => a + (+x[5] || 0), 0)))}</td></tr></tfoot></table></div>` : ''}
-    ${arch.length && !xlDone() ? `<h2 class="sec">سجل العميل في يومية الإكسيل 2026</h2>
+    ${arch.length && !xlDone() ? `<div class="no-print"><h2 class="sec">سجل العميل في يومية الإكسيل 2026</h2>
       <div class="note info" style="margin-bottom:10px">${icon('archive', 18)}<div>للاطلاع فقط ولا يدخل في رصيد العميل؛ لأن مدفوعات العملاء في الإكسيل لم تكن مربوطة بالعميل دائمًا (كانت تُسجّل غالبًا «وارد أ. محمود»).
       الإجمالي: رسوم <b>${money(as.fee)}</b> · نثرية <b>${money(as.misc)}</b>${as.inc ? ` · وارد مسجّل باسمه <b>${money(as.inc)}</b>` : ''}</div></div>
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>المحاسب</th><th>البيان</th><th>المكان</th><th class="n">وارد</th><th class="n">نثرية</th><th class="n">رسوم</th></tr></thead>
       <tbody>${arch.map(x => `<tr><td class="num">${x[ci.date]}</td><td>${esc(x[ci.member])}</td><td>${esc(x[ci.desc])}</td><td>${esc(x[ci.place])}</td>
-        <td class="n">${+x[ci.inc] ? fmt(x[ci.inc]) : ''}</td><td class="n">${+x[ci.misc] ? fmt(x[ci.misc]) : ''}</td><td class="n">${+x[ci.fee] ? fmt(x[ci.fee]) : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+        <td class="n">${+x[ci.inc] ? fmt(x[ci.inc]) : ''}</td><td class="n">${+x[ci.misc] ? fmt(x[ci.misc]) : ''}</td><td class="n">${+x[ci.fee] ? fmt(x[ci.fee]) : ''}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
 }
 function clientWhatsApp(id) {
   const c = D.clients[id], s = cliStat(id), st = clientStatement(id), sa = saFor(id);
@@ -2698,14 +3046,15 @@ function colleaguesHtml() {
     <tbody>${rows.map(o => `<tr data-act="go" data-h="account/${o.a.id}" style="cursor:pointer"><td><b>${esc(o.a.name.replace(/^عهدة\s+/, ''))}</b></td><td class="n pos">${c(o.inC)}</td><td class="n">${c(o.trs)}</td><td class="n">${c(o.own)}</td><td class="n neg">${c(o.fee)}</td><td class="n neg">${c(o.op)}</td><td class="n neg">${c(o.off)}</td><td class="n">${o.tr ? fmt(o.tr) : '<span class="muted">—</span>'}</td><td class="n"><b class="${accBal(o.a.id) < 0 ? 'neg' : ''}">${fmt(accBal(o.a.id))}</b></td></tr>`).join('')}</tbody>
     <tfoot><tr><td>الإجمالي</td><td class="n">${fmt(sum('inC'))}</td><td class="n">${fmt(sum('trs'))}</td><td class="n">${fmt(sum('own'))}</td><td class="n">${fmt(sum('fee'))}</td><td class="n">${fmt(sum('op'))}</td><td class="n">${fmt(sum('off'))}</td><td class="n">${fmt(sum('tr'))}</td><td class="n">${fmt(rows.reduce((s, o) => s + accBal(o.a.id), 0))}</td></tr></tfoot></table></div>`;
 }
-const AS = { period: 'all', from: '', to: '' };
+const AS = { period: 'all', from: '', to: '', limit: 200, acc: '' };
 function vAccount(r, el) {
   const a = accById(r.arg);
   if (!a) { el.innerHTML = '<div class="empty">الحساب غير موجود.</div>'; return; }
   if (!accVisible(a)) { el.innerHTML = '<div class="empty">الحساب غير موجود.</div>'; return; }
   if (!isPriv() && a.id !== myAcc()) return go('account/' + myAcc());
+  if (AS.acc !== a.id) { AS.acc = a.id; AS.limit = 200; }
   const [from, to] = periodRange(AS.period, AS.from, AS.to);
-  const all = activeTx().filter(t => t.fromAcc === a.id || t.toAcc === a.id).sort((x, y) => (x.date + x.createdAt).localeCompare(y.date + y.createdAt));
+  const all = activeTx().filter(t => t.fromAcc === a.id || t.toAcc === a.id).sort(byOld);
   let bal = 0, opening = 0;
   const rows = [];
   all.forEach(t => {
@@ -2729,8 +3078,9 @@ function vAccount(r, el) {
     <div class="card pad no-print" style="margin-top:12px"><div class="chips scroll">${PERIODS.map(([k, l]) => `<button class="chip ${AS.period === k ? 'on' : ''}" data-act="as-period" data-v="${k}">${l}</button>`).join('')}</div>
       ${AS.period === 'custom' ? `<div class="fbar" style="margin-top:8px"><span class="small">من</span><input type="date" class="inp" data-as="from" value="${AS.from}"><span class="small">إلى</span><input type="date" class="inp" data-as="to" value="${AS.to}"></div>` : ''}</div>
     <div class="card tblwrap" style="margin-top:12px">${rows.length ? `<table class="tbl"><thead><tr><th>التاريخ</th><th>البيان / العميل</th><th class="n">وارد</th><th class="n">صادر</th><th class="n">الرصيد</th></tr></thead><tbody>
-      ${rows.slice().reverse().map(({ t, v, bal, op }) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="num">${t.date}</td><td>${tBadge(t.type, t.type === 'TRANSFER' ? (v > 0 ? 'وارد' : 'صرف') : '')} ${esc(op ? 'مرحّل من يومية الإكسيل' : t.type === 'TRANSFER' ? (v > 0 ? 'من ' + accName(t.fromAcc) : 'إلى ' + accName(t.toAcc)) : (t.category || t.description || ''))}${t.clientId ? `<div class="small"><a href="#client/${t.clientId}">${esc(clientName(t.clientId))}</a></div>` : ''}</td>
-        <td class="n pos">${!op && v > 0 ? fmt(v) : ''}</td><td class="n neg">${!op && v < 0 ? fmt(-v) : ''}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td></tr>`).join('')}</tbody></table>`
+      ${rows.slice(-AS.limit).reverse().map(({ t, v, bal, op }) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="num">${t.date}</td><td>${tBadge(t.type, t.type === 'TRANSFER' ? (v > 0 ? 'وارد' : 'صرف') : '')} ${esc(op ? 'مرحّل من يومية الإكسيل' : t.type === 'TRANSFER' ? (v > 0 ? 'من ' + accName(t.fromAcc) : 'إلى ' + accName(t.toAcc)) : t.type === 'IN_OWNER' && v < 0 ? 'سحب أ. محمود إلى ' + accName(t.toAcc) + (t.description ? ' — ' + t.description : '') : (t.category || t.description || ''))}${t.clientId ? `<div class="small"><a href="#client/${t.clientId}">${esc(clientName(t.clientId))}</a></div>` : ''}</td>
+        <td class="n pos">${!op && v > 0 ? fmt(v) : ''}</td><td class="n neg">${!op && v < 0 ? fmt(-v) : ''}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td></tr>`).join('')}</tbody></table>
+      ${rows.length > AS.limit ? `<div class="totbar no-print"><span class="small muted">يُعرض أحدث ${AS.limit} من ${rows.length.toLocaleString('en-US')} حركة (الطباعة تشمل الكل)</span><span class="sp"></span><button class="btn sm" data-act="as-more">عرض المزيد</button><button class="btn sm" data-act="as-all">عرض الكل</button></div>` : ''}`
       : '<div class="empty">لا توجد حركات في هذه الفترة.</div>'}</div>${legacyAccountHtml(a)}`;
 }
 /* حركات يومية الإكسيل القديمة لعضو الفريق (للاطلاع، رصيدها الختامي = الرصيد الافتتاحي المرحّل) */
@@ -2846,10 +3196,10 @@ function vDups(r, el) {
 /* ====== المراجعة والاعتماد ====== */
 const RV = { tab: 'q' };
 function vReview(r, el) {
-  const srt = a => a.sort((x, y) => (y.date + y.createdAt).localeCompare(x.date + x.createdAt));
+  const srt = a => a.sort(byNew);
   const q = srt(queueTxs()), rej = srt(listTx().filter(t => +t.approved === 2)), okk = srt(listTx().filter(t => !isPend(t) && t.type !== 'OPENING' && t.approvedBy)).slice(0, 100);
   const mem = D.accounts.filter(a => a.type === 'custody' && +a.active !== 0);
-  const miss = listTx().filter(t => isXL(t) && (TYPES[t.type] || {}).client && !t.clientId).sort((x, y) => (y.date + y.createdAt).localeCompare(x.date + x.createdAt));
+  const miss = listTx().filter(t => isXL(t) && (TYPES[t.type] || {}).client && !t.clientId).sort(byNew);
   const list = RV.tab === 'ok' ? okk : RV.tab === 'rej' ? rej : RV.tab === 'miss' ? miss : q;
   const btns = t => RV.tab === 'miss' ? `<button class="btn sm pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 15)} إكمال</button>` : RV.tab === 'ok' ? `<button class="btn sm" data-act="tx-unapprove" data-id="${t.id}">تراجع عن الاعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`
     : RV.tab === 'rej' ? `<button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm" data-act="tx-unapprove" data-id="${t.id}">رجوع للانتظار</button>`
@@ -2859,8 +3209,9 @@ function vReview(r, el) {
     ${mem.map(a => { const n = pendOf(a.id).length; return `<tr data-act="go" data-h="account/${a.id}" style="cursor:pointer"><td>${esc(a.name.replace('عهدة ', ''))}</td><td class="n">${fmt(accBal(a.id))}</td><td class="n"><b>${fmt(accBalR(a.id))}</b></td><td class="n">${n ? `<b style="color:#b45309">${n}</b>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>
     <div class="chips" style="margin:12px 0"><button class="chip ${RV.tab === 'q' ? 'on' : ''}" data-act="rv-tab" data-v="q">بانتظار الاعتماد (${q.length})</button><button class="chip ${RV.tab === 'rej' ? 'on' : ''}" data-act="rv-tab" data-v="rej">غير معتمدة (${rej.length})</button><button class="chip ${RV.tab === 'ok' ? 'on' : ''}" data-act="rv-tab" data-v="ok">معتمدة (آخر 100)</button>${miss.length ? `<button class="chip ${RV.tab === 'miss' ? 'on' : ''}" data-act="rv-tab" data-v="miss">📝 بيانات ناقصة (${miss.length})</button>` : ''}</div>
     ${RV.tab === 'miss' ? '<p class="small muted" style="margin:0 0 8px">حركات مرحّلة من الإكسيل بدون عميل. اضغط «إكمال» واختر العميل ثم احفظ.</p>' : ''}
-    <div class="card">${list.length ? list.slice(0, 300).map(t => `<div class="rvrow">${txRow(t, '')}<div class="rvb">${btns(t)}</div></div>`).join('') : '<div class="empty">لا توجد حركات هنا.</div>'}</div>`;
+    <div class="card">${list.length ? list.slice(0, 300).map(t => `<div class="rvrow">${txRow(t, '')}${RV.tab === 'q' ? owingWarn([t]).map(o => `<div class="note warn" style="margin:4px 12px">${icon('alert', 16)}<div>انتبه: رصيد العميل <b>${esc(clientName(o.id))}</b> مستحق عليه <b>${fmt(-o.b)}</b> ج.م</div></div>`).join('') : ''}<div class="rvb">${btns(t)}</div></div>`).join('') : '<div class="empty">لا توجد حركات هنا.</div>'}</div>`;
 }
+const alertOwing = w => modal(`<h3>${icon('alert', 20)} تنبيه: رصيد عميل أصبح مستحقًا</h3><div class="note warn" style="white-space:pre-line">${esc(owingMsg(w))}</div><div class="acts"><button class="btn pri" data-act="mclose">فهمت</button></div>`);
 const queueApprove = arr => queue('saveTx', { txs: arr.map(t => ({ ...t, __approveOnly: 1 })) });
 function approveTx(t) { Object.assign(t, { approved: 1, approvedBy: ME.id, approvedAt: nowIso(), updatedAt: nowIso(), updatedBy: ME.id }); }
 const DR = { d: '', f: '' };
@@ -2873,7 +3224,7 @@ function dayReview() {
   const acc = isPriv() ? '' : myAcc();
   const paint = () => {
     const txs = listTx().filter(t => t.date === DR.d && t.type !== 'OPENING' && (isPriv() || t.fromAcc === myAcc() || t.toAcc === myAcc() || t.userId === ME.id))
-      .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+      .sort((a, b) => { const x = a.createdAt || '', y = b.createdAt || ''; return x < y ? -1 : x > y ? 1 : 0; });
     const inn = txs.filter(t => txSign(t, acc) > 0), out = txs.filter(t => txSign(t, acc) < 0);
     const tot = a => r2(a.reduce((s, t) => s + Math.abs(+t.amount), 0));
     const list = DR.f === 'in' ? inn : DR.f === 'out' ? out : txs;
@@ -2919,7 +3270,7 @@ function anKey(t) {
     case 'OFFICE_EXP': return isSalary(t) ? 'sal' : 'gen';
     case 'PERSONAL': return 'pers';
     case 'OUT_OWNER': return t.category === 'تحويل عهدة' ? 'xout' : 'wd';
-    case 'IN_OWNER': return t.category === 'تحويل داخلي' ? 'xin' : 'fund';
+    case 'IN_OWNER': { const sa = ownSrc(t) ? accById(t.fromAcc) : null; return (t.category === 'تحويل داخلي' || (sa && !accPrivate(sa))) ? 'xin' : 'fund'; }   // من خزنة المكتب = حركة داخلية وليست تمويلًا جديدًا
     case 'FEE': return 'fee';
     default: return '';
   }
@@ -3137,7 +3488,7 @@ function anStaff(txs) {
 
 /* ---- المصروفات الشخصية ---- */
 function anPersonal(txs, S, M, mk) {
-  const p = txs.filter(t => t.type === 'PERSONAL').sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt));
+  const p = txs.filter(t => t.type === 'PERSONAL').sort(byNew);
   const top = anBy(p, () => true, t => String(t.description || t.category || 'غير محدد').split(' — ').pop().slice(0, 40));
   return `<div class="row" style="margin-bottom:10px"><button class="btn pri" data-act="new-type" data-t="PERSONAL">${icon('plus', 17)} تسجيل مصروف شخصي</button></div>
     <div class="grid g4">
@@ -3214,11 +3565,16 @@ function vSettings(r, el) {
       ${isPriv() ? `<button class="btn" data-act="j-export-all">${icon('download', 17)} تصدير كل الحركات (Excel)</button>${isSup() ? '' : `<button class="btn" data-act="cl-export">${icon('download', 17)} تصدير العملاء (Excel)</button>`}` : ''}
       ${isFull() ? `<label class="btn">${icon('upload', 17)} استرجاع نسخة<input type="file" accept=".json" id="bk-file" hidden></label>` : ''}</div>
       <p class="small muted" style="margin:10px 0 0">الشيت نفسه هو النسخة الأساسية، ويمكن تفعيل نسخة احتياطية يومية تلقائية على Google Drive بتشغيل الدالة <b>installDailyBackup</b> مرة واحدة من محرر Apps Script.</p></div>`);
-  const CATS = [['acct', 'حسابي', 'user', 'الاسم ورمز الدخول'], ['conn', 'الاتصال بالشيت', 'sync', 'رابط الشيت والمزامنة'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء'],
+  push('look', `<h2 class="sec">المظهر</h2><div class="card pad">
+    <label class="row" style="gap:10px;margin-bottom:14px;cursor:pointer"><input type="checkbox" class="sw" data-look="theme" ${themeIsDark() ? 'checked' : ''}> <span class="grow"><b>🌙 الوضع الداكن</b><br><small class="muted">ألوان داكنة مريحة للعين ليلًا</small></span></label>
+    <label class="row" style="gap:10px;margin-bottom:14px;cursor:pointer"><input type="checkbox" class="sw" data-look="fx" ${fxOn() ? 'checked' : ''}> <span class="grow"><b>🔷 الخلفية الهندسية المتحركة</b><br><small class="muted">مربعات ومثلثات ودوائر تتحرك بهدوء خلف الصفحات. أوقفيها لو الجهاز قديم أو بطيء.</small></span></label>
+    <label class="row" style="gap:10px;cursor:pointer"><input type="checkbox" class="sw" data-look="haptic" ${LS.get('haptic', 'on') !== 'off' ? 'checked' : ''}> <span class="grow"><b>📳 اهتزاز خفيف عند اللمس</b><br><small class="muted">على الموبايلات التي تدعمه</small></span></label>
+    <p class="small muted" style="margin:12px 0 0">هذه الاختيارات تُحفظ على هذا الجهاز فقط.</p></div>`);
+  const CATS = [['acct', 'حسابي', 'user', 'الاسم ورمز الدخول'], ['look', 'المظهر', 'sliders', 'الوضع الداكن والخلفية المتحركة'], ['conn', 'الاتصال بالشيت', 'sync', 'رابط الشيت والمزامنة'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء'],
     ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['rem', 'التذكير اليومي', 'alert', 'إشعار إدخال يومية اليوم الساعة 3 و4'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير']].filter(c => secs[c[0]]);
-  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|القوائم|كود الحذف|النسخ الاحتياطي)<\/h2>/, ''); return; }
+  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|النسخ الاحتياطي)<\/h2>/, ''); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
-    <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}"><div class="av">${icon(i, 20)}</div><div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
+    <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
     <div style="text-align:center;margin-top:18px">${canInstallUI() ? `<button class="btn pri sm" data-act="pwa-install" style="margin-inline-end:8px">${icon('download', 15)} تثبيت التطبيق على هذا الجهاز</button>` : ''}<button class="btn sm" data-act="app-update">${icon('sync', 15)} تحديث البرنامج لآخر نسخة</button>
     <p class="small muted" style="margin-top:8px">إصدار التطبيق ${APP_VER} · ${BUILD}</p></div>`;
 }
@@ -3489,8 +3845,8 @@ const ACT = {
   },
   mclose: () => closeModal(),
   'mclose-bg': (el, e) => { if (e.target === el) closeModal(); },
-  'j-period': el => { J.period = el.dataset.v; J.limit = 300; render(); },
-  'j-more': () => { J.limit += 300; render(); },
+  'j-period': el => { J.period = el.dataset.v; J.limit = 150; render(); },
+  'j-more': () => { const y = window.scrollY; J.limit += 300; render(); window.scrollTo(0, y); },
   'j-export': () => exportJournal(),
   'j-export-all': () => { const s = { ...J }; Object.assign(J, { period: 'all', type: '', acc: '', q: '' }); exportJournal(); Object.assign(J, s); },
   'cl-export': () => {
@@ -3498,11 +3854,14 @@ const ACT = {
     csvDownload(`العملاء_${today()}.csv`, [['كود العميل', 'الاسم', 'الموبايل', 'رقم إضافي', 'النوع', 'المسؤول', 'الخدمة', 'الرصيد', 'حركات الإكسيل', 'آخر نشاط في الإكسيل', 'أسماء أخرى'],
       ...activeClients().map(c => [c.id, c.name, c.phone, c.phone2, c.kind, c.contact, c.service, (cs[c.id] || {}).bal || 0, (ast[c.id] || {}).n || 0, (ast[c.id] || {}).last || '', (c.aliases || '').split('|').join('، ')])]);
   },
+  'clrep-export': () => exportClRep(),
   'aj-more': () => { AJ.limit += 300; render(); },
   'oj-more': () => { OJ.limit += 400; render(); },
   'cj-f': el => { CJ.f = el.dataset.v; CJ.limit = 80; history.replaceState(null, '', '#clients'); render(); },
   'cj-more': () => { CJ.limit += 120; render(); },
-  'as-period': el => { AS.period = el.dataset.v; render(); },
+  'as-period': el => { AS.period = el.dataset.v; AS.limit = 200; render(); },
+  'as-more': () => { const y = window.scrollY; AS.limit += 400; render(); window.scrollTo(0, y); },
+  'as-all': () => { const y = window.scrollY; AS.limit = 1e9; render(); window.scrollTo(0, y); },
   'an-period': el => { AN.period = el.dataset.v; render(); },
   'an-tab': el => { AN.tab = el.dataset.v; render(); },
   'an-owner': el => { AN.ownerRev = el.checked ? 1 : 0; render(); },
@@ -3513,7 +3872,8 @@ const ACT = {
   'client-wa': el => clientWhatsApp(el.dataset.id),
   'client-merge': el => openMergeModal(el.dataset.id),
   'client-del': el => deleteClient(el.dataset.id),
-  print: () => { const cb = document.getElementById('psrc'); document.body.classList.toggle('print-src', !!(cb && cb.checked)); return window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(); },
+  print: () => { if (route().name === 'account' && AS.limit < 1e9) { AS.limit = 1e9; render(); }
+    const cb = document.getElementById('psrc'); document.body.classList.toggle('print-src', !!(cb && cb.checked)); return window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(); },
   'dup-keep': el => mergeClients(el.dataset.k, el.dataset.d),
   'dup-no': el => {
     const { a, b } = el.dataset;
@@ -3752,13 +4112,15 @@ const ACT = {
     D.lists.xlImported = [today()]; queue('saveLists', { lists: { xlImported: D.lists.xlImported } });
     changed(); toast(`تم ترحيل ${txs.length.toLocaleString('en-US')} حركة — جارٍ الرفع للشيت`); go('journal');
   },
-  'tx-approve': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; approveTx(t); queueApprove([t]); changed(); closeModal(); toast('تم اعتماد الحركة'); render(); },
+  'own-src': el => openOwnSrc(el.dataset.id),
+  'own-src-set': el => setOwnSrc(el.dataset.id, el.dataset.v),
+  'tx-approve': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; if (isFull() && t.type === 'IN_OWNER' && !t.fromAcc && !isXL(t)) return openOwnSrc(t.id); approveTx(t); queueApprove([t]); changed(); closeModal(); toast('تم اعتماد الحركة'); render(); const w = owingWarn([t]); if (w.length) alertOwing(w); },
   'tx-reject': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 2, approvedBy: ME.id, approvedAt: nowIso(), updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('تم تعليمها غير معتمدة'); render(); },
   'xl-bal': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv() || !isXL(t)) return; const on = xlInBal(t); t.batchId = on ? String(t.batchId).replace(/\+C$/, '') : t.batchId + '+C'; t.updatedAt = nowIso(); t.updatedBy = ME.id; queue('saveTx', { txs: [t] }); changed(); closeModal(); toast(on ? 'اتشالت من رصيد العميل' : 'اتحسبت في رصيد العميل'); render(); },
   'rv-tab': el => { RV.tab = el.dataset.v; render(); },
   'tx-unapprove': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 0, approvedBy: '', approvedAt: '', updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('رجعت الحركة لبانتظار الاعتماد'); render(); },
-  'approve-many': async el => { const arr = queueTxs().filter(t => t.userId === el.dataset.u); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد ${arr.length} حركة؟`, 'اعتماد'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم الاعتماد'); render(); },
-  'approve-all': async () => { const arr = queueTxs(); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد كل الحركات (${arr.length})؟`, 'اعتماد الكل'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم اعتماد الكل'); render(); },
+  'approve-many': async el => { const arr = queueTxs().filter(t => t.userId === el.dataset.u); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد ${arr.length} حركة؟`, 'اعتماد'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم الاعتماد'); render(); const w = owingWarn(arr); if (w.length) alertOwing(w); },
+  'approve-all': async () => { const arr = queueTxs(); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد كل الحركات (${arr.length})؟`, 'اعتماد الكل'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم اعتماد الكل'); render(); const w = owingWarn(arr); if (w.length) alertOwing(w); },
   'rem-save': () => {
     const t = [$('#rm-t1').value, $('#rm-t2').value].filter(Boolean).sort();
     D.lists.reminderOn = [$('#rm-on').checked ? '1' : '0']; D.lists.reminderTimes = t; D.lists.reminderRoles = [$('#rm-roles').value];
@@ -3772,7 +4134,7 @@ const ACT = {
     toast(p === 'granted' ? 'تم تفعيل الإشعارات على هذا الجهاز' : 'لم يتم السماح بالإشعارات. فعّليها من إعدادات الموقع في المتصفح', p === 'granted' ? '' : 'err');
   },
   'rem-test': () => showReminder('إشعار تجريبي: هكذا سيظهر التذكير.', true),
-  'theme-toggle': () => { LS.set('theme', themeIsDark() ? 'light' : 'dark'); applyTheme(); const b = $('.themebtn'); if (b) b.textContent = themeIsDark() ? '☀️' : '🌙'; },
+  'theme-toggle': () => { LS.set('theme', themeIsDark() ? 'light' : 'dark'); applyTheme(); const b = $('.themebtn'); if (b) b.textContent = themeIsDark() ? '☀️' : '🌙'; if (route().name === 'more' || route().arg === 'look') render(); },
   'autologout-save': () => {
     const m = +$('#al-min').value || 0; D.lists.autoLogout = [m];
     queue('saveLists', { lists: { autoLogout: D.lists.autoLogout } }); changed(); LS.set('lastActive', String(Date.now()));
@@ -3792,6 +4154,26 @@ const ACT = {
   'bk-export': () => download(`نسخة_اليومية_${today()}.json`, JSON.stringify({ app: 'msj', ver: APP_VER, exportedAt: nowIso(), D, A, Q }), 'application/json')
 };
 
+/* اختيار الخزينة التي سُحب منها «وارد من أ. محمود» — للمالك فقط */
+function openOwnSrc(id) {
+  const t = D.txs[id]; if (!t || !isFull() || t.type !== 'IN_OWNER') return;
+  const trs = visAccounts().filter(a => a.type === 'treasury' && +a.active !== 0 && a.id !== t.toAcc);
+  const u = userById(t.userId);
+  modal(`<h3>🏦 من أي خزينة سُحب المبلغ؟</h3>
+    <div class="note info" style="margin-bottom:12px">${icon('info', 18)}<div><b>${money(t.amount)}</b> ج.م — وارد من الأستاذ محمود إلى <b>${esc(accName(t.toAcc))}</b><div class="small muted">${dLong(t.date)}${u ? ' · سجّلها ' + esc(u.name) : ''}${t.description ? ' · ' + esc(t.description) : ''}</div></div></div>
+    <div class="srclist">${trs.map(a => { const b = accBal(a.id), cur = t.fromAcc === a.id; return `<button class="srcbtn ${cur ? 'on' : ''}" data-act="own-src-set" data-id="${t.id}" data-v="${a.id}"><span class="em">${accPrivate(a) ? '🔐' : '🏦'}</span><span class="grow"><b>${esc(trsLabel(a))}</b><small>الرصيد الآن ${fmt(b)} ← بعد الخصم ${fmt(r2(b - (cur ? 0 : +t.amount)))}</small></span>${cur ? '✅' : ''}</button>`; }).join('')}
+      <button class="srcbtn ${t.fromAcc === OWN_EXT ? 'on' : ''}" data-act="own-src-set" data-id="${t.id}" data-v="${OWN_EXT}"><span class="em">👤</span><span class="grow"><b>خارج الخزائن</b><small>من الأستاذ محمود مباشرة — لا يُخصم من أي خزينة</small></span>${t.fromAcc === OWN_EXT ? '✅' : ''}</button></div>
+    <div class="acts"><button class="btn" data-act="mclose">إلغاء</button></div>`);
+}
+function setOwnSrc(id, src) {
+  const t = D.txs[id]; if (!t || !isFull() || t.type !== 'IN_OWNER' || !src || src === t.toAcc) return;
+  const base = t.updatedAt || '', now = nowIso();
+  Object.assign(t, { fromAcc: src, updatedAt: now, updatedBy: ME.id });
+  if (isPend(t)) Object.assign(t, { approved: 1, approvedBy: ME.id, approvedAt: now });   // تحديد الخزينة من المالك = اعتماد للحركة
+  queue('saveTx', { txs: [{ ...t, __base: base }] });
+  changed(); closeModal(); render();
+  toast(src === OWN_EXT ? 'سُجّلت من خارج الخزائن' : `تم الخصم من ${accName(src)} — رصيدها الآن ${fmt(accBal(src))}`);
+}
 function bindEvents() {
   document.addEventListener('click', e => {
     if (!e.target.closest('.cpick')) { const l = $('#cp-list'); if (l) l.innerHTML = ''; }
@@ -3800,6 +4182,7 @@ function bindEvents() {
     const fn = ACT[el.dataset.act];
     if (!fn) return;
     if (el.tagName === 'BUTTON' || (el.tagName === 'A' && el.getAttribute('href') === '#')) e.preventDefault();
+    if (el.dataset.act !== 'mclose-bg') haptic();
     fn(el, e);
   });
   let deb = 0;
@@ -3818,6 +4201,12 @@ function bindEvents() {
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.id === 'bk-file') return importBackup(t.files[0]);
+    if (t.dataset.look) {
+      const k = t.dataset.look;
+      if (k === 'theme') { LS.set('theme', t.checked ? 'dark' : 'light'); applyTheme(); const b = $('.themebtn'); if (b) b.textContent = themeIsDark() ? '☀️' : '🌙'; }
+      else { LS.set(k, t.checked ? 'on' : 'off'); if (k === 'fx') applyFx(); else haptic(15); }
+      return;
+    }
     if (t.dataset.actChange === 'an-period') { AN.period = t.value; render(); return; }
     if (t.dataset.actChange === 'entry-pick') { if (t.value) go(t.value); return; }
     if (F && t.dataset.rphoto && t.files && t.files[0]) {
@@ -3948,14 +4337,18 @@ function startIdleWatch() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   if (ME) LS.set('lastActive', String(Date.now()));
 }
+/* شبكة أمان: أي خطأ غير متوقع يُسجَّل ولا يوقف المزامنة أو يجمّد البرنامج */
+window.addEventListener('unhandledrejection', e => { try { console.warn('unhandled', e.reason); e.preventDefault(); } catch (x) { } });
+window.addEventListener('error', e => { try { console.warn('error', e.message); } catch (x) { } });
 async function boot() {
   await loadState();
   const s = LS.get('session', null);
   if (s && idleExceeded()) { LS.del('session'); AUTO_NOTE = 1; }
   else if (s && userById(s.userId) && +userById(s.userId).active !== 0 && !+userById(s.userId).deleted) ME = userById(s.userId);
   bindEvents();
+  try { applyFx(); } catch (e) { }
   startIdleWatch();
-  window.addEventListener('hashchange', () => { if (ME) { if (route().name !== 'entry') F = F && F.editId ? null : F; render(); window.scrollTo(0, 0); } });
+  window.addEventListener('hashchange', () => { if (ME) { if (route().name !== 'entry') F = F && F.editId ? null : F; _navAnim = true; render(); window.scrollTo(0, 0); } });
   render();
   if (AUTO_NOTE) { AUTO_NOTE = 0; setTimeout(() => toast('خرج البرنامج تلقائيًا لعدم الاستخدام. ادخلي برمز الدخول.'), 300); }
   if (ME) syncNow();
