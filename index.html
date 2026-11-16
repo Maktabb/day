@@ -1471,7 +1471,7 @@ const archObj = r => { const o = {}; ARCH_COLS.forEach((k, i) => o[k] = r[i]); r
 
 /* التدفقات المستخرجة من الأرشيف لأغراض التقارير فقط */
 const isXL = t => String(t.batchId || '').startsWith('XL-');
-const xlInBal = t => isXL(t) && /\+C$/.test(String(t.batchId));   // حركة إكسيل احتُسبت يدويًا في رصيد العميل
+const xlInBal = t => isXL(t) && (!(SEED.sa || []).length || /\+C$/.test(String(t.batchId)));   // بعد إلغاء «المحاسب الذكي» كل حركات الإكسيل تُحتسب في رصيد العميل   // حركة إكسيل احتُسبت يدويًا في رصيد العميل
 const xlDone = () => !!((D.lists || {}).xlImported || [])[0];
 /* تحويل صفوف يومية الإكسيل إلى حركات عادية — بنفس أثرها على الأرصدة تمامًا */
 function buildLegacyTxs(srcRows, sarahTrs) {
@@ -1558,7 +1558,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261117-031000';
+const BUILD = '20261117-035500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2089,7 +2089,7 @@ function txDetails(id) {
   modal(`<h3><span class="tx" style="padding:0;min-height:0;cursor:default"><span class="ic em" style="--c:${m.c}">${m.em || ''}</span></span> تفاصيل الحركة</h3>
     <dl class="dl">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
     <div class="acts">${isPriv() && !+t.deleted && t.type !== 'OPENING' ? (isPend(t) ? `<button class="btn pri" data-act="tx-approve" data-id="${t.id}">${icon('check', 17)} اعتماد</button>${+t.approved === 2 ? '' : `<button class="btn danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`}` : `<button class="btn" data-act="tx-unapprove" data-id="${t.id}">إلغاء الاعتماد</button>`) : ''}
-      ${isPriv() && isXL(t) && t.clientId && (TYPES[t.type] || {}).client && !+t.deleted ? `<button class="btn" data-act="xl-bal" data-id="${t.id}">${xlInBal(t) ? 'إلغاء احتسابها في رصيد العميل' : 'احتسابها في رصيد العميل'}</button>` : ''}
+      ${isPriv() && (SEED.sa || []).length && isXL(t) && t.clientId && (TYPES[t.type] || {}).client && !+t.deleted ? `<button class="btn" data-act="xl-bal" data-id="${t.id}">${xlInBal(t) ? 'إلغاء احتسابها في رصيد العميل' : 'احتسابها في رصيد العميل'}</button>` : ''}
       ${isFull() && t.type === 'IN_OWNER' && !+t.deleted ? `<button class="btn gold" data-act="own-src" data-id="${t.id}">${icon('bank', 17)} ${t.fromAcc ? 'تغيير خزينة السحب' : 'تحديد خزينة السحب'}</button>` : ''}
       ${can && !+t.deleted ? `<button class="btn pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 17)} تعديل</button>
       <button class="btn danger" data-act="tx-del" data-id="${t.id}">${icon('trash', 17)} حذف</button>` : ''}
@@ -2969,7 +2969,7 @@ function vClient(r, el) {
     ${mineOnly ? `<div class="note info" style="margin-bottom:10px">${icon('info', 18)}<div>يعرض كشف الحساب حركاتك أنت فقط على هذا العميل.</div></div>` : ''}
     <div class="card tblwrap">${st.length ? `<table class="tbl stmt"><thead><tr><th class="c">م</th><th>التاريخ</th><th>التفاصيل</th><th class="src">المصدر</th><th class="n">عليه (مدين)</th><th class="n">له (دائن)</th><th class="n">الرصيد</th>${isPriv() ? '<th class="no-print">إجراء</th>' : ''}</tr></thead>
       <tbody>${st.map((x, i) => [x, i + 1]).reverse().map(([{ t, cr, dr, bal }, no]) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="c">${no}</td><td class="num">${t.date}</td>
-        <td>${tBadge(t.type)}${isXL(t) ? ` <span class="xlb">إكسيل${xlInBal(t) ? ' • محتسبة' : ''}</span>` : ''} ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${t.category && t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
+        <td>${tBadge(t.type)}${isXL(t) ? ` <span class="xlb">إكسيل</span>` : ''} ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${t.category && t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
         <td class="small src">${esc(accName(t.fromAcc || t.toAcc).replace('عهدة ', ''))}</td>
         <td class="n neg">${dr ? fmt(dr) : '<span class="z">—</span>'}</td><td class="n pos">${cr ? fmt(cr) : '<span class="z">—</span>'}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td>${isPriv() && t.type !== 'OPENING' ? `<td class="no-print" style="white-space:nowrap"><button class="btn sm" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف">${icon('edit', 15)} تصنيف</button> <button class="btn sm danger" data-act="tx-del" data-id="${t.id}" title="حذف">${icon('trash', 15)}</button></td>` : (isPriv() ? '<td class="no-print"></td>' : '')}</tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="3">الإجمالي (${st.length} حركة)</td><td class="src"></td><td class="n">${fmt(st.reduce((a, x) => a + x.dr, 0))}</td><td class="n">${fmt(st.reduce((a, x) => a + x.cr, 0))}</td><td class="n"><b>${mineOnly ? '' : fmt(s.bal)}</b></td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr></tfoot></table>`
