@@ -1228,7 +1228,7 @@ const ARCH_COLS = SEED.archiveCols;
 let D = null;        // البيانات الحية
 let A = null;        // أرشيف الإكسيل {ver, rows}
 let Q = [];          // عمليات بانتظار المزامنة
-let FAILED = [];
+let FAILED = [], _freshNow = false;
 let ME = null;
 let CFG = { url: '', key: '' };
 let SYNC = { state: 'local', msg: '', last: '' };
@@ -1282,6 +1282,12 @@ async function loadState() {
   if ((A.sv || '') !== (SEED.archiveVer || '')) { A = { ver: '1', sv: SEED.archiveVer || '', rows: SEED.archive }; persistArchive(); }   // أرشيف الإكسيل أحدث من المحفوظ على الجهاز
   Q = q || [];
   FAILED = LS.get('failed', []);
+  /* بداية جديدة 17 نوفمبر: كل جهاز يمسح نسخته القديمة مرة واحدة ويحمّل من الشيت (الشيت هو المرجع) */
+  if (LS.get('freshTok', '') !== '20261117') {
+    D.txs = {}; D.cursor = ''; D.rev = ''; Q = []; FAILED = []; LS.del('recent'); LS.set('failed', []);
+    D.lists = D.lists || {}; ['xlImported', 'sarahTrs', 'treasurySplit', 'saLoaded'].forEach(k => delete D.lists[k]);
+    LS.set('freshTok', '20261117'); _freshNow = true;
+  }
   const c = LS.get('cfg', null);
   CFG = c && c.url ? c : { url: CONFIG.url, key: CONFIG.key };
   SYNC.last = LS.get('lastSyncLocal', '');
@@ -1552,7 +1558,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261117-025000';
+const BUILD = '20261117-030000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1757,7 +1763,7 @@ async function pull(full) {
   }
   const dirty = mergeServer(res);
   D.cursor = res.serverTime; D.rev = res.rev || ''; persist();
-  if (D.meta && D.meta.archiveVer && String(D.meta.archiveVer) !== String(A.ver)) await pullArchive();
+  if (!SEED.archiveVer && D.meta && D.meta.archiveVer && String(D.meta.archiveVer) !== String(A.ver)) await pullArchive();   // أرشيف الإكسيل المدمج في البرنامج هو المرجع
   return dirty;
 }
 async function pullArchive() {
@@ -4415,6 +4421,7 @@ window.addEventListener('unhandledrejection', e => { try { console.warn('unhandl
 window.addEventListener('error', e => { try { console.warn('error', e.message); } catch (x) { } });
 async function boot() {
   await loadState();
+  if (_freshNow) { try { saveQueue(); await saveData(); } catch (e) { } }
   const s = LS.get('session', null);
   if (s && idleExceeded()) { LS.del('session'); AUTO_NOTE = 1; }
   else if (s && userById(s.userId) && +userById(s.userId).active !== 0 && !+userById(s.userId).deleted) ME = userById(s.userId);
