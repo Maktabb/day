@@ -1271,6 +1271,7 @@ async function loadState() {
   if (typeof st === 'string') { try { st = JSON.parse(st); } catch (e) { st = null; } }
   if (!st) { st = LS.get('data', null); fromLS = !!st; }
   D = st ? { ...st, clients: st.clients || {}, txs: st.txs || {} } : seedData();
+  Object.keys(D.txs).forEach(k => { if (/^SA\d/.test(k)) delete D.txs[k]; });   // حركات «المحاسب الذكي» أُلغيت نهائيًا
   D.users = D.users.map(normUser);
   let a = null, q = LS.get('queue', null);
   if (USE_IDB) {
@@ -1551,7 +1552,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261117-023000';
+const BUILD = '20261117-025000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1702,6 +1703,7 @@ function mergeServer(res) {
     D.txs = keepT; D.clients = keepC; dirty = true;
   }
   (res.transactions || []).forEach(t => {
+    if (/^SA\d/.test(String(t.id))) return;   // تجاهل حركات المحاسب الذكي القادمة من الشيت
     if (pend.has(t.id)) return;
     const old = D.txs[t.id];
     if (old && t.updatedAt && String(old.updatedAt) === String(t.updatedAt) && +old.deleted === (+t.deleted || 0)) return;   // نفس النسخة الموجودة
