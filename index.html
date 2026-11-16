@@ -791,7 +791,13 @@ html{overflow-x:hidden}
 .tk-g{font-size:13px;font-weight:700;color:var(--muted);margin:16px 4px 6px}
 .tk-g.late{color:var(--out)}
 .tk-g small{font-weight:500}
-.tk-home{margin-bottom:14px}
+.tk-home{margin:14px 0}
+.tks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 14px 10px}
+.tks-i{background:rgba(36,70,122,.07);border-radius:12px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.tks-i b{font-size:20px;line-height:1.1}
+.tks-i small{opacity:.75}
+.tks-i.today{background:rgba(161,116,11,.12);color:#8a6206}
+.tks-i.late{background:rgba(185,28,28,.1);color:#b91c1c}
 .tk-form{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .tk-pick{display:flex;align-items:center;gap:10px;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;font:inherit;color:inherit;cursor:pointer;min-height:48px}
 .tk-pick.on{border-color:var(--in);background:var(--in-soft)}
@@ -802,7 +808,9 @@ html{overflow-x:hidden}
 .inperm .ipr{border:1px solid var(--line,#e3e6ea);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .inperm .ipc{display:flex;align-items:center;gap:8px;cursor:pointer}
 .inperm .ipc input{width:18px;height:18px}
-.bigpair:has(> .bigbtn:only-child){grid-template-columns:1fr}
+.bigpair:has(> .bigbtn:only-child){grid-template-columns:minmax(0,calc(50% - 6px));justify-content:center}
+.pm:has(> .pmb:only-child){grid-template-columns:minmax(0,calc(50% - 6px));justify-content:center}
+.epick .pm:has(.fee):not(:has(.in)){grid-template-columns:repeat(2,minmax(0,1fr));max-width:420px;margin:0 auto}
 .rvwho{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 10px;margin:-4px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .rvwho::-webkit-scrollbar{display:none}
 .rvwho .chip{flex:none;white-space:nowrap}
@@ -1542,7 +1550,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261116-190000';
+const BUILD = '20261116-210000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1798,6 +1806,8 @@ const colleague = u => isFem(u) ? 'الزميلة' : 'الزميل';
 const exColleague = u => isFem(u) ? 'زميلة سابقة' : 'زميل سابق';
 const gw = (m, f) => isFem(ME) ? f : m;   // صيغة مخاطبة المستخدم الحالي
 const unsynced = () => !!(typeof Q !== 'undefined' && Q.length) || SYNC.state === 'busy' || FLUSHING;
+/* عمليات لم تُرسل فعلًا (حركات أو إغلاق مهام). تنزيل بيانات الزملاء لا يمنع الإغلاق ولا الخروج */
+const unsent = () => (typeof Q !== 'undefined' ? Q.length : 0) + (typeof OPS !== 'undefined' && OPS.q ? OPS.q.length : 0);
 function paintSync() {
   const el = $('#sync');
   if (!el) return;
@@ -2145,8 +2155,8 @@ function vHome(r, el) {
     </div>
 `;
   }
-  if (mine) { el.innerHTML = hello + reminderBanner() + installBanner() + body; return; }
-  el.innerHTML = hello + reminderBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
+  if (mine) { el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + body; return; }
+  el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
     <h2 class="sec">🕘 آخر الحركات</h2>
     <div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
     ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>`);
@@ -3583,9 +3593,9 @@ function vSettings(r, el) {
     ${saLoaded() ? `<div class="note ok">${icon('check', 18)}<div>تم تحميل العملاء الجدد وأرقام التليفونات بتاريخ ${esc(saLoaded())}.</div></div>`
       : `<ul class="small" style="margin:6px 0 10px;line-height:1.9"><li>إضافة ${(SEED.saClients || []).filter(i => !D.clients[i]).length} عميل جديد موجودين في المحاسب الذكي فقط.</li><li>تحميل أرقام التليفونات للعملاء الذين بلا رقم.</li></ul><button class="btn pri" data-act="sa-load">${icon('upload', 17)} تحميل العملاء والتليفونات</button>`}</div>`);
   if (isFull()) { const rc = reminderCfg(); push('rem', `<h2 class="sec">التذكير اليومي بإدخال اليومية</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">إشعار تذكيري لكل من لم يسجّل حركات اليوم بعد. لا يظهر لمن سجّل حركة اليوم، ولا يوم الجمعة. على تطبيق الأندرويد يصل حتى والتطبيق مقفول، وعلى الكمبيوتر والآيباد يصل والبرنامج مفتوح (حتى لو في الخلفية).</p>
-    <label class="row small" style="gap:8px;margin-bottom:10px"><input type="checkbox" id="rm-on" ${rc.on ? 'checked' : ''}> تفعيل التذكير</label>
+    <div class="note ok" style="margin-bottom:10px">${icon('check', 18)}<div>التذكير مفعّل دائمًا على كل الأجهزة ولكل الفريق. يمكن تغيير المواعيد فقط.</div></div>
     <div class="row wrap" style="gap:10px;margin-bottom:10px"><div>التذكير الأول<br><input class="inp ltr" type="time" id="rm-t1" value="${rc.times[0] || '15:00'}"></div><div>التذكير الثاني<br><input class="inp ltr" type="time" id="rm-t2" value="${rc.times[1] || '16:00'}"></div></div>
-    <div class="row wrap" style="gap:10px;margin-bottom:10px"><div>يصل إلى<br><select class="inp" id="rm-roles"><option value="all" ${rc.roles === 'all' ? 'selected' : ''}>الجميع</option><option value="team" ${rc.roles === 'team' ? 'selected' : ''}>الفريق (دون الصلاحية الكاملة)</option></select></div></div>
+    
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
   if (isFull()) push('team', `<h2 class="sec">صلاحية تسجيل الوارد</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد أنواع الوارد التي يمكن لكل صلاحية تسجيلها. النوع غير المحدَّد لا يظهر لهم في البرنامج، وإن لم يُحدَّد أي نوع يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل أنواع الوارد دائمًا.</p>
     <div class="inperm">${IN_ROLES.map(([r, l]) => `<div class="ipr"><b>${l}</b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="${r}:${k}" ${inAllowed(r, k) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
@@ -3756,7 +3766,7 @@ const ACT = {
     const tmp = document.createElement('div'); tmp.innerHTML = box.dataset[g];
     list.innerHTML = [...tmp.children].map(o => `<button class="btn eopt ${g}" data-act="go" data-h="${o.getAttribute('value')}">${o.textContent}</button>`).join('');
   },
-  logout: a => { if (a !== 'force' && unsynced()) { syncNow(); toast('لسه البيانات لم يتم حفظها على الشيت. انتظر حتى تظهر الإشارة الخضراء «متزامن» ثم اخرج.', 'err'); return; } ME = null; F = null; LS.del('session'); history.replaceState(null, '', location.pathname); $('#app').innerHTML = ''; renderLogin(); },
+  logout: a => { if (a !== 'force' && unsent()) { syncNow(); toast('لسه البيانات لم يتم حفظها على الشيت. انتظر حتى تظهر الإشارة الخضراء «متزامن» ثم اخرج.', 'err'); return; } ME = null; F = null; LS.del('session'); history.replaceState(null, '', location.pathname); $('#app').innerHTML = ''; renderLogin(); },
   'new-type': el => { F = null; go('entry/' + el.dataset.t); },
   'entry-change': () => { const g = F && (['IN_CLIENT', 'IN_OWNER'].includes(F.type) || (F.type === 'TRANSFER' && F.mode === 'in')) ? 'in' : (F && ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'TRANSFER'].includes(F.type) ? 'out' : ''); F = null; go('entry' + (g ? '/' + g : '')); },
   'entry-cancel': () => { F = null; history.length > 1 ? history.back() : go('journal'); },
@@ -4163,15 +4173,15 @@ const ACT = {
   },
   'rem-save': () => {
     const t = [$('#rm-t1').value, $('#rm-t2').value].filter(Boolean).sort();
-    D.lists.reminderOn = [$('#rm-on').checked ? '1' : '0']; D.lists.reminderTimes = t; D.lists.reminderRoles = [$('#rm-roles').value];
+    D.lists.reminderOn = ['1']; D.lists.reminderTimes = t; D.lists.reminderRoles = ['all'];
     queue('saveLists', { lists: { reminderOn: D.lists.reminderOn, reminderTimes: D.lists.reminderTimes, reminderRoles: D.lists.reminderRoles } }); changed(); syncReminders();
-    toast($('#rm-on').checked ? 'تم الحفظ. التذكير الساعة ' + t.join(' و ') : 'تم إيقاف التذكير'); render();
+    toast('تم الحفظ. التذكير الساعة ' + t.join(' و ')); render();
   },
   'rem-perm': async () => {
-    if (window.AndroidBridge) { try { AndroidBridge.setReminders(reminderCfg().times.join(','), reminderCfg().on); } catch (e) { } return toast('اسمحي بالإشعارات من النافذة التي ظهرت. وإن لم تظهر: إعدادات الهاتف ← التطبيقات ← يومية المكتب ← الإشعارات'); }
+    if (window.AndroidBridge) { try { AndroidBridge.setReminders(reminderCfg().times.join(','), true); } catch (e) { } setTimeout(() => render(), 4000); return toast('اسمحي بالإشعارات من النافذة التي ظهرت. وإن لم تظهر: إعدادات الهاتف ← التطبيقات ← يومية المكتب ← الإشعارات'); }
     if (!('Notification' in window)) return toast('هذا المتصفح لا يدعم الإشعارات (على الآيباد ثبّتي البرنامج من Safari أولًا)', 'err');
     const p = await Notification.requestPermission();
-    toast(p === 'granted' ? 'تم تفعيل الإشعارات على هذا الجهاز' : 'لم يتم السماح بالإشعارات. فعّليها من إعدادات الموقع في المتصفح', p === 'granted' ? '' : 'err');
+    render(); toast(p === 'granted' ? 'تم تفعيل الإشعارات على هذا الجهاز' : 'لم يتم السماح بالإشعارات. فعّليها من إعدادات الموقع في المتصفح', p === 'granted' ? '' : 'err');
   },
   'rem-test': () => showReminder('إشعار تجريبي: هكذا سيظهر التذكير.', true),
   'theme-toggle': () => { LS.set('theme', themeIsDark() ? 'light' : 'dark'); applyTheme(); const b = $('.themebtn'); if (b) b.textContent = themeIsDark() ? '☀️' : '🌙'; if (route().name === 'more' || route().arg === 'look') render(); },
@@ -4293,15 +4303,22 @@ function importBackup(file) {
 
 /* ====== التشغيل ====== */
 /* التطبيق المثبَّت يظل مفتوحًا أيامًا بنفس النسخة: نفحص ملف version.json ونحمّل النسخة الجديدة تلقائيًا */
-let _newVer = false;
+let _newVer = '';
+/* حماية من إعادة التحميل المتكررة: لا نعيد التحميل إلا بعد التأكد أن index.html الجديد وصل فعلًا للسيرفر،
+   ولا نحاول لنفس النسخة أكثر من مرة كل 30 دقيقة (لو version.json سبق index.html أو الكاش لسه قديم) */
 async function checkVersion() {
   if (!/^https?:/.test(location.protocol) || BUILD.indexOf('BUILD') >= 0) return;
   try {
     const r = await fetchT('version.json?t=' + Date.now(), { cache: 'no-store' }, 15000);
     if (!r.ok) return;
-    const v = (await r.json()).build;
-    if (!v || v === BUILD) return;
-    _newVer = true;
+    const v = String((await r.json()).build || '');
+    if (!v || v === BUILD) { LS.del('updTry'); return; }
+    if (v < BUILD) return;                                   // version.json أقدم من البرنامج المفتوح: لا شيء
+    const tr = LS.get('updTry', null);
+    if (tr && tr.v === v && Date.now() - tr.at < 1800000) return;
+    const h = await fetchT('index.html?t=' + Date.now(), { cache: 'no-store' }, 30000);
+    if (!h.ok || (await h.text()).indexOf("const BUILD = '" + v + "'") < 0) return;   // الملف الجديد لم يصل بعد
+    _newVer = v;
     applyUpdate();
   } catch (e) { }
 }
@@ -4310,9 +4327,11 @@ async function applyUpdate(force) {
   // لا نقطع على المستخدم إدخال حركة أو نافذة مفتوحة أو بيانات لم تُرفع
   if (!force && (route().name === 'entry' || modalOpen() || Q.length || SYNCING)) { setTimeout(applyUpdate, 20000); return; }
   clearTimeout(_saveT); saveQueue(); await saveData();
+  LS.set('updTry', { v: _newVer, at: Date.now() });
   try { if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) { }
-  location.reload();
+  location.replace(location.pathname + '?v=' + _newVer + location.hash);   // رابط مختلف يتخطى كاش المتصفح
 }
+try { if (/[?&]v=\d/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); } catch (e) { }
 
 const accEff = (x, id) => { const m = +x.amount || 0; return (x.toAcc === id ? m : 0) - (x.fromAcc === id ? m : 0) + (x.type === 'TRANSFER' ? 0 : 0); };
 function custodyEffectMsg(t, patch) {
@@ -4324,7 +4343,7 @@ function custodyEffectMsg(t, patch) {
 /* ===== التذكير اليومي بإدخال اليومية ===== */
 function reminderCfg() {
   const L = D.lists || {}, t = (L.reminderTimes && L.reminderTimes.length ? L.reminderTimes : ['15:00', '16:00']).filter(x => /^\d{1,2}:\d{2}$/.test(x));
-  return { on: L.reminderOn ? L.reminderOn[0] !== '0' : true, times: t, roles: (L.reminderRoles || ['all'])[0] };
+  return { on: true, times: t, roles: 'all' };   // التذكير مفعّل دائمًا لكل الصلاحيات وعلى كل الأجهزة
 }
 const remApplies = () => { if (!ME) return false; const c = reminderCfg(); return c.on && (c.roles === 'all' || ME.role !== 'full'); };
 const iEnteredToday = () => !!ME && activeTx().some(t => t.userId === ME.id && t.type !== 'OPENING' && t.date === today());
@@ -4358,6 +4377,17 @@ function syncReminders() {
       if (mins >= hhmm(tm) && mins < hhmm(tm) + 20) { LS.set(k, '1'); showReminder('لم تُسجَّل حركات اليوم بعد. أدخلي يومية اليوم.'); }
     });
   } catch (e) { }
+}
+function notifState() {
+  try {
+    if (window.AndroidBridge) return AndroidBridge.reminderInfo ? (AndroidBridge.reminderInfo() === 'denied' ? 'off' : 'ok') : 'ok';
+    if (!('Notification' in window)) return 'ok';
+    return Notification.permission === 'granted' ? 'ok' : 'off';
+  } catch (e) { return 'ok'; }
+}
+function notifBanner() {
+  if (notifState() === 'ok') return '';
+  return `<div class="note info no-print" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow"><b>الإشعارات غير مفعّلة على هذا الجهاز</b>، فلن يصلك تذكير إدخال اليومية الساعة ${esc(reminderCfg().times.join(' و '))}.</div><button class="btn pri sm" data-act="rem-perm">تفعيل</button></div>`;
 }
 function reminderBanner() {
   if (!remDue()) return '';
@@ -4398,7 +4428,7 @@ async function boot() {
   window.addEventListener('pagehide', () => { clearTimeout(_saveT); saveQueue(); saveData(); });
   window.addEventListener('online', () => { paintSync(); ME && syncNow(); });
   window.addEventListener('offline', paintSync);
-  window.addEventListener('beforeunload', e => { if (ME && unsynced()) { e.preventDefault(); e.returnValue = 'لسه البيانات لم يتم حفظها'; return e.returnValue; } });
+  window.addEventListener('beforeunload', e => { if (ME && unsent()) { e.preventDefault(); e.returnValue = 'لسه البيانات لم يتم حفظها'; return e.returnValue; } });
   // الرجوع للتطبيق (خصوصًا المثبَّت على الشاشة الرئيسية للآيفون): مزامنة فورية + فحص وجود نسخة أحدث
   let _lastWake = 0;
   const wake = () => { if (Date.now() - _lastWake < 1500) return; _lastWake = Date.now(); if (ME) syncNow(); checkVersion(); };
@@ -4582,15 +4612,21 @@ function opsHomeCard(view) {
   if (!opsCfg() || !view) return;
   if (Date.now() - OPS_ST.last > 30000) opsSync();
   const mine = tkMyOpen();
-  const lateTeam = isPriv() ? tkAll().filter(t => tkLate(t) && !tkMine(t)).length : 0;
-  if (!mine.length && !lateTeam) return;
-  const html = `<div class="card tk-home"><div class="row" style="padding:12px 14px 6px"><b>مهامي</b>${mine.length ? `<span class="cnt">${mine.length}</span>` : ''}<span class="sp"></span><a href="#tasks" class="small">كل المهام</a></div>
-    ${mine.slice(0, 3).map(t => tkRow(t)).join('')}
-    ${mine.length > 3 ? `<a href="#tasks" class="tk small muted" style="justify-content:center">و${mine.length - 3} مهام أخرى</a>` : ''}
-    ${!mine.length ? `<div class="tk small muted">لا مهام مفتوحة عليك.</div>` : ''}
-    ${lateTeam ? `<a href="#tasks" class="tk small tk-late" data-act="tk-who" data-k="all">متأخرات لدى الفريق: ${lateTeam}</a>` : ''}</div>`;
-  const h = view.querySelector('h1.pg');
-  if (h) h.insertAdjacentHTML('afterend', html); else view.insertAdjacentHTML('afterbegin', html);
+  const team = isPriv() ? tkAll().filter(tkOpen).sort(tkSort) : [];
+  const useTeam = !mine.length && team.length;          // من ليس له مهام (مثل المدير) يرى مهام الفريق
+  const L = useTeam ? team : mine, td = today();
+  const late = L.filter(tkLate).length, due = L.filter(t => t.due === td).length;
+  const teamLate = isPriv() && !useTeam ? team.filter(t => tkLate(t) && !tkMine(t)).length : 0;
+  const stat = (n, l, c) => `<div class="tks-i ${c || ''}"><b>${n}</b><small>${l}</small></div>`;
+  const html = `<div class="card tk-home"><div class="row" style="padding:12px 14px 4px"><b>📋 ${useTeam ? 'مهام الفريق' : 'مهامي'}</b><span class="sp"></span><a href="#tasks" class="small">كل المهام ←</a></div>
+    ${L.length ? `<div class="tks">${stat(L.length, 'مفتوحة')}${stat(due, 'اليوم', due ? 'today' : '')}${stat(late, 'متأخرة', late ? 'late' : '')}</div>
+    ${L.slice(0, 5).map(t => tkRow(t, { who: useTeam })).join('')}
+    ${L.length > 5 ? `<a href="#tasks" class="tk small muted" style="justify-content:center">و${L.length - 5} مهام أخرى</a>` : ''}`
+    : `<div class="tk small muted" style="justify-content:center">✅ لا توجد مهام مفتوحة عليك الآن.</div>`}
+    ${teamLate ? `<a href="#tasks" class="tk small tk-late" data-act="tk-who" data-k="all">متأخرات لدى الفريق: ${teamLate}</a>` : ''}</div>`;
+  const anchor = view.querySelector('.mybal') || view.querySelector('.grid.gk');
+  if (anchor) anchor.insertAdjacentHTML('afterend', html);
+  else { const h = view.querySelector('h1.pg'); if (h) h.insertAdjacentHTML('afterend', html); else view.insertAdjacentHTML('afterbegin', html); }
 }
 /* ---- داخل نموذج الحركة: مهام العميل المختار (ثم باقي مهام الموظف) تُغلق مع الحفظ ---- */
 function opsMountForm() {
