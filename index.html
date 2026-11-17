@@ -1613,7 +1613,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-050000';
+const BUILD = '20261118-060000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1949,13 +1949,13 @@ function navItems() {
   const priv = isPriv();
   return [
     ['home', 'الرئيسية', 'home'],
-    ['tasks', 'المهام', 'check'],
-    ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
+    ...(canTab('tasks') ? [['tasks', 'المهام', 'check']] : []),
+    ...(priv ? [['review', 'مراجعة الاعتماد', 'check']] : []),
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
     ...(canTab('collect') ? [['collect', 'التحصيل', 'wallet']] : []),
     ...(canTab('deliver') ? [['deliver', 'التسليم', 'archive']] : []),
+    ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
     ['accounts', priv ? 'الخزينة والعهد' : 'عهدتي', 'wallet'],
-    ...(priv ? [['review', 'مراجعة الاعتماد', 'check']] : []),
     ['settings', 'الإعدادات', 'sliders']
   ];
 }
@@ -2020,11 +2020,11 @@ function render() {
     account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver };
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
-  if ((r.name === 'collect' || r.name === 'deliver') && !canTab(r.name)) return go('home');
+  if ((r.name === 'collect' || r.name === 'deliver' || r.name === 'tasks') && !canTab(r.name)) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn === vHome) opsHomeCard(vw); }
+  try { fn(r, vw); if (fn === vHome) { if (canTab('tasks')) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2118,6 +2118,7 @@ function txRow(t, acc) {
   if (t.receiptNo) sub.push('إيصال ' + esc(t.receiptNo));
   if (t.type === 'GOV_FEE') sub.push(t.receiptUrl ? '📎 بصورة' : (receiptPending(t.id) ? '⏳ الصورة قيد الرفع' : 'بدون صورة'));
   if (t.place) sub.push(esc(t.place));
+  if (txTime(t)) sub.push('🕐 ' + esc(txTime(t)));
   for (let i = sub.length - 1; i >= 0; i--) if (!sub[i]) sub.splice(i, 1);
   const amt = Math.abs(+t.amount);
   return `<div class="tx" data-act="tx" data-id="${t.id}">
@@ -2140,7 +2141,7 @@ function txDetails(id) {
     t.category && ['البند', esc(t.category)], t.receiptNo && ['رقم الإيصال', esc(t.receiptNo)],
     t.type === 'GOV_FEE' && ['صورة الإيصال', t.receiptUrl ? `<a href="${esc(t.receiptUrl)}" target="_blank" rel="noopener">فتح الصورة على Drive</a>` : (receiptPending(t.id) ? 'قيد الرفع على Drive…' : '<span class="muted">لا توجد صورة</span>')], t.place && ['المكان', esc(t.place)],
     t.payMethod && ['طريقة الدفع', esc(payNorm(t.payMethod))], t.stage && ['المرحلة', esc(t.stage)], t.service && ['الخدمة', esc(t.service)],
-    t.description && ['البيان', esc(t.description)], [u0 && isFem(u0) ? 'أدخلتها' : 'أدخلها', esc(u ? u.name : t.userId) + ` <span class="muted small">${t.createdAt ? new Date(t.createdAt).toLocaleString('ar-EG-u-nu-latn') : ''}</span>`],
+    t.description && ['البيان', esc(t.description)], [u0 && isFem(u0) ? 'أدخلتها' : 'أدخلها', esc(u ? u.name : t.userId)], !isXL(t) && t.createdAt && ['وقت التسجيل', `<b>${esc(new Date(t.createdAt).toLocaleString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</b>`],
     !+t.deleted && t.type !== 'OPENING' && ['المراجعة', isPend(t) ? (+t.approved === 2 ? '<b style="color:#b91c1c">❌ غير معتمدة</b>' : '<b style="color:#b45309">⏳ بانتظار الاعتماد</b>') : `<b style="color:#0f766e">✔ معتمدة</b>${t.approvedBy && userById(t.approvedBy) ? ' <span class="muted small">— ' + esc(userById(t.approvedBy).name) + '</span>' : ''}`],
     +t.deleted && ['الحالة', `<span class="neg">محذوفة — ${esc(t.deleteReason || '')}</span>`]
   ].filter(Boolean);
@@ -2158,6 +2159,25 @@ function txDetails(id) {
       <button class="btn" data-act="mclose">إغلاق</button></div>
     ${!can ? '<p class="small muted" style="margin-top:12px">يمكن لعضو الفريق تعديل حركاته في نفس يوم إدخالها فقط.</p>' : ''}`);
 }
+/* ====== كود التعديل: أي حركة تاريخها قبل اليوم لا تتعدّل إلا بالكود ====== */
+const editCodeSet = () => !!((D.lists || {}).editCodeH || [])[0];
+const editCodeOk = c => ((D.lists || {}).editCodeH || [])[0] === hashCode(String(c).trim());
+const EDIT_OK = {};
+const needsEditCode = t => !!(t && editCodeSet() && t.date && t.date < today());
+const editUnlocked = id => EDIT_OK[id] && Date.now() - EDIT_OK[id] < 10 * 60000;
+function editGate(t) {
+  if (!needsEditCode(t) || editUnlocked(t.id)) return Promise.resolve(true);
+  return new Promise(res => {
+    const m = modal(`<h3>${icon('key', 20)} كود التعديل</h3><p>هذه الحركة بتاريخ <b>${esc(dLong(t.date))}</b> (قبل اليوم)، ولا تُعدَّل إلا بكود التعديل.</p>
+      ${fld('كود التعديل', `<input id="ec-c" class="inp ltr" type="password" inputmode="numeric" autocomplete="off">`, { req: 1 })}
+      <div class="acts"><button class="btn pri" id="ec-ok">متابعة</button><button class="btn" id="ec-no">إلغاء</button></div>`);
+    let done = false; const fin = v => { if (done) return; done = true; closeModal(); res(v); };
+    m.querySelector('#ec-ok').onclick = () => { if (!editCodeOk($('#ec-c').value)) return toast('كود التعديل غير صحيح', 'err'); EDIT_OK[t.id] = Date.now(); fin(true); };
+    m.querySelector('#ec-no').onclick = () => fin(false);
+    setTimeout(() => { const i = $('#ec-c'); i && i.focus(); }, 50);
+  });
+}
+const txTime = t => (!t.createdAt || isXL(t)) ? '' : new Date(t.createdAt).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
 function canEdit(t) {
   if (!ME) return false;
   if (t.type === 'OPENING') return isFull();
@@ -2349,6 +2369,7 @@ function vEntry(r, el) {
   if (r.arg === 'edit') {
     const t = D.txs[r.arg2];
     if (!t || !canEdit(t)) { toast('لا يمكن تعديل هذه الحركة', 'err'); return go('journal'); }
+    if (needsEditCode(t) && !editUnlocked(t.id)) { toast('هذه الحركة قبل اليوم: تحتاج كود التعديل', 'err'); return go('journal'); }
     if (!F || F.editId !== t.id) F = formFromTx(t);
   } else if (r.arg && TYPES[r.arg]) {
     if (!roleTypes(ME.role).includes(r.arg) || (r.arg === 'TRANSFER' && r.q.get('mode') === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))) { if (!F || !F.editId) toast('تسجيل هذا النوع من الوارد غير مفعّل لصلاحيتك', 'err'); return go('entry'); }
@@ -2841,8 +2862,8 @@ function vJournal(r, el) {
 }
 function exportJournal() {
   const txs = journalTxs();
-  const head = ['التاريخ', 'النوع', 'المبلغ', 'من حساب', 'إلى حساب', 'العميل', 'رقم موبايل العميل', 'البند', 'رقم الإيصال', 'المكان', 'طريقة الدفع', 'المرحلة', 'البيان', 'أدخلها', 'رقم الحركة', 'رابط الإيصال'];
-  const rows = txs.map(t => { const c = D.clients[t.clientId] || {}; return [t.date, (TYPES[t.type] || {}).n, t.amount, accName(t.fromAcc), t.toAcc ? accName(t.toAcc) : '', c.name || '', c.phone || '', t.category, t.receiptNo, t.place, payNorm(t.payMethod), t.stage, t.description, (userById(t.userId) || {}).name || t.userId, t.id, t.receiptUrl || '']; });
+  const head = ['التاريخ', 'النوع', 'المبلغ', 'من حساب', 'إلى حساب', 'العميل', 'رقم موبايل العميل', 'البند', 'رقم الإيصال', 'المكان', 'طريقة الدفع', 'المرحلة', 'البيان', 'أدخلها', 'وقت التسجيل', 'رقم الحركة', 'رابط الإيصال'];
+  const rows = txs.map(t => { const c = D.clients[t.clientId] || {}; return [t.date, (TYPES[t.type] || {}).n, t.amount, accName(t.fromAcc), t.toAcc ? accName(t.toAcc) : '', c.name || '', c.phone || '', t.category, t.receiptNo, t.place, payNorm(t.payMethod), t.stage, t.description, (userById(t.userId) || {}).name || t.userId, isXL(t) || !t.createdAt ? '' : new Date(t.createdAt).toLocaleString('ar-EG-u-nu-latn'), t.id, t.receiptUrl || '']; });
   csvDownload(`اليومية_${today()}.csv`, [head, ...rows]);
 }
 function csvDownload(name, rows) {
@@ -3092,8 +3113,8 @@ function csPeriod(p) {
 }
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
-const TABS = [['collect', 'التحصيل'], ['deliver', 'التسليم']];
-const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return u.role === 'sup'; };
+const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم']];
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || u.role === 'sup'; };
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
 const LOGV = { rows: [], total: 0, q: '', limit: 300, busy: false, err: '' };
 const LOG_ACT = { create: 'إضافة', update: 'تعديل', delete: 'حذف', save: 'حفظ', restore: 'استرجاع', approve: 'اعتماد', merge: 'دمج' };
@@ -3218,6 +3239,22 @@ function dlForm(id, clientId) {
     const rec = { id: cur.id || uid('D-'), c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
     dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
   };
+}
+function collHomeCard(view) {
+  const rows = collRows(), td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
+  const d = document.createElement('div'); d.className = 'card'; d.style.marginTop = '12px';
+  d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>💰 التحصيل</b><span class="sp"></span><a href="#collect" class="small">كل التحصيل ←</a></div>
+    ${rows.length ? `<div class="tks"><div class="tks-i"><b>${rows.length}</b><small>عملاء</small></div><div class="tks-i ${tot ? 'late' : ''}"><b>${fmt(tot)}</b><small>المتوقع تحصيله</small></div><div class="tks-i ${late ? 'late' : ''}"><b>${late}</b><small>متأخر</small></div></div>
+    ${open.slice(0, 4).map(q => `<a class="lrow" href="#client/${q.x.c}"><b class="grow">${esc(clientName(q.x.c))}</b><span class="num neg">${fmt(q.owe)}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">لا يوجد عملاء في قائمة التحصيل.</div>`}`;
+  view.appendChild(d);
+}
+function dlHomeCard(view) {
+  const td = today(), L = dlList().filter(dlPend).sort((a, b) => String(a.d || '9999').localeCompare(String(b.d || '9999'))), left = L.reduce((n, x) => n + dlPend(x), 0), late = L.filter(x => x.d && x.d < td).length;
+  const d = document.createElement('div'); d.className = 'card'; d.style.marginTop = '12px';
+  d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>📦 التسليم</b><span class="sp"></span><a href="#deliver" class="small">كل التسليمات ←</a></div>
+    ${L.length ? `<div class="tks"><div class="tks-i"><b>${L.length}</b><small>ملفات</small></div><div class="tks-i"><b>${left}</b><small>مستندات لم تُسلَّم</small></div><div class="tks-i ${late ? 'late' : ''}"><b>${late}</b><small>متأخر</small></div></div>
+    ${L.slice(0, 4).map(x => `<a class="lrow" href="#deliver"><b class="grow">${esc(clientName(x.c))}</b><span class="small muted">${dlPend(x)} مستند${x.d ? ' · ' + esc(x.d) : ''}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">✅ لا توجد مستندات مطلوب تسليمها.</div>`}`;
+  view.appendChild(d);
 }
 function printCollect() {
   const rows = collRows(), tot = r2(rows.reduce((n, q) => n + q.owe, 0));
@@ -3975,6 +4012,8 @@ function vSettings(r, el) {
     <div class="row wrap"><select class="inp" id="al-min" style="max-width:260px">${AUTO_LOGOUT_OPTS.map(([m, l]) => `<option value="${m}" ${autoLogoutMin() === m ? 'selected' : ''}>${l}</option>`).join('')}</select><button class="btn pri" data-act="autologout-save">حفظ</button></div></div>`);
   if (isFull()) push('sec', `<h2 class="sec">كود الحذف</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="dc-new" type="password" inputmode="numeric" autocomplete="off" placeholder="${delCodeSet() ? 'كود جديد (يستبدل الحالي)' : 'اكتب كود الحذف'}" style="max-width:240px"><button class="btn pri" data-act="delcode-save">حفظ الكود</button></div>
     <p class="small muted" style="margin-top:8px">${delCodeSet() ? '✅ الكود مفعّل: لا تُحذف أي حركة (من أي عضو) إلا بإدخاله.' : '⚠️ لم يُحدَّد كود بعد، فالحذف حاليًا بدون كود. حدّد كودًا ليصبح الحذف به فقط.'}</p></div>`);
+  if (isFull()) push('sec', `<h2 class="sec">كود التعديل</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="ec-new" type="password" inputmode="numeric" autocomplete="off" placeholder="${editCodeSet() ? 'كود جديد (يستبدل الحالي)' : 'اكتب كود التعديل'}" style="max-width:240px"><button class="btn pri" data-act="editcode-save">حفظ الكود</button></div>
+    <p class="small muted" style="margin-top:8px">${editCodeSet() ? '✅ مفعّل: أي حركة تاريخها قبل اليوم (من أي عضو، حتى الأدمن) لا تُعدَّل ولا يتغيّر تصنيفها ولا تتحوّل إلا بإدخال الكود. حركات اليوم تتعدّل عادي.' : '⚠️ لم يُحدَّد كود بعد، فالتعديل حاليًا بدون كود. حدّد كودًا ليُقفل تعديل الأيام السابقة.'}</p></div>`);
   if (isFull()) push('log', `<h2 class="sec">سجل التعديلات</h2><p class="small muted" style="margin:0 0 10px">كل إضافة وتعديل وحذف اتسجّل في الشيت: مين عمله وإمتى، وقبل التعديل كان إيه وبعده بقى إيه.</p><div id="log-box">${logShell()}</div>`);
   push('bk', `<h2 class="sec">النسخ الاحتياطي</h2><div class="card pad"><div class="row wrap">
       <button class="btn" data-act="bk-export">${icon('download', 17)} تنزيل نسخة احتياطية</button>
@@ -3988,7 +4027,7 @@ function vSettings(r, el) {
     <p class="small muted" style="margin:12px 0 0">هذه الاختيارات تُحفظ على هذا الجهاز فقط.</p></div>`);
   const CATS = [['acct', 'حسابي', 'user', 'الاسم ورمز الدخول'], ['look', 'المظهر', 'sliders', 'الوضع الداكن والخلفية المتحركة'], ['conn', 'الاتصال بالشيت', 'sync', 'رابط الشيت والمزامنة'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
     ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['rem', 'التذكير اليومي', 'alert', 'إشعار إدخال يومية اليوم الساعة 3 و4'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير'], ['log', 'سجل التعديلات', 'list', 'مين عدّل أو حذف إيه وإمتى']].filter(c => secs[c[0]]);
-  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|النسخ الاحتياطي|سجل التعديلات)<\/h2>/, ''); if (r.arg === 'log') setTimeout(logLoad, 0); return; }
+  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|كود التعديل|النسخ الاحتياطي|سجل التعديلات)<\/h2>/, ''); if (r.arg === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
     <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
     ${[...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="go" data-h="${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
@@ -4173,7 +4212,7 @@ const ACT = {
     queue('saveClient', { client: c }); changed(); toast('تم حفظ رقم العميل'); rerenderForm();
   },
   tx: el => txDetails(el.dataset.id),
-  'tx-edit': el => { closeModal(); F = null; go('entry/edit/' + el.dataset.id); },
+  'tx-edit': async el => { const t = D.txs[el.dataset.id]; if (t && !(await editGate(t))) return; closeModal(); F = null; go('entry/edit/' + el.dataset.id); },
   'tx-del': el => {
     const t = D.txs[el.dataset.id];
     const m = modal(`<h3>${icon('trash', 20)} حذف الحركة</h3><p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م</p>
@@ -4189,8 +4228,8 @@ const ACT = {
       queue('saveTx', { txs: [{ ...t, __base: base }] }); changed(); closeModal(); toast('تم حذف الحركة'); render();
     };
   },
-  'tx-retype': el => {
-    const t = D.txs[el.dataset.id]; if (!t || !canEdit(t)) return;
+  'tx-retype': async el => {
+    const t = D.txs[el.dataset.id]; if (!t || !canEdit(t)) return; if (!(await editGate(t))) return;
     const opts = ['IN_CLIENT', 'GOV_FEE', 'OP_EXP', 'FEE', 'CLIENT_REFUND', 'OFFICE_EXP'].filter(k => k !== 'FEE' || isFull());
     const m = modal(`<h3>${icon('edit', 20)} تغيير تصنيف الحركة</h3>
       <p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م${t.clientId ? `<br><span class="small muted">العميل: ${esc(clientName(t.clientId))}</span>` : ''}</p>
@@ -4218,8 +4257,8 @@ const ACT = {
       })();
     });
   },
-  'tx-to-office': el => {
-    const t = D.txs[el.dataset.id]; if (!t || !t.clientId) return;
+  'tx-to-office': async el => {
+    const t = D.txs[el.dataset.id]; if (!t || !t.clientId) return; if (!(await editGate(t))) return;
     const cn = clientName(t.clientId), items = list('officeExp'), cur = t.category || '';
     const m = modal(`<h3>${icon('building', 20)} تحويل إلى مصروف مكتب</h3>
       <p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م<br><span class="small muted">على العميل: ${esc(cn)}</span></p>
@@ -4258,8 +4297,8 @@ const ACT = {
   'coll-del': async el => { if (!(await ask(`إزالة <b>${esc(clientName(el.dataset.id))}</b> من قائمة التحصيل؟ (حسابه ما بيتأثرش)`, 'إزالة'))) return; collSave(collList().filter(q => q.c !== el.dataset.id)); toast('تمت الإزالة'); render(); },
   'coll-toggle': el => { const id = el.dataset.id; if (collHas(id)) { collSave(collList().filter(q => q.c !== resCid(id))); toast('اتشالت من التحصيل'); render(); } else collForm(id); },
   'pd-collect': () => printCollect(),
-  'tx-to-client': el => {
-    const t = D.txs[el.dataset.id]; if (!t || (t.type !== 'OFFICE_EXP' && !el.dataset.ty)) return;
+  'tx-to-client': async el => {
+    const t = D.txs[el.dataset.id]; if (!t || (t.type !== 'OFFICE_EXP' && !el.dataset.ty)) return; if (!(await editGate(t))) return;
     let pick = '';
     const m = modal(`<h3>${icon('user', 20)} تحويل إلى مصروف عميل</h3>
       <p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م</p>
@@ -4564,7 +4603,7 @@ const ACT = {
   'own-src-set': el => setOwnSrc(el.dataset.id, el.dataset.v),
   'tx-approve': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; if (isFull() && t.type === 'IN_OWNER' && !t.fromAcc && !isXL(t)) return openOwnSrc(t.id); approveTx(t); queueApprove([t]); changed(); closeModal(); toast('تم اعتماد الحركة'); render(); const w = owingWarn([t]); if (w.length) alertOwing(w); },
   'tx-reject': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 2, approvedBy: ME.id, approvedAt: nowIso(), updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('تم تعليمها غير معتمدة'); render(); },
-  'xl-bal': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv() || !isXL(t)) return; const on = xlInBal(t); t.batchId = on ? String(t.batchId).replace(/\+C$/, '') : t.batchId + '+C'; t.updatedAt = nowIso(); t.updatedBy = ME.id; queue('saveTx', { txs: [t] }); changed(); closeModal(); toast(on ? 'اتشالت من رصيد العميل' : 'اتحسبت في رصيد العميل'); render(); },
+  'xl-bal': async el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv() || !isXL(t)) return; if (!(await editGate(t))) return; const on = xlInBal(t); t.batchId = on ? String(t.batchId).replace(/\+C$/, '') : t.batchId + '+C'; t.updatedAt = nowIso(); t.updatedBy = ME.id; queue('saveTx', { txs: [t] }); changed(); closeModal(); toast(on ? 'اتشالت من رصيد العميل' : 'اتحسبت في رصيد العميل'); render(); },
   'rv-tab': el => { RV.tab = el.dataset.v; RV.who = ''; render(); },
   'rv-who': el => { RV.who = el.dataset.v; render(); },
   'tx-unapprove': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 0, approvedBy: '', approvedAt: '', updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('رجعت الحركة لبانتظار الاعتماد'); render(); },
@@ -4594,6 +4633,11 @@ const ACT = {
     const m = +$('#al-min').value || 0; D.lists.autoLogout = [m];
     queue('saveLists', { lists: { autoLogout: D.lists.autoLogout } }); changed(); LS.set('lastActive', String(Date.now()));
     toast(m ? 'سيخرج البرنامج تلقائيًا بعد ' + (AUTO_LOGOUT_OPTS.find(o => o[0] === m) || [0, m + ' دقيقة'])[1].replace('بعد ', '') + ' من عدم الاستخدام' : 'تم إيقاف الخروج التلقائي'); render();
+  },
+  'editcode-save': () => {
+    if (!isFull()) return; const c = ($('#ec-new').value || '').trim();
+    if (c.length < 4) return toast('الكود لا يقل عن 4 أرقام/حروف', 'err');
+    D.lists.editCodeH = [hashCode(c)]; queue('saveLists', { lists: { editCodeH: D.lists.editCodeH } }); changed(); toast('تم حفظ كود التعديل'); render();
   },
   'delcode-save': () => {
     const c = ($('#dc-new').value || '').trim();
