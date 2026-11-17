@@ -739,6 +739,53 @@ html{overflow-x:hidden}
 .kpis>div{background:var(--bg2,#f6f7f9);border-radius:10px;padding:8px 10px}.kpis small{display:block;color:#6b7280;font-size:12px}.kpis b{font-size:17px}
 @media print{.print-only{display:block!important}.cl-rep .tbl{font-size:12px}}
 
+
+/* ===== تقارير PDF ===== */
+#print-area{display:none}
+@page land{size:A4 landscape;margin:10mm}
+@media print{
+  body.pd-on>*:not(#print-area){display:none!important}
+  body.pd-on #print-area{display:block!important}
+  #print-area.pd-land{page:land}
+  .pd{font-family:inherit;color:#000;font-size:11.5px;direction:rtl}
+  .pd-top{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px double #0f2747;padding-bottom:8px;margin-bottom:10px}
+  .pd-org{display:flex;align-items:center;gap:10px}.pd-org img{width:46px;height:46px;border-radius:50%;object-fit:cover}
+  .pd-org b{display:block;font-size:17px;color:#0f2747}.pd-org span{display:block;font-size:11px;color:#444}
+  .pd-title{text-align:center}.pd-title b{display:block;font-size:17px;color:#0f2747;border:1.5px solid #0f2747;border-radius:6px;padding:3px 14px}
+  .pd-title span{display:block;font-size:10.5px;color:#444;margin-top:3px}
+  .pd-info{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:11.5px}
+  .pd-info th,.pd-info td{border:1px solid #9aa3b2;padding:4px 8px;text-align:right}
+  .pd-info th{background:#eef1f6;color:#0f2747;width:16%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-kpis{display:grid;border:1px solid #9aa3b2;border-radius:6px;margin:8px 0;overflow:hidden}
+  .pd-kpis>div{padding:6px 4px;text-align:center;border-inline-start:1px solid #9aa3b2}.pd-kpis>div:first-child{border-inline-start:0}
+  .pd-kpis small{display:block;font-size:10px;color:#333}.pd-kpis b{font-size:14px;direction:ltr;display:block}
+  .pd-kpis .neg{background:#fbeeee;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-t{width:100%;border-collapse:collapse;font-size:11px}
+  .pd-t thead{display:table-header-group}.pd-t tfoot{display:table-footer-group}
+  .pd-t th{background:#0f2747;color:#fff;border:1px solid #0f2747;padding:5px 4px;font-weight:600;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-t td{border:1px solid #9aa3b2;padding:4px 5px;text-align:right;vertical-align:middle}
+  .pd-t td.n{text-align:center;white-space:nowrap;direction:ltr}.pd-t td.c{text-align:center}
+  .pd-t tbody tr:nth-child(even) td{background:#f6f8fb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-t tr{page-break-inside:avoid}
+  .pd-t tfoot td{font-weight:700;background:#e3e8f1;border-top:2px solid #0f2747;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-t tr.pd-open td{background:#eef1f6;font-weight:600}
+  .pd .neg{color:#b91c1c}.pd .muted{color:#666}.pd .num{direction:ltr;unicode-bidi:embed}
+  .pd-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:26px;text-align:center;font-size:12px}
+  .pd-sign i{display:block;border-bottom:1px solid #000;height:34px;margin:0 16px}
+  .pd-body .card{border:1px solid #9aa3b2!important;border-radius:6px!important;box-shadow:none!important;background:#fff!important;margin:6px 0;break-inside:avoid}
+  .pd-body .grid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:6px!important}
+  .pd-body .kpi{padding:6px 8px!important}.pd-body .kpi .l{font-size:10px;color:#333}.pd-body .kpi .v{font-size:14px!important}
+  .pd-body h2.sec{font-size:13.5px;color:#0f2747;margin:12px 0 4px;border-bottom:1px solid #0f2747;padding-bottom:2px}
+  .pd-body .tbl{width:100%;border-collapse:collapse;font-size:11px}
+  .pd-body .tbl th{background:#0f2747!important;color:#fff!important;border:1px solid #0f2747;padding:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-body .tbl td{border:1px solid #9aa3b2;padding:3px 5px}
+  .pd-body .tbl tfoot td{font-weight:700;background:#e3e8f1;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-body .bars .fl{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-body .lrow{padding:4px 8px!important;border-bottom:1px solid #ddd}
+  .pd-body .tblwrap{overflow:visible!important}
+  .pd-body .kpi.hl{background:#eef1f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pd-body .kpi.hl .l,.pd-body .kpi.hl .v{color:#000!important;opacity:1!important}.pd-body .kpi .v.neg,.pd-body .neg{color:#b91c1c!important}.pd-body .pos{color:#15803d!important}
+  .pd-foot{margin-top:14px;padding-top:6px;border-top:1px solid #9aa3b2;font-size:9.5px;color:#555;text-align:center}
+}
 /* ===== الوضع الداكن ===== */
 @media screen{
 :root[data-theme=dark]{
@@ -1562,7 +1609,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261117-043000';
+const BUILD = '20261117-053000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2770,6 +2817,7 @@ function vJournal(r, el) {
         ${isPriv() ? `<select class="inp" data-j="acc"><option value="">كل الحسابات</option>${visAccounts().filter(a => !accGone(a)).map(a => `<option value="${a.id}" ${J.acc === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>` : ''}
         <div class="search grow" style="min-width:200px">${icon('search', 18)}<input class="inp" style="width:100%" data-j="q" value="${esc(J.q)}" placeholder="بحث: عميل، بند، إيصال، مكان…"></div>
         <button class="btn sm" data-act="day-review">${icon('list', 16)} مراجعة يوم</button>
+        <button class="btn sm pri" data-act="pd-journal">${icon('print', 16)} طباعة PDF</button>
         ${isPriv() ? `<button class="btn sm" data-act="j-export">${icon('download', 16)} تصدير Excel</button>` : ''}
       </div>
     </div>
@@ -2795,6 +2843,106 @@ function csvDownload(name, rows) {
   download(name, csv, 'text/csv;charset=utf-8');
 }
 
+
+/* ====== طباعة PDF احترافية لأي قائمة ====== */
+function printDoc(o) {
+  let pa = document.getElementById('print-area');
+  if (!pa) { pa = document.createElement('div'); pa.id = 'print-area'; document.body.appendChild(pa); }
+  const cols = o.cols || [], nc = cols.length;
+  const cell = (v, c) => `<td class="${c.n ? 'n' : ''}${c.c ? ' c' : ''}">${v == null || v === '' ? '' : v}</td>`;
+  pa.className = o.land ? 'pd-land' : '';
+  pa.innerHTML = `<div class="pd">
+    <div class="pd-top"><div class="pd-org">${LOGO ? `<img src="${LOGO}" alt="">` : ''}<div><b>مكتب محمود سالم</b><span>للمحاسبة والمراجعة وتأسيس الشركات</span></div></div>
+      <div class="pd-title"><b>${esc(o.title)}</b><span>${dLong(today())}</span></div></div>
+    ${(o.info || []).length ? `<table class="pd-info">${o.info.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join('')}</table>` : ''}
+    ${(o.kpis || []).length ? `<div class="pd-kpis" style="grid-template-columns:repeat(${o.kpis.length},1fr)">${o.kpis.map(([k, v, cls]) => `<div class="${cls || ''}"><small>${esc(k)}</small><b>${v}</b></div>`).join('')}</div>` : ''}
+    ${o.body ? `<div class="pd-body">${o.body}</div>` : `<table class="pd-t"><thead><tr>${cols.map(c => `<th${c.w ? ` style="width:${c.w}"` : ''}>${esc(c.h)}</th>`).join('')}</tr></thead>
+      <tbody>${o.rows.length ? o.rows.map(r => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${(r.v || r).map((v, i) => cell(v, cols[i])).join('')}</tr>`).join('') : `<tr><td colspan="${nc}" class="c">لا توجد بيانات</td></tr>`}</tbody>
+      ${o.foot ? `<tfoot><tr>${o.foot.map((v, i) => v === null ? '' : `<td${Array.isArray(v) ? ` colspan="${v[1]}"` : ''} class="${(cols[i] || {}).n ? 'n' : ''}">${Array.isArray(v) ? v[0] : v}</td>`).join('')}</tr></tfoot>` : ''}</table>`}
+    ${o.after || ''}
+    <div class="pd-foot">صدر من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · ${new Date().toLocaleString('ar-EG-u-nu-latn')}${ME ? ' · بواسطة ' + esc(ME.name) : ''}</div></div>`;
+  const oldT = document.title; document.title = (o.file || o.title).replace(/[\\/:*?"<>|]/g, '-');
+  document.body.classList.add('pd-on');
+  const done = () => { document.body.classList.remove('pd-on'); document.title = oldT; pa.innerHTML = ''; };
+  if (window.AndroidBridge) { setTimeout(() => { AndroidBridge.print(document.title); setTimeout(done, 4000); }, 120); return; }
+  window.addEventListener('afterprint', done, { once: true });
+  setTimeout(() => window.print(), 120);
+}
+const pdDesc = t => { const cn = t.clientId ? clientName(t.clientId) : '', seen = new Set([nkey(cn), nkey('مصروفات المكتب')]), out = [];
+  [t.category, ...String(t.description || '').split(' — ')].forEach(x => { x = String(x || '').trim(); const k = nkey(x); if (x && !seen.has(k)) { seen.add(k); out.push(x); } }); return out.join(' — '); };
+const pdNum = v => `<span class="${v < 0 ? 'neg' : ''}">${fmt(v)}</span>`;
+const pdPer = (a, b) => (!a || a === '0000') && (!b || b === '9999') ? 'كل الفترات' : `من ${a && a !== '0000' ? a : 'البداية'} إلى ${b && b !== '9999' ? b : today()}`;
+/* طباعة صفحة تقارير كما هي (بدون الأزرار والفلاتر) */
+function printPage(title, info, file) {
+  const v = $('#view'); if (!v) return;
+  const c = v.cloneNode(true);
+  c.querySelectorAll('label').forEach(l => { if (l.querySelector('input[type=checkbox]')) { const cd = l.closest('.card'); (cd && cd.textContent.trim() === l.textContent.trim() ? cd : l).remove(); } });
+  c.querySelectorAll('.no-print,.filters,button,.chips,.tabs,h1.pg,.rvwho,input,select,.note').forEach(e => e.remove());
+  c.querySelectorAll('[data-act]').forEach(e => { e.removeAttribute('data-act'); e.style.cursor = ''; });
+  printDoc({ title, info, file: file || title + '_' + today(), body: c.innerHTML });
+}
+function printReview(list, tabName, who) {
+  const tot = r2(list.reduce((n, t) => n + Math.abs(+t.amount || 0), 0));
+  const st = t => +t.approved === 2 ? 'غير معتمدة' : isPend(t) ? 'بانتظار الاعتماد' : 'معتمدة';
+  printDoc({ title: 'مراجعة الاعتماد — ' + tabName, file: 'مراجعة_الاعتماد_' + today(), land: true,
+    info: [['القائمة', esc(tabName)], ...(who ? [['العضو', esc(who)]] : [])],
+    kpis: [['عدد الحركات', list.length], ['إجمالي المبالغ', fmt(tot)]],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'التاريخ', c: 1 }, { h: 'العضو' }, { h: 'النوع', c: 1 }, { h: 'البيان' }, { h: 'العميل' }, { h: 'المبلغ', n: 1 }, { h: 'الحالة', c: 1 }],
+    rows: list.slice().sort(byOld).map((t, i) => [i + 1, `<span class="num">${t.date}</span>`, esc((userById(t.userId) || {}).name || accName(t.fromAcc || t.toAcc)), esc((TYPES[t.type] || {}).s || ''), esc(pdDesc(t)), esc(t.clientId ? clientName(t.clientId) : ''), fmt(Math.abs(+t.amount || 0)), st(t)]),
+    foot: [['الإجمالي (' + list.length + ' حركة)', 6], null, null, null, null, null, fmt(tot), ''] });
+}
+/* بيان أرصدة العملاء */
+function printClients(arr, label) {
+  const c = calc().cli;
+  const rows = arr.map(x => ({ x, s: c[x.id] || { n: 0, paid: 0, opening: 0, chg: 0, fees: 0, ops: 0, refund: 0, bal: 0 } }));
+  if (/عليهم|مدين/.test(label)) rows.sort((a, b) => a.s.bal - b.s.bal);
+  const T = k => r2(rows.reduce((n, r) => n + k(r.s), 0));
+  const paid = s => (s.paid || 0) + Math.max(s.opening || 0, 0), exp = s => (s.ops || 0) + (s.refund || 0);
+  const db = r2(rows.filter(r => r.s.bal < 0).reduce((n, r) => n - r.s.bal, 0)), cr = r2(rows.filter(r => r.s.bal > 0).reduce((n, r) => n + r.s.bal, 0));
+  printDoc({ title: 'بيان أرصدة العملاء', file: 'بيان_أرصدة_العملاء_' + today(), land: true,
+    info: [['الفلتر', esc(label)], ['عدد العملاء', String(rows.length)]],
+    kpis: [['عدد العملاء', rows.length], ['إجمالي المدفوع', fmt(T(paid))], ['إجمالي الأتعاب', fmt(T(s => s.chg || 0))], ['إجمالي المستحق عليهم', fmt(db), 'neg'], ['إجمالي الرصيد لهم', fmt(cr)]],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'حركات', c: 1 }, { h: 'المدفوع', n: 1 }, { h: 'الأتعاب', n: 1 }, { h: 'الرسوم', n: 1 }, { h: 'المصروفات', n: 1 }, { h: 'الرصيد', n: 1 }, { h: 'الحالة', c: 1 }],
+    rows: rows.map((r, i) => [i + 1, esc(r.x.name), `<span class="num">${esc(r.x.phone || '')}</span>`, r.s.n || 0, fmt(paid(r.s)), fmt(r.s.chg || 0), fmt(r.s.fees || 0), fmt(exp(r.s)), `<b>${pdNum(r.s.bal || 0)}</b>`, r.s.bal < -0.004 ? 'عليه' : r.s.bal > 0.004 ? 'له' : 'مسدَّد']),
+    foot: [['الإجمالي (' + rows.length + ' عميل)', 4], null, null, null, fmt(T(paid)), fmt(T(s => s.chg || 0)), fmt(T(s => s.fees || 0)), fmt(T(exp)), `<b>${pdNum(r2(cr - db))}</b>`, ''] });
+}
+/* اليومية بالفلتر الحالي */
+function printJournal() {
+  const txs = journalTxs().slice().sort((a, b) => (a.date + (a.createdAt || '')).localeCompare(b.date + (b.createdAt || '')));
+  const [a, b] = periodRange(J.period, J.from, J.to);
+  const sg = t => t.type === 'OPENING' ? 0 : txSign(t, J.acc);
+  const inT = r2(txs.filter(t => sg(t) > 0).reduce((n, t) => n + Math.abs(+t.amount), 0)), outT = r2(txs.filter(t => sg(t) < 0).reduce((n, t) => n + Math.abs(+t.amount), 0));
+  const info = [['الفترة', pdPer(a, b)]];
+  if (J.type) info.push(['النوع', esc((TYPES[J.type] || {}).n || J.type)]);
+  if (J.acc) info.push(['الحساب', esc(accName(J.acc))]);
+  if (J.q) info.push(['بحث', esc(J.q)]);
+  printDoc({ title: isPriv() ? 'تقرير اليومية' : 'حركاتي', file: 'اليومية_' + today(), land: true, info,
+    kpis: [['عدد الحركات', txs.length], ['إجمالي الوارد', fmt(inT)], ['إجمالي الصادر', fmt(outT), 'neg'], ['الصافي', pdNum(r2(inT - outT))]],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'التاريخ', c: 1 }, { h: 'النوع', c: 1 }, { h: 'البيان' }, { h: 'العميل' }, { h: 'من' }, { h: 'إلى' }, { h: 'وارد', n: 1 }, { h: 'صادر', n: 1 }],
+    rows: txs.map((t, i) => { const v = sg(t), amt = Math.abs(+t.amount); return [i + 1, `<span class="num">${t.date}</span>`, esc((TYPES[t.type] || {}).s || ''), esc(pdDesc(t)), esc(t.clientId ? clientName(t.clientId) : ''), esc(t.fromAcc ? accName(t.fromAcc) : ''), esc(t.toAcc ? accName(t.toAcc) : ''), v > 0 ? fmt(amt) : '', v < 0 ? fmt(amt) : (t.type === 'FEE' ? `<span class="muted">${fmt(amt)}</span>` : '')]; }),
+    foot: [['الإجمالي (' + txs.length + ' حركة)', 7], null, null, null, null, null, null, fmt(inT), fmt(outT)] });
+}
+/* كشف خزينة / عهدة */
+function printAccount(id) {
+  const a = accById(id); if (!a) return;
+  const [from, to] = periodRange(AS.period, AS.from, AS.to);
+  let bal = 0, opening = 0; const rows = [];
+  activeTx().filter(t => t.fromAcc === a.id || t.toAcc === a.id).sort(byOld).forEach(t => {
+    const sgn = txSign(t, a.id), v = +t.amount * (t.type === 'OPENING' ? 1 : sgn);
+    if (t.date < from) { opening = r2(opening + v); bal = opening; return; }
+    if (t.date > to) return;
+    bal = r2(bal + v); rows.push({ t, v, bal });
+  });
+  const inT = r2(rows.filter(x => x.v > 0).reduce((n, x) => n + x.v, 0)), outT = r2(rows.filter(x => x.v < 0).reduce((n, x) => n - x.v, 0));
+  const out = rows.map(({ t, v, bal }, i) => [i + 1, `<span class="num">${t.date}</span>`, esc((TYPES[t.type] || {}).s || ''), esc(pdDesc(t) + (t.clientId ? ' · ' + clientName(t.clientId) : '')), v > 0 ? fmt(v) : '', v < 0 ? fmt(-v) : '', `<b>${pdNum(bal)}</b>`]);
+  if (from !== '0000') out.unshift({ cls: 'pd-open', v: ['—', `<span class="num">${from}</span>`, '', '<b>رصيد أول الفترة</b>', '', '', `<b>${pdNum(opening)}</b>`] });
+  printDoc({ title: 'كشف حساب ' + a.name, file: 'كشف_' + a.name + '_' + today(),
+    info: [['الحساب', esc(a.name)], ['الفترة', pdPer(from, to)]],
+    kpis: [['رصيد أول الفترة', pdNum(opening)], ['وارد الفترة', fmt(inT)], ['صادر الفترة', fmt(outT), 'neg'], ['رصيد آخر الفترة', pdNum(rows.length ? rows[rows.length - 1].bal : opening)]],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'التاريخ', c: 1 }, { h: 'النوع', c: 1 }, { h: 'البيان' }, { h: 'وارد', n: 1 }, { h: 'صادر', n: 1 }, { h: 'الرصيد', n: 1 }],
+    rows: out, foot: [['الإجمالي (' + rows.length + ' حركة)', 4], null, null, null, fmt(inT), fmt(outT), `<b>${pdNum(rows.length ? rows[rows.length - 1].bal : opening)}</b>`],
+    after: a.type === 'custody' ? '<div class="pd-sign"><div>صاحب العهدة<i></i></div><div>المراجع<i></i></div><div>الاعتماد<i></i></div></div>' : '' });
+}
 /* ====== أرشيف الإكسيل ====== */
 const AJ = { month: '', member: '', kind: '', q: '', limit: 200 };
 function vArchive(r, el) {
@@ -2859,6 +3007,7 @@ function exportClRep() {
     ['', `الإجمالي (${R.rows.length} عميل)`, '', sm('n'), sm('inc'), sm('exp'), sm('fee'), r2(R.rows.reduce((s, r) => s + r.bal, 0))]]);
   toast('تم تنزيل ملف Excel');
 }
+let _pdClients = null;
 function vClients(r, el) {
   if (r.q.get('f')) { CJ.f = r.q.get('f'); }
   const sup = isSup(); if (sup && !['month', 'quarter', 'owing', 'owing1'].includes(CJ.f)) CJ.f = 'month';
@@ -2892,12 +3041,15 @@ function vClients(r, el) {
       ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(r.x.name)}</td><td>${esc(r.x.phone || '')}</td><td class="c">${r.p.n}</td><td class="n">${fmt(r.p.inc)}</td><td class="n">${fmt(r.p.exp)}</td><td class="n">${fmt(r.p.fee)}</td><td class="n"><b class="${r.bal < 0 ? 'neg' : ''}">${fmt(r.bal)}</b></td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="4">الإجمالي (${rows.length} عميل)</td><td class="n">${fmt(sm('inc'))}</td><td class="n">${fmt(sm('exp'))}</td><td class="n">${fmt(sm('fee'))}</td><td class="n">${fmt(r2(cr - db))}</td></tr></tfoot></table></div>`;
   }
+  const _lbl = ({ all: 'كل العملاء', month: 'تعاملنا معهم هذا الشهر', quarter: 'تعاملنا معهم هذا الربع', owing1: 'عليهم رصيد (آخر شهر)', owing: 'عليهم رصيد (آخر 3 شهور)', nophone: 'بدون رقم موبايل', debt: 'عليهم رصيد (مدينون)', credit: 'لهم رصيد', new: 'عملاء جدد' })[CJ.f] || 'كل العملاء';
+  _pdClients = () => printClients(arr, _lbl + (CJ.q ? ' · بحث: ' + CJ.q : ''));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</b><div class="small muted">${per ? (CJ.f === 'month' ? 'تقرير عملاء الشهر' : 'تقرير عملاء الربع') + ' — من ' + from + ' إلى ' + td : 'العملاء'}</div></div></div>
     <h1 class="pg no-print">${sup ? 'عملاء هذه الفترة' : 'العملاء'} <small>${sup ? arr.length : activeClients().length} عميل</small><span class="sp"></span><button class="btn pri sm" data-act="client-new">${icon('plus', 16)} عميل جديد</button></h1>
     <div class="filters card pad">
       <div class="search">${icon('search', 18)}<input class="inp" data-cj="q" value="${esc(CJ.q)}" placeholder="ابحث بالاسم أو رقم الموبايل"></div>
       <div class="chips scroll">${[['all', 'الكل'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
     </div>
+    ${isPriv() ? `<div class="row no-print" style="margin-top:10px;justify-content:flex-end"><button class="btn pri sm" data-act="pd-clients">${icon('print', 16)} طباعة PDF — بيان أرصدة العملاء (${arr.length})</button></div>` : ''}
     ${rep}
     ${['owing', 'owing1', 'debt'].includes(CJ.f) && isPriv() ? `<div class="card sumrow" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>👥 عدد العملاء</small><b>${arr.length}</b></div><div class="bal neg"><small>⚠️ إجمالي المستحق عليهم</small><b class="neg">${fmt(r2(arr.reduce((t, x) => t - Math.min((c[x.id] || {}).bal || 0, 0), 0)))}</b></div></div>` : ''}
     <div class="card ${per && isPriv() ? 'no-print' : ''}" style="margin-top:12px">${arr.slice(0, CJ.limit).map(x => {
@@ -3002,7 +3154,7 @@ function vClient(r, el) {
         <span class="grow"></span>
         ${filtered ? `<button class="btn sm ghost" data-act="cs-clear">مسح الفلتر</button>` : ''}
         <label class="row small" style="gap:6px;cursor:pointer"><input type="checkbox" id="psrc"> عمود «المصدر»</label>
-        <button class="btn sm pri" data-act="print">${icon('print', 16)} طباعة الكشف${filtered ? ' (حسب الفلتر)' : ''}</button></div>
+        <button class="btn sm pri" data-act="print">${icon('print', 16)} طباعة PDF${filtered ? ' (حسب الفلتر)' : ''}</button></div>
     </div>
     <h2 class="sec">كشف الحساب ${filtered ? `<span class="small muted">— ${esc(fDesc)}</span>` : ''}</h2>
     ${mineOnly ? `<div class="note info" style="margin-bottom:10px">${icon('info', 18)}<div>يعرض كشف الحساب حركاتك أنت فقط على هذا العميل.</div></div>` : ''}
@@ -3145,7 +3297,7 @@ function vAccount(r, el) {
   const inT = r2(mv.filter(x => x.v > 0).reduce((s, x) => s + x.v, 0)), outT = r2(mv.filter(x => x.v < 0).reduce((s, x) => s - x.v, 0));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم</b><div class="small muted">كشف ${esc(a.name)} — ${dLong(today())}</div></div></div>
     ${isPriv() ? `<div class="row no-print" style="margin-bottom:8px"><a href="#accounts" class="btn ghost sm">${icon('back', 16)} الخزينة والعهد</a></div>` : ''}
-    <h1 class="pg">${esc(a.name)} <span class="sp"></span>${isFull() && a.type !== 'custody' && a.id !== 'TRS' ? `<button class="btn sm no-print" data-act="acc-edit" data-id="${a.id}">${icon('edit', 16)} تعديل</button>` : ''}<button class="btn sm no-print" data-act="print">${icon('print', 16)} طباعة</button></h1>
+    <h1 class="pg">${esc(a.name)} <span class="sp"></span>${isFull() && a.type !== 'custody' && a.id !== 'TRS' ? `<button class="btn sm no-print" data-act="acc-edit" data-id="${a.id}">${icon('edit', 16)} تعديل</button>` : ''}<button class="btn sm pri no-print" data-act="pd-account" data-id="${a.id}">${icon('print', 16)} طباعة PDF</button></h1>
     ${a.type === 'custody' ? `<div class="no-print">${reviewLine(a.id)}</div>` : ''}
     <div class="grid g4"><div class="card kpi hl"><div class="l">الرصيد الحالي</div><div class="v ${accBal(a.id) < 0 ? 'neg' : ''}">${money(accBal(a.id))} <small>ج.م</small></div></div>
       ${isPriv() ? `<div class="card kpi"><div class="l">رصيد أول الفترة</div><div class="v">${money(opening)}</div></div>
@@ -3214,7 +3366,7 @@ function vReports(r, el) {
   const prow = Object.entries(pc).filter(([, v]) => v.fee || v.op).map(([id, v]) => ({ id, ...v, profit: r2(v.fee - v.op) })).sort((a, b) => b.profit - a.profit);
   const pct = (a, b) => b > 0 ? Math.round(a / b * 100) + '%' : '—';
   const debt = Object.entries(cs).filter(([, v]) => v.bal < 0).sort((a, b) => a[1].bal - b[1].bal);
-  el.innerHTML = `<h1 class="pg">التقارير</h1>
+  el.innerHTML = `<h1 class="pg">التقارير <span class="sp"></span><button class="btn sm pri no-print" data-act="pd-reports">${icon('print', 16)} طباعة PDF</button></h1>
     <div class="card pad filters"><div class="chips scroll">${PERIODS.filter(p => p[0] !== 'yest').map(([k, l]) => `<button class="chip ${RP.period === k ? 'on' : ''}" data-act="rp-period" data-v="${k}">${l}</button>`).join('')}</div>
       ${RP.period === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-rp="from" value="${RP.from}"><span class="small">إلى</span><input type="date" class="inp" data-rp="to" value="${RP.to}"></div>` : ''}
       ${xlDone() ? '' : `<label class="row small" style="cursor:pointer"><input type="checkbox" data-act="rp-legacy" ${RP.legacy ? 'checked' : ''}> تضمين بيانات يومية الإكسيل (يناير – نوفمبر 2026) للتحليل</label>`}</div>
@@ -3279,6 +3431,7 @@ const rvWho = t => {
 };
 const rvPeople = arr => { const m = {}; arr.forEach(t => { const w = rvWho(t); (m[w.k] = m[w.k] || { k: w.k, n: w.n, c: 0, s: 0 }).c++; m[w.k].s += Math.abs(+t.amount || 0); }); return Object.values(m).sort((a, b) => b.c - a.c); };
 const rvByWho = arr => RV.who ? arr.filter(t => rvWho(t).k === RV.who) : arr;
+let _pdReview = null;
 function vReview(r, el) {
   const srt = a => a.sort(byNew);
   const q = srt(queueTxs()), rej = srt(listTx().filter(t => +t.approved === 2)), okk = srt(listTx().filter(t => !isPend(t) && t.type !== 'OPENING' && t.approvedBy)).slice(0, 100);
@@ -3292,7 +3445,9 @@ function vReview(r, el) {
   const btns = t => RV.tab === 'miss' ? `<button class="btn sm pri" data-act="tx-edit" data-id="${t.id}">${icon('edit', 15)} إكمال</button>` : RV.tab === 'ok' ? `<button class="btn sm" data-act="tx-unapprove" data-id="${t.id}">تراجع عن الاعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`
     : RV.tab === 'rej' ? `<button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm" data-act="tx-unapprove" data-id="${t.id}">رجوع للانتظار</button>`
     : `<button class="btn sm pri" data-act="tx-approve" data-id="${t.id}">اعتماد</button> <button class="btn sm danger" data-act="tx-reject" data-id="${t.id}">غير معتمد</button>`;
-  el.innerHTML = `<h1 class="pg">مراجعة الاعتماد <span class="sp"></span>${qW.length ? `<button class="btn sm pri" data-act="approve-all">${icon('check', 16)} ${RV.who && RV.tab === 'q' ? `اعتماد حركات ${esc(whoN)}` : 'اعتماد الكل'} (${RV.who && RV.tab === 'q' ? qW.length : q.length})</button>` : ''}</h1>
+  const _tabN = ({ q: 'بانتظار الاعتماد', rej: 'غير معتمد', ok: 'آخر المعتمد', miss: 'بيانات ناقصة' })[RV.tab] || '';
+  _pdReview = () => printReview(list, _tabN, whoN);
+  el.innerHTML = `<h1 class="pg">مراجعة الاعتماد <span class="sp"></span><button class="btn sm no-print" data-act="pd-review">${icon('print', 16)} طباعة PDF</button> ${qW.length ? `<button class="btn sm pri" data-act="approve-all">${icon('check', 16)} ${RV.who && RV.tab === 'q' ? `اعتماد حركات ${esc(whoN)}` : 'اعتماد الكل'} (${RV.who && RV.tab === 'q' ? qW.length : q.length})</button>` : ''}</h1>
     <div class="card tblwrap"><table class="tbl"><thead><tr><th>العضو</th><th class="n">عهدته الآن</th><th class="n">بعد المراجعة</th><th class="n">غير معتمد</th></tr></thead><tbody>
     ${mem.map(a => { const n = pendOf(a.id).length; return `<tr data-act="go" data-h="account/${a.id}" style="cursor:pointer"><td>${esc(a.name.replace('عهدة ', ''))}</td><td class="n">${fmt(accBal(a.id))}</td><td class="n"><b>${fmt(accBalR(a.id))}</b></td><td class="n">${n ? `<b style="color:#b45309">${n}</b>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>
     <div class="chips" style="margin:12px 0"><button class="chip ${RV.tab === 'q' ? 'on' : ''}" data-act="rv-tab" data-v="q">بانتظار الاعتماد (${q.length})</button><button class="chip ${RV.tab === 'rej' ? 'on' : ''}" data-act="rv-tab" data-v="rej">غير معتمدة (${rej.length})</button><button class="chip ${RV.tab === 'ok' ? 'on' : ''}" data-act="rv-tab" data-v="ok">معتمدة (آخر 100)</button>${miss.length ? `<button class="chip ${RV.tab === 'miss' ? 'on' : ''}" data-act="rv-tab" data-v="miss">📝 بيانات ناقصة (${miss.length})</button>` : ''}</div>
@@ -3394,7 +3549,7 @@ function vAnalytics(r, el) {
   if (!isFull()) return go('home');
   const txs = anTxs(), { S, M, mk } = anAgg(txs);
   const body = { is: anIncome, ie: anIE, ge: anGeneral, pl: anProfit, bs: anBalance, st: anStaff, pe: anPersonal }[AN.tab](txs, S, M, mk);
-  el.innerHTML = `<h1 class="pg">التحليلات المالية</h1>
+  el.innerHTML = `<h1 class="pg">التحليلات المالية <span class="sp"></span><button class="btn sm pri no-print" data-act="pd-analytics">${icon('print', 16)} طباعة PDF</button></h1>
     <div class="card pad filters"><select class="inp" data-act-change="an-period" style="width:100%">${PERIODS.filter(p => p[0] !== 'yest').map(([k, l]) => `<option value="${k}" ${AN.period === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
       ${AN.period === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-an="from" value="${AN.from}"><span class="small">إلى</span><input type="date" class="inp" data-an="to" value="${AN.to}"></div>` : ''}
       <div class="chips scroll antabs" style="margin-top:10px">${AN_TABS.map(([k, l]) => `<button class="chip ${AN.tab === k ? 'on' : ''}" data-act="an-tab" data-v="${k}">${l}</button>`).join('')}</div></div>
@@ -3952,6 +4107,12 @@ const ACT = {
   'oj-more': () => { OJ.limit += 400; render(); },
   'cs-per': el => { CST.per = el.dataset.per; [CST.from, CST.to] = csPeriod(el.dataset.per); render(); },
   'cs-kind': el => { CST.kind = el.dataset.k; render(); },
+  'pd-clients': () => { _pdClients && _pdClients(); },
+  'pd-journal': () => printJournal(),
+  'pd-reports': () => { const [f, t] = periodRange(RP.period, RP.from, RP.to); printPage('التقارير المالية', [['الفترة', pdPer(f, t)]], 'التقارير_' + today()); },
+  'pd-analytics': () => { const [f, t] = periodRange(AN.period, AN.from, AN.to); const tn = (AN_TABS.find(x => x[0] === AN.tab) || [, ''])[1]; printPage('التحليلات المالية — ' + tn, [['الفترة', pdPer(f, t)], ['التقرير', esc(tn)]], 'التحليلات_' + tn + '_' + today()); },
+  'pd-review': () => { _pdReview && _pdReview(); },
+  'pd-account': el => printAccount(el.dataset.id),
   'cs-clear': () => { Object.assign(CST, { from: '', to: '', kind: 'all', q: '', per: 'all' }); render(); },
   'cj-f': el => { CJ.f = el.dataset.v; CJ.limit = 80; history.replaceState(null, '', '#clients'); render(); },
   'cj-more': () => { CJ.limit += 120; render(); },
