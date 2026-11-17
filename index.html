@@ -1209,7 +1209,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { home: '🏠', tasks: '📋', journal: '📒', clients: '👥', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1260,12 +1260,15 @@ const normRole = r => ({ full: 'full', sup: 'sup', staff: 'staff', admin: 'full'
 /* صلاحية تسجيل الوارد لكل دور (تُضبط من الإعدادات، والافتراضي: مسموح) */
 const IN_KINDS = [['IN_CLIENT', 'وارد من عميل'], ['IN_OWNER', 'وارد من الأستاذ محمود'], ['TRANSFER_in', 'وارد من خزنة المكتب']];
 const IN_ROLES = [['staff', 'محاسب / محامي'], ['sup', 'أدمن / مشرف']];
-const inAllowed = (role, k) => { if (role === 'full') return true; const L = (D.lists || {}).inAllow; if (!L || !L.includes('v1')) return true; return L.includes(role + ':' + k); };
+const inAllowed = (role, k, uid) => { if (role === 'full') return true; const L = (D.lists || {}).inAllow; if (!L || !L.includes('v1')) return true; if (uid === undefined) uid = typeof ME !== 'undefined' && ME ? ME.id : ''; if (uid && L.includes('u:' + uid + ':v1')) return L.includes('u:' + uid + ':' + k); return L.includes(role + ':' + k); };
 const roleTypes = role => (ROLE_TYPES[role] || []).filter(k => !['IN_CLIENT', 'IN_OWNER'].includes(k) || inAllowed(role, k));
 const canInAny = role => IN_KINDS.some(([k]) => inAllowed(role, k)) && IN_KINDS.some(([k]) => k === 'TRANSFER_in' ? (ROLE_TYPES[role] || []).includes('TRANSFER') && inAllowed(role, k) : roleTypes(role).includes(k));
 const normUser = u => ({ ...u, role: normRole(u.role), code: String(u.code), active: +u.active, deleted: +u.deleted || 0 });
+/* طرق الدفع: ثلاثة فقط. الفيزا والإنستاباي والتحويل البنكي حساب واحد */
+const PAY_BANK = 'فيزا / إنستاباي / تحويل بنكي', PAY_WAL = 'محفظة كاش (فودافون)', PAY_LIST = ['نقدي', PAY_BANK, PAY_WAL];
+const payNorm = m => { m = String(m || '').trim(); if (!m) return ''; if (PAY_LIST.includes(m)) return m; if (/فيزا|visa|انستا|إنستا|insta|تحويل|بنك|شيك/i.test(m)) return PAY_BANK; if (/كاش|فودافون|اتصالات|محفظ/.test(m)) return PAY_WAL; return /نقد/.test(m) ? 'نقدي' : m; };
 const LIST_NAMES = { govFees: 'أنواع الرسوم الحكومية', opExp: 'بنود مصروفات العملية', officeExp: 'بنود المصروفات العمومية',
-  places: 'أماكن الخدمة', payMethods: 'طرق الدفع', services: 'أنواع الخدمات', stages: 'مراحل ملف العميل' };
+  places: 'أماكن الخدمة', services: 'أنواع الخدمات', stages: 'مراحل ملف العميل' };
 
 /* ====== التخزين المحلي ====== */
 const LS = {
@@ -1609,7 +1612,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261117-053000';
+const BUILD = '20261118-014000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1945,6 +1948,7 @@ function navItems() {
     ['tasks', 'المهام', 'check'],
     ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
+    ...(priv ? [['collect', 'التحصيل', 'wallet']] : []),
     ['accounts', priv ? 'الخزينة والعهد' : 'عهدتي', 'wallet'],
     ...(priv ? [['review', 'مراجعة الاعتماد', 'check']] : []),
     ...(priv && !isSup() ? [['reports', 'التقارير', 'chart']] : []),
@@ -2011,9 +2015,9 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect };
   const fn = V[r.name] || vHome;
-  if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
+  if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client' || r.name === 'collect') && !isPriv()) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
@@ -2132,7 +2136,7 @@ function txDetails(id) {
     t.clientId && ['العميل', `<a href="#client/${t.clientId}" data-act="mclose">${esc(clientName(t.clientId))}</a>`],
     t.category && ['البند', esc(t.category)], t.receiptNo && ['رقم الإيصال', esc(t.receiptNo)],
     t.type === 'GOV_FEE' && ['صورة الإيصال', t.receiptUrl ? `<a href="${esc(t.receiptUrl)}" target="_blank" rel="noopener">فتح الصورة على Drive</a>` : (receiptPending(t.id) ? 'قيد الرفع على Drive…' : '<span class="muted">لا توجد صورة</span>')], t.place && ['المكان', esc(t.place)],
-    t.payMethod && ['طريقة الدفع', esc(t.payMethod)], t.stage && ['المرحلة', esc(t.stage)], t.service && ['الخدمة', esc(t.service)],
+    t.payMethod && ['طريقة الدفع', esc(payNorm(t.payMethod))], t.stage && ['المرحلة', esc(t.stage)], t.service && ['الخدمة', esc(t.service)],
     t.description && ['البيان', esc(t.description)], [u0 && isFem(u0) ? 'أدخلتها' : 'أدخلها', esc(u ? u.name : t.userId) + ` <span class="muted small">${t.createdAt ? new Date(t.createdAt).toLocaleString('ar-EG-u-nu-latn') : ''}</span>`],
     !+t.deleted && t.type !== 'OPENING' && ['المراجعة', isPend(t) ? (+t.approved === 2 ? '<b style="color:#b91c1c">❌ غير معتمدة</b>' : '<b style="color:#b45309">⏳ بانتظار الاعتماد</b>') : `<b style="color:#0f766e">✔ معتمدة</b>${t.approvedBy && userById(t.approvedBy) ? ' <span class="muted small">— ' + esc(userById(t.approvedBy).name) + '</span>' : ''}`],
     +t.deleted && ['الحالة', `<span class="neg">محذوفة — ${esc(t.deleteReason || '')}</span>`]
@@ -2284,7 +2288,7 @@ function officeBreakdown() {
   const m = {};
   listTx().forEach(t => {
     const s = t.toAcc === 'TRS' ? 1 : t.fromAcc === 'TRS' ? -1 : 0; if (!s) return;
-    const k = t.payMethod || 'بدون تحديد طريقة'; m[k] = r2((m[k] || 0) + s * (+t.amount || 0));
+    const k = payNorm(t.payMethod) || 'بدون تحديد طريقة'; m[k] = r2((m[k] || 0) + s * (+t.amount || 0));
   });
   const rows = Object.entries(m).filter(([, v]) => Math.abs(v) > 0.004);
   if (!rows.length) return '';
@@ -2330,7 +2334,7 @@ function formFromTx(t) {
   const f = newForm(t.type);
   Object.assign(f, {
     editId: t.id, date: t.date, clientId: t.clientId || '', place: t.place || '', stage: t.stage || '', service: t.service || '',
-    projectRef: t.projectRef || '', description: t.description || '', payMethod: t.payMethod || '', fromAcc: t.fromAcc || '', toAcc: t.toAcc || '',
+    projectRef: t.projectRef || '', description: t.description || '', payMethod: payNorm(t.payMethod), fromAcc: t.fromAcc || '', toAcc: t.toAcc || '',
     amount: String(t.amount), receiptNo: t.receiptNo || '', openTarget: t.clientId && t.type === 'OPENING' ? 'client' : 'acc'
   });
   if (t.type === 'TRANSFER') { f.lines = [{ toAcc: t.toAcc, amount: String(t.amount) }]; f.mode = t.fromAcc === 'TRS' ? 'in' : 'out'; }
@@ -2430,7 +2434,7 @@ function formHTML() {
   if (m.lines) parts.push(linesField());
   else parts.push(fld(t === 'OPENING' ? 'المبلغ (بالسالب إن كان الرصيد مدينًا)' : 'المبلغ', `<span class="amtw"><input class="inp big ltr" style="text-align:center" inputmode="decimal" data-f="amount" placeholder="0" value="${esc(F.amount)}" autocomplete="off"><button type="button" class="calcb" data-act="calc" tabindex="-1" title="آلة حاسبة" aria-label="آلة حاسبة">${icon('calc', 18)}</button></span>`, { req: 1, help: 'يمكن كتابة جمع مثل 115+85' }));
   // طريقة الدفع
-  if (['IN_CLIENT', 'IN_OWNER', 'OUT_OWNER', 'PERSONAL', 'CLIENT_REFUND', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t)) parts.push(fld('طريقة الدفع', chipsRow('payMethod', list('payMethods'), F.payMethod)));
+  if (['IN_CLIENT', 'IN_OWNER', 'OUT_OWNER', 'PERSONAL', 'CLIENT_REFUND', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t)) parts.push(fld('طريقة الدفع', chipsRow('payMethod', PAY_LIST, payNorm(F.payMethod))));
   // المرحلة
   if (t === 'GOV_FEE' || t === 'OP_EXP') parts.push(fld('مرحلة ملف العميل <span class="muted small">(اختياري)</span>', chipsRow('stage', list('stages'), F.stage, { scroll: 1 })));
   // البيان
@@ -2835,7 +2839,7 @@ function vJournal(r, el) {
 function exportJournal() {
   const txs = journalTxs();
   const head = ['التاريخ', 'النوع', 'المبلغ', 'من حساب', 'إلى حساب', 'العميل', 'رقم موبايل العميل', 'البند', 'رقم الإيصال', 'المكان', 'طريقة الدفع', 'المرحلة', 'البيان', 'أدخلها', 'رقم الحركة', 'رابط الإيصال'];
-  const rows = txs.map(t => { const c = D.clients[t.clientId] || {}; return [t.date, (TYPES[t.type] || {}).n, t.amount, accName(t.fromAcc), t.toAcc ? accName(t.toAcc) : '', c.name || '', c.phone || '', t.category, t.receiptNo, t.place, t.payMethod, t.stage, t.description, (userById(t.userId) || {}).name || t.userId, t.id, t.receiptUrl || '']; });
+  const rows = txs.map(t => { const c = D.clients[t.clientId] || {}; return [t.date, (TYPES[t.type] || {}).n, t.amount, accName(t.fromAcc), t.toAcc ? accName(t.toAcc) : '', c.name || '', c.phone || '', t.category, t.receiptNo, t.place, payNorm(t.payMethod), t.stage, t.description, (userById(t.userId) || {}).name || t.userId, t.id, t.receiptUrl || '']; });
   csvDownload(`اليومية_${today()}.csv`, [head, ...rows]);
 }
 function csvDownload(name, rows) {
@@ -3084,6 +3088,67 @@ function csPeriod(p) {
   return ({ all: ['', ''], month: [m + '-01', d], prev: [prev + '-01', end(prev)], year: [y + '-01-01', d], lastyear: [(+y - 1) + '-01-01', (+y - 1) + '-12-31'] })[p] || ['', ''];
 }
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
+/* ====== التحصيل: عملاء نحتاج نحصّل منهم ====== */
+const collList = () => { const seen = {}; return list('collect').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.c).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c] && !seen[x.c] && (seen[x.c] = 1)); };
+function collSave(arr) { D.lists = D.lists || {}; D.lists.collect = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { collect: D.lists.collect } }); changed(); }
+const collHas = id => collList().some(x => x.c === resCid(id));
+function collRows() {
+  const cs = calc().cli;
+  return collList().map(x => { const s = cs[x.c] || { bal: 0, last: '' }; return { x, s, owe: Math.max(r2(-(s.bal || 0)), 0) }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
+}
+function vCollect(r, el) {
+  const rows = collRows(), td = today();
+  const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
+  const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
+  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">💰 التحصيل</h1>
+      <button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل للتحصيل</button>
+      ${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
+    <div class="card sumrow">
+      <div><small>عملاء في قائمة التحصيل</small><b>${rows.length}</b></div>
+      <div><small>عليهم رصيد مستحق</small><b>${n0}</b></div>
+      <div><small>تأخر موعدهم</small><b class="${late ? 'neg' : ''}">${late}</b></div>
+      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>إجمالي المتوقع تحصيله</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
+    </div>
+    ${rows.length ? rows.map(({ x, s, owe }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td;
+      return `<div class="card pad" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:10px">
+        <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
+          <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}آخر نشاط: <span class="num">${esc(s.last || '—')}</span>${x.d ? ` · الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : ''}</div>
+          ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
+        <div style="text-align:left"><small class="muted">${owe > 0.004 ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد')}</small><div class="${owe > 0.004 ? 'neg' : 'pos'}" style="font-size:20px;font-weight:700">${fmt(owe > 0.004 ? owe : Math.max(s.bal || 0, 0))}</div></div></div>
+        <div class="row wrap no-print" style="margin-top:8px;gap:6px">
+          ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 16)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 16)} كشف واتساب</button>` : ''}
+          <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 16)} ملاحظة / موعد</button>
+          <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 16)} إزالة من التحصيل</button></div></div>`; }).join('')
+    : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل للتحصيل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
+    <p class="small muted" style="margin-top:12px">المبلغ المعروض هو رصيد العميل الحالي (المستحق عليه) ويتحدّث تلقائيًا مع كل دفعة تسجّلينها. العميل اللي رصيده مسدَّد يفضل في القائمة لحد ما تشيليه.</p>`;
+}
+function printCollect() {
+  const rows = collRows(), tot = r2(rows.reduce((n, q) => n + q.owe, 0));
+  printDoc({ title: 'كشف التحصيل — عملاء مطلوب التحصيل منهم', file: 'كشف_التحصيل_' + today(), land: true,
+    info: [['عدد العملاء', String(rows.length)], ['إجمالي المتوقع تحصيله', fmt(tot)]],
+    kpis: [['عدد العملاء', rows.length], ['إجمالي المتوقع تحصيله', fmt(tot), 'neg']],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'آخر نشاط', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'ملاحظة' }, { h: 'المطلوب تحصيله', n: 1 }],
+    rows: rows.map((q, i) => [i + 1, esc(D.clients[q.x.c].name), `<span class="num">${esc(D.clients[q.x.c].phone || '')}</span>`, esc(q.s.last || ''), esc(q.x.d || ''), esc(q.x.n || ''), `<b>${fmt(q.owe)}</b>`]),
+    foot: [['الإجمالي (' + rows.length + ' عميل)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
+}
+function collForm(id) {
+  const cur = collList().find(q => q.c === id) || {}; let pick = id || '';
+  const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'ملاحظة وموعد التحصيل' : 'إضافة عميل للتحصيل'}</h3>
+    ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:240px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
+    ${fld('الموعد المتوقع للتحصيل (اختياري)', `<input id="cl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
+    ${fld('ملاحظة (اختياري)', `<input id="cl-n" class="inp" placeholder="مثال: وعد يدفع نهاية الشهر" value="${esc(cur.n || '')}">`)}
+    <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const paint = () => { const l = $('#cl-l'); if (l) l.innerHTML = clientSearch($('#cl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
+  if (!id) paint();
+  m.addEventListener('input', e => { if (e.target.id === 'cl-q') paint(); });
+  m.addEventListener('click', e => { const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#cl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
+  m.querySelector('#cl-ok').onclick = () => {
+    if (!pick) return toast('اختاري العميل أولًا', 'err');
+    const arr = collList().filter(q => q.c !== pick);
+    arr.push({ c: pick, n: $('#cl-n').value.trim(), d: $('#cl-d').value, by: ME.id, at: cur.at || today() });
+    collSave(arr); closeModal(); toast('تم الحفظ في التحصيل'); render();
+  };
+}
 function vClient(r, el) {
   const c = D.clients[r.arg];
   if (!c) { el.innerHTML = '<div class="empty">العميل غير موجود.</div>'; return; }
@@ -3129,6 +3194,7 @@ function vClient(r, el) {
         </div>
         <div class="row wrap no-print">
           <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 16)} تعديل</button>
+          ${isPriv() ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 16)} ${collHas(c.id) ? 'في التحصيل ✓' : 'علّم للتحصيل'}</button>` : ''}
           ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 16)} كشف واتساب</button>` : ''}
           ${isAdmin() ? `<button class="btn sm" data-act="client-merge" data-id="${c.id}">${icon('merge', 16)} دمج</button><button class="btn sm" data-act="client-del" data-id="${c.id}">${icon('trash', 16)} حذف</button>` : ''}
         </div>
@@ -3801,8 +3867,8 @@ function vSettings(r, el) {
     <div class="row wrap" style="gap:10px;margin-bottom:10px"><div>التذكير الأول<br><input class="inp ltr" type="time" id="rm-t1" value="${rc.times[0] || '15:00'}"></div><div>التذكير الثاني<br><input class="inp ltr" type="time" id="rm-t2" value="${rc.times[1] || '16:00'}"></div></div>
     
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
-  if (isFull()) push('team', `<h2 class="sec">صلاحية تسجيل الوارد</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد أنواع الوارد التي يمكن لكل صلاحية تسجيلها. النوع غير المحدَّد لا يظهر لهم في البرنامج، وإن لم يُحدَّد أي نوع يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل أنواع الوارد دائمًا.</p>
-    <div class="inperm">${IN_ROLES.map(([r, l]) => `<div class="ipr"><b>${l}</b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="${r}:${k}" ${inAllowed(r, k) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
+  if (isFull()) push('team', `<h2 class="sec">صلاحية تسجيل الوارد</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد أنواع الوارد التي يمكن لكل شخص تسجيلها (محاسب أو محامي أو مشرف، واحد واحد). النوع غير المحدَّد لا يظهر لهم في البرنامج، وإن لم يُحدَّد أي نوع يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل أنواع الوارد دائمًا.</p>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="inperm-save">حفظ</button></div></div>`);
   if (isFull()) push('sec', `<h2 class="sec">تسجيل الخروج التلقائي</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">يخرج البرنامج تلقائيًا من حساب أي مستخدم ترك الجهاز دون استخدام لهذه المدة، ولا يدخل بعدها إلا برمز الدخول. قبل انتهاء المدة يبقى مفتوحًا كما هو. يسري على كل أجهزة الفريق.</p>
     <div class="row wrap"><select class="inp" id="al-min" style="max-width:260px">${AUTO_LOGOUT_OPTS.map(([m, l]) => `<option value="${m}" ${autoLogoutMin() === m ? 'selected' : ''}>${l}</option>`).join('')}</select><button class="btn pri" data-act="autologout-save">حفظ</button></div></div>`);
@@ -4031,7 +4097,10 @@ const ACT = {
     m.addEventListener('click', e => {
       const b = e.target.closest('[data-ty]'); if (!b) return; const ty = b.dataset.ty; if (ty === t.type) return closeModal();
       const M = TYPES[ty], acc = t.fromAcc || t.toAcc || myAcc() || 'TRS', base = t.updatedAt || '';
-      if (M.client && !t.clientId) return toast('هذه الحركة غير مرتبطة بعميل. استخدمي «تحويل لمصروف عميل» أولًا', 'err');
+      if (M.client && !t.clientId) {
+        if (['GOV_FEE', 'OP_EXP', 'IN_CLIENT', 'CLIENT_REFUND'].includes(ty)) { closeModal(); ACT['tx-to-client']({ dataset: { id: t.id, ty } }); return; }
+        return toast('هذا التصنيف يحتاج عميلًا. حوّليها أولًا لمصروف عميل (رسوم أو مباشر) ثم غيّري التصنيف', 'err');
+      }
       const patch = { type: ty, updatedAt: nowIso(), updatedBy: ME.id };
       if (ty === 'OFFICE_EXP') patch.clientId = '';
       if (ty === 'FEE') Object.assign(patch, { fromAcc: '', toAcc: '' });
@@ -4067,17 +4136,22 @@ const ACT = {
       })();
     };
   },
+  'coll-add': () => collForm(''),
+  'coll-edit': el => collForm(el.dataset.id),
+  'coll-del': async el => { if (!(await ask(`إزالة <b>${esc(clientName(el.dataset.id))}</b> من قائمة التحصيل؟ (حسابه ما بيتأثرش)`, 'إزالة'))) return; collSave(collList().filter(q => q.c !== el.dataset.id)); toast('تمت الإزالة'); render(); },
+  'coll-toggle': el => { const id = el.dataset.id; if (collHas(id)) { collSave(collList().filter(q => q.c !== resCid(id))); toast('اتشالت من التحصيل'); render(); } else collForm(id); },
+  'pd-collect': () => printCollect(),
   'tx-to-client': el => {
-    const t = D.txs[el.dataset.id]; if (!t || t.type !== 'OFFICE_EXP') return;
+    const t = D.txs[el.dataset.id]; if (!t || (t.type !== 'OFFICE_EXP' && !el.dataset.ty)) return;
     let pick = '';
     const m = modal(`<h3>${icon('user', 20)} تحويل إلى مصروف عميل</h3>
       <p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م</p>
-      ${fld('نوع مصروف العميل', `<select id="tc-type" class="inp"><option value="GOV_FEE">رسوم حكومية</option><option value="OP_EXP">مصروف عملية</option><option value="IN_CLIENT">وارد من عميل (دفعة)</option></select>`)}
+      ${fld('نوع مصروف العميل', `<select id="tc-type" class="inp"><option value="GOV_FEE">رسوم حكومية</option><option value="OP_EXP">مصروف عملية</option><option value="IN_CLIENT">وارد من عميل (دفعة)</option><option value="CLIENT_REFUND">رد مبلغ لعميل</option></select>`)}
       ${fld('العميل', `<div class="search">${icon('search', 18)}<input id="tc-q" class="inp" placeholder="ابحث عن العميل"></div><div id="tc-l" class="card" style="margin-top:8px;max-height:240px;overflow:auto"></div><div id="tc-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
       <p class="small muted">ستُحسب الحركة على العميل وتنقص رصيده بقيمتها، وتخرج من مصروفات المكتب.</p>
       <div class="acts"><button class="btn pri" id="tc-ok">تحويل</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
     const paint = () => { $('#tc-l').innerHTML = clientSearch($('#tc-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
-    paint();
+    paint(); if (el.dataset.ty) $('#tc-type').value = el.dataset.ty;
     m.addEventListener('input', e => { if (e.target.id === 'tc-q') paint(); });
     m.addEventListener('click', e => { const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#tc-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
     m.querySelector('#tc-ok').onclick = () => {
@@ -4381,7 +4455,8 @@ const ACT = {
   'approve-all': async () => { const arr = RV.tab === 'q' ? rvByWho(queueTxs()) : queueTxs(); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد كل الحركات (${arr.length})؟`, 'اعتماد الكل'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم اعتماد الكل'); render(); const w = owingWarn(arr); if (w.length) alertOwing(w); },
   'inperm-save': () => {
     if (!isFull()) return;
-    const v = ['v1', ...[...document.querySelectorAll('[data-inp]')].filter(x => x.checked).map(x => x.dataset.inp)];
+    const old = ((D.lists || {}).inAllow || []).filter(x => /^(staff|sup):/.test(x)), users = [...new Set([...document.querySelectorAll('[data-inp]')].map(x => x.dataset.inp.split(':')[1]))];
+    const v = ['v1', ...old, ...users.map(u => 'u:' + u + ':v1'), ...[...document.querySelectorAll('[data-inp]')].filter(x => x.checked).map(x => x.dataset.inp)];
     D.lists.inAllow = v; queue('saveLists', { lists: { inAllow: v } }); changed(); toast('تم حفظ صلاحيات الوارد'); render();
   },
   'rem-save': () => {
