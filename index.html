@@ -1612,7 +1612,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-014000';
+const BUILD = '20261118-024000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1630,7 +1630,7 @@ async function fetchT(url, opt, ms) {
   finally { clearTimeout(t); }
 }
 async function apiPost(action, payload) {
-  const r = await fetchT(CFG.url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ key: CFG.key, action, userId: ME ? ME.id : '', payload }) }, HEAVY[action] ? 240000 : 90000);
+  const r = await fetchT(CFG.url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ key: CFG.key, action, userId: ME ? ME.id : '', build: BUILD, payload }) }, HEAVY[action] ? 240000 : 90000);
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
@@ -1663,6 +1663,7 @@ async function flush() {
         const ops = Q.slice(0, n);
         const res = await apiPost('batch', { ops: ops.map(op => ({ action: op.action, payload: opPayload(op) })) });
         if (res.error === 'BAD_KEY') throw Object.assign(new Error('رمز الربط غير صحيح'), { hard: 1 });
+        if (res.error === 'OLD_VERSION') throw Object.assign(new Error('هذه النسخة قديمة، اضغطي «تحديث البرنامج» ثم أعيدي المحاولة'), { hard: 1 });
         if (isTransient(res) && await backoff(ops[0])) continue;
         if (!res.ok || !Array.isArray(res.results)) { NO_BATCH = true; continue; }   // سكربت الشيت قديم: نرجع لإرسال كل عملية وحدها
         const again = [];
@@ -1673,6 +1674,7 @@ async function flush() {
         const op = Q[0];
         const res = await apiPost(op.action, opPayload(op));
         if (res.error === 'BAD_KEY') throw Object.assign(new Error('رمز الربط غير صحيح'), { hard: 1 });
+        if (res.error === 'OLD_VERSION') throw Object.assign(new Error('هذه النسخة قديمة، اضغطي «تحديث البرنامج» ثم أعيدي المحاولة'), { hard: 1 });
         if (isTransient(res) && await backoff(op)) continue;
         opDone(op, res);
         Q.shift(); recent(op);
@@ -1806,6 +1808,7 @@ async function pull(full) {
   if (quick) params.rev = D.rev;
   const res = await apiGet('all', params);
   if (res.error === 'BAD_KEY') throw Object.assign(new Error('رمز الربط غير صحيح'), { hard: 1 });
+        if (res.error === 'OLD_VERSION') throw Object.assign(new Error('هذه النسخة قديمة، اضغطي «تحديث البرنامج» ثم أعيدي المحاولة'), { hard: 1 });
   if (!res.ok) throw new Error(res.error || 'خطأ');
   if (res.unchanged) return false;
   if (!quick) _lastDeep = Date.now();
