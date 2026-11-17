@@ -1613,7 +1613,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-040000';
+const BUILD = '20261118-050000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3094,6 +3094,40 @@ const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, 
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
 const TABS = [['collect', 'التحصيل'], ['deliver', 'التسليم']];
 const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return u.role === 'sup'; };
+/* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
+const LOGV = { rows: [], total: 0, q: '', limit: 300, busy: false, err: '' };
+const LOG_ACT = { create: 'إضافة', update: 'تعديل', delete: 'حذف', save: 'حفظ', restore: 'استرجاع', approve: 'اعتماد', merge: 'دمج' };
+const LOG_ENT = { transactions: 'حركة', clients: 'عميل', accounts: 'حساب', users: 'مستخدم', lists: 'قوائم', meta: 'إعدادات', archive: 'أرشيف' };
+function logVal(k, v) { if (v == null || v === '') return '—'; if (k === 'type') return (TYPES[v] || {}).n || v; if (k === 'clientId') return clientName(v) || v; if (k === 'fromAcc' || k === 'toAcc') return accName(v); if (k === 'amount') return fmt(v); if (k === 'deleted') return +v ? 'نعم' : 'لا'; return String(v).slice(0, 60); }
+function logDesc(r) {
+  let d; try { d = JSON.parse(r.data); } catch (e) { return String(r.data || '').slice(0, 100); }
+  const F = { amount: 'المبلغ', type: 'النوع', date: 'التاريخ', clientId: 'العميل', fromAcc: 'من حساب', toAcc: 'إلى حساب', category: 'البند', description: 'البيان', deleted: 'محذوفة' };
+  if (d && d.before && d.after) { const ch = Object.keys(F).filter(k => String(d.before[k] ?? '') !== String(d.after[k] ?? '')).map(k => `${F[k]}: ${logVal(k, d.before[k])} ← ${logVal(k, d.after[k])}`); return ch.join(' · ') || 'بدون تغيير ظاهر'; }
+  const x = (d && d.before) || d || {};
+  if (x.amount != null || x.type) return [logVal('type', x.type), x.amount != null ? fmt(x.amount) : '', x.clientId ? clientName(x.clientId) : '', x.description || ''].filter(Boolean).join(' · ');
+  return String(r.data || '').slice(0, 100);
+}
+function logPaint() {
+  const box = $('#log-box'); if (!box) return;
+  if (LOGV.busy) { box.innerHTML = '<div class="empty">جارٍ التحميل من الشيت…</div>'; return; }
+  if (LOGV.err) { box.innerHTML = `<div class="note err">${icon('alert', 18)}<div>${esc(LOGV.err)}</div></div>`; return; }
+  const q = nkey(LOGV.q), uname = id => (userById(id) || {}).name || id || '—';
+  const rows = LOGV.rows.filter(r => !q || nkey([uname(r.userId), LOG_ACT[r.action] || r.action, LOG_ENT[r.entity] || r.entity, r.id, logDesc(r)].join(' ')).includes(q));
+  const tb = $('#log-tb'); if (!tb) return;
+  tb.innerHTML = rows.map(r => `<tr><td class="small num" style="white-space:nowrap">${esc(new Date(r.ts).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' }))}</td><td>${esc(uname(r.userId))}</td><td><span class="badge">${esc(LOG_ACT[r.action] || r.action || '')}</span> ${esc(LOG_ENT[r.entity] || r.entity || '')}</td><td class="small">${esc(logDesc(r))}</td><td class="small muted num" style="direction:ltr">${esc(String(r.id || '').slice(0, 18))}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">لا نتائج</td></tr>';
+  $('#log-cnt').textContent = `${rows.length} من ${LOGV.rows.length} (إجمالي السجل ${LOGV.total})`;
+}
+async function logLoad() {
+  if (!cfgOk()) { LOGV.err = 'غير متصل بالشيت'; return logPaint(); }
+  LOGV.busy = true; LOGV.err = ''; logPaint();
+  try { const j = await apiGet('log', { limit: LOGV.limit }); if (!j.ok) throw new Error(j.error || 'خطأ'); LOGV.rows = j.log || []; LOGV.total = j.total || LOGV.rows.length; }
+  catch (e) { LOGV.err = 'تعذّر تحميل السجل: ' + (e.message || e) + '. تأكدي إن كود الشيت محدّث.'; }
+  LOGV.busy = false;
+  const box = $('#log-box'); if (box && !$('#log-tb')) box.innerHTML = logShell(); logPaint();
+}
+const logShell = () => `<div class="row wrap" style="gap:8px;margin-bottom:8px"><input class="inp grow" id="log-q" placeholder="ابحث: اسم أو عميل أو نوع أو رقم" value="${esc(LOGV.q)}"><button class="btn" data-act="log-reload">${icon('sync', 16)} تحديث</button><button class="btn" data-act="log-more">أقدم (+300)</button></div>
+  <div class="small muted" id="log-cnt" style="margin-bottom:6px"></div><div class="card tblwrap"><table class="tbl"><thead><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>التفاصيل (قبل ← بعد)</th><th>المعرّف</th></tr></thead><tbody id="log-tb"></tbody></table></div>`;
+document.addEventListener('input', e => { if (e.target && e.target.id === 'log-q') { LOGV.q = e.target.value; logPaint(); } });
 /* ====== التحصيل: عملاء نحتاج نحصّل منهم ====== */
 const collList = () => { const seen = {}; return list('collect').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.c).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c] && !seen[x.c] && (seen[x.c] = 1)); };
 function collSave(arr) { D.lists = D.lists || {}; D.lists.collect = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { collect: D.lists.collect } }); changed(); }
@@ -3941,6 +3975,7 @@ function vSettings(r, el) {
     <div class="row wrap"><select class="inp" id="al-min" style="max-width:260px">${AUTO_LOGOUT_OPTS.map(([m, l]) => `<option value="${m}" ${autoLogoutMin() === m ? 'selected' : ''}>${l}</option>`).join('')}</select><button class="btn pri" data-act="autologout-save">حفظ</button></div></div>`);
   if (isFull()) push('sec', `<h2 class="sec">كود الحذف</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="dc-new" type="password" inputmode="numeric" autocomplete="off" placeholder="${delCodeSet() ? 'كود جديد (يستبدل الحالي)' : 'اكتب كود الحذف'}" style="max-width:240px"><button class="btn pri" data-act="delcode-save">حفظ الكود</button></div>
     <p class="small muted" style="margin-top:8px">${delCodeSet() ? '✅ الكود مفعّل: لا تُحذف أي حركة (من أي عضو) إلا بإدخاله.' : '⚠️ لم يُحدَّد كود بعد، فالحذف حاليًا بدون كود. حدّد كودًا ليصبح الحذف به فقط.'}</p></div>`);
+  if (isFull()) push('log', `<h2 class="sec">سجل التعديلات</h2><p class="small muted" style="margin:0 0 10px">كل إضافة وتعديل وحذف اتسجّل في الشيت: مين عمله وإمتى، وقبل التعديل كان إيه وبعده بقى إيه.</p><div id="log-box">${logShell()}</div>`);
   push('bk', `<h2 class="sec">النسخ الاحتياطي</h2><div class="card pad"><div class="row wrap">
       <button class="btn" data-act="bk-export">${icon('download', 17)} تنزيل نسخة احتياطية</button>
       ${isPriv() ? `<button class="btn" data-act="j-export-all">${icon('download', 17)} تصدير كل الحركات (Excel)</button>${isSup() ? '' : `<button class="btn" data-act="cl-export">${icon('download', 17)} تصدير العملاء (Excel)</button>`}` : ''}
@@ -3952,8 +3987,8 @@ function vSettings(r, el) {
     <label class="row" style="gap:10px;cursor:pointer"><input type="checkbox" class="sw" data-look="haptic" ${LS.get('haptic', 'on') !== 'off' ? 'checked' : ''}> <span class="grow"><b>📳 اهتزاز خفيف عند اللمس</b><br><small class="muted">على الموبايلات التي تدعمه</small></span></label>
     <p class="small muted" style="margin:12px 0 0">هذه الاختيارات تُحفظ على هذا الجهاز فقط.</p></div>`);
   const CATS = [['acct', 'حسابي', 'user', 'الاسم ورمز الدخول'], ['look', 'المظهر', 'sliders', 'الوضع الداكن والخلفية المتحركة'], ['conn', 'الاتصال بالشيت', 'sync', 'رابط الشيت والمزامنة'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
-    ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['rem', 'التذكير اليومي', 'alert', 'إشعار إدخال يومية اليوم الساعة 3 و4'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير']].filter(c => secs[c[0]]);
-  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|النسخ الاحتياطي)<\/h2>/, ''); return; }
+    ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['rem', 'التذكير اليومي', 'alert', 'إشعار إدخال يومية اليوم الساعة 3 و4'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير'], ['log', 'سجل التعديلات', 'list', 'مين عدّل أو حذف إيه وإمتى']].filter(c => secs[c[0]]);
+  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|النسخ الاحتياطي|سجل التعديلات)<\/h2>/, ''); if (r.arg === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
     <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
     ${[...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="go" data-h="${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
@@ -4216,6 +4251,8 @@ const ACT = {
     D.lists.tabAcc = v; queue('saveLists', { lists: { tabAcc: v } }); changed(); toast('تم حفظ الصلاحيات'); render();
   },
   'acc-home': el => { if (!isFull()) return; const id = el.dataset.id, cur = (D.lists.accHide || []).filter(x => x !== 'v1'); const nx = cur.includes(id) ? cur.filter(x => x !== id) : cur.concat(id); D.lists.accHide = ['v1', ...nx]; queue('saveLists', { lists: { accHide: D.lists.accHide } }); changed(); toast(nx.includes(id) ? 'الخزينة اتشالت من الرئيسية ومن إجمالياتها' : 'الخزينة ظهرت في الرئيسية'); render(); },
+  'log-reload': () => logLoad(),
+  'log-more': () => { LOGV.limit = Math.min(LOGV.limit + 300, 1000); logLoad(); },
   'coll-add': () => collForm(''),
   'coll-edit': el => collForm(el.dataset.id),
   'coll-del': async el => { if (!(await ask(`إزالة <b>${esc(clientName(el.dataset.id))}</b> من قائمة التحصيل؟ (حسابه ما بيتأثرش)`, 'إزالة'))) return; collSave(collList().filter(q => q.c !== el.dataset.id)); toast('تمت الإزالة'); render(); },
