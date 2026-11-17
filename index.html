@@ -1209,7 +1209,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1393,8 +1393,9 @@ const accName = id => { if (id === OWN_EXT) return 'خارج الخزائن (م�
 /* الخزينة الخاصة: حساب (غير العهدة) له مسؤول محدد، لا يظهر إلا له */
 const accPrivate = a => !!a && a.type !== 'custody' && !!a.userId;
 const accVisible = a => !accPrivate(a) || (!!ME && a.userId === ME.id);
-const officeTrs = () => D.accounts.filter(a => a.type === 'treasury' && +a.active !== 0 && !accPrivate(a));
-const mainTrs = () => D.accounts.filter(a => a.type === 'treasury' && +a.active !== 0 && accPrivate(a) && accVisible(a));
+const accHidden = id => ((D.lists || {}).accHide || []).includes(id);
+const officeTrs = () => D.accounts.filter(a => a.type === 'treasury' && +a.active !== 0 && !accPrivate(a) && !accHidden(a.id));
+const mainTrs = () => D.accounts.filter(a => a.type === 'treasury' && +a.active !== 0 && accPrivate(a) && accVisible(a) && !accHidden(a.id));
 const trsLabel = a => accPrivate(a) ? String(a.name) : String(a.name).replace(/^الخزينة الرئيسية\s*[—-]\s*/, 'خزنة المكتب — ');
 const visAccounts = () => D.accounts.filter(accVisible);
 /* حركة لا تخص إلا حسابًا خاصًا بغيري: تُخفى من القوائم (وتبقى محسوبة في رصيد العميل إن وُجد) */
@@ -1612,7 +1613,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-024000';
+const BUILD = '20261118-040000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1951,12 +1952,10 @@ function navItems() {
     ['tasks', 'المهام', 'check'],
     ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
-    ...(priv ? [['collect', 'التحصيل', 'wallet']] : []),
+    ...(canTab('collect') ? [['collect', 'التحصيل', 'wallet']] : []),
+    ...(canTab('deliver') ? [['deliver', 'التسليم', 'archive']] : []),
     ['accounts', priv ? 'الخزينة والعهد' : 'عهدتي', 'wallet'],
     ...(priv ? [['review', 'مراجعة الاعتماد', 'check']] : []),
-    ...(priv && !isSup() ? [['reports', 'التقارير', 'chart']] : []),
-    ...(isFull() ? [['analytics', 'التحليلات المالية', 'chart']] : []),
-    ...(isFull() ? [['dups', 'مراجعة تكرار العملاء', 'merge']] : []),
     ['settings', 'الإعدادات', 'sliders']
   ];
 }
@@ -2018,9 +2017,10 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver };
   const fn = V[r.name] || vHome;
-  if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client' || r.name === 'collect') && !isPriv()) return go('home');
+  if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
+  if ((r.name === 'collect' || r.name === 'deliver') && !canTab(r.name)) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
@@ -3091,6 +3091,9 @@ function csPeriod(p) {
   return ({ all: ['', ''], month: [m + '-01', d], prev: [prev + '-01', end(prev)], year: [y + '-01-01', d], lastyear: [(+y - 1) + '-01-01', (+y - 1) + '-12-31'] })[p] || ['', ''];
 }
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
+/* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
+const TABS = [['collect', 'التحصيل'], ['deliver', 'التسليم']];
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return u.role === 'sup'; };
 /* ====== التحصيل: عملاء نحتاج نحصّل منهم ====== */
 const collList = () => { const seen = {}; return list('collect').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.c).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c] && !seen[x.c] && (seen[x.c] = 1)); };
 function collSave(arr) { D.lists = D.lists || {}; D.lists.collect = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { collect: D.lists.collect } }); changed(); }
@@ -3124,6 +3127,63 @@ function vCollect(r, el) {
           <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 16)} إزالة من التحصيل</button></div></div>`; }).join('')
     : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل للتحصيل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
     <p class="small muted" style="margin-top:12px">المبلغ المعروض هو رصيد العميل الحالي (المستحق عليه) ويتحدّث تلقائيًا مع كل دفعة تسجّلينها. العميل اللي رصيده مسدَّد يفضل في القائمة لحد ما تشيليه.</p>`;
+}
+/* ====== التسليم: مستندات لازم تتسلّم للعملاء ====== */
+const dlList = () => list('deliver').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.id && x.c && Array.isArray(x.docs)).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c]);
+function dlSave(arr) { D.lists = D.lists || {}; D.lists.deliver = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { deliver: D.lists.deliver } }); changed(); }
+const dlPend = x => x.docs.filter(d => !d.x).length;
+function vDeliver(r, el) {
+  const td = today(), L = dlList().sort((a, b) => (!!dlPend(b) - !!dlPend(a)) || String(a.d || '9999').localeCompare(String(b.d || '9999')));
+  const open = L.filter(dlPend), docsLeft = open.reduce((n, x) => n + dlPend(x), 0), late = open.filter(x => x.d && x.d < td).length;
+  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">📦 التسليم</h1>
+      <button class="btn pri" data-act="dl-add">${icon('plus', 17)} إضافة مستندات للتسليم</button>
+      ${L.length ? `<button class="btn" data-act="pd-deliver">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
+    <div class="card sumrow">
+      <div><small>ملفات لسه فيها تسليم</small><b>${open.length}</b></div>
+      <div><small>مستندات لم تُسلَّم</small><b>${docsLeft}</b></div>
+      <div><small>تأخر موعدها</small><b class="${late ? 'neg' : ''}">${late}</b></div>
+      <div><small>تم تسليمها بالكامل</small><b class="pos">${L.length - open.length}</b></div>
+    </div>
+    ${L.length ? L.map(x => { const c = D.clients[x.c], p = dlPend(x), isLate = p && x.d && x.d < td;
+      return `<div class="card pad" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:10px">
+        <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
+          <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
+          ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
+        <span class="badge ${p ? 'warn' : ''}">${p ? p + ' لم تُسلَّم' : 'تم التسليم كله ✓'}</span></div>
+        <div style="margin-top:8px">${x.docs.map((d, i) => `<label class="row" style="gap:8px;align-items:center;cursor:pointer;padding:5px 0"><input type="checkbox" data-act="dl-doc" data-id="${x.id}" data-i="${i}" ${d.x ? 'checked' : ''} style="width:20px;height:20px"><span style="${d.x ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(d.t)}</span>${d.x ? `<small class="muted num">${esc(d.x)}</small>` : ''}</label>`).join('')}</div>
+        <div class="row wrap no-print" style="margin-top:8px;gap:6px">
+          <button class="btn sm" data-act="dl-edit" data-id="${x.id}">${icon('edit', 16)} تعديل</button>
+          <button class="btn sm" data-act="dl-del" data-id="${x.id}">${icon('trash', 16)} حذف</button></div></div>`; }).join('')
+    : `<div class="card pad empty" style="margin-top:12px">لسه ماسجّلتيش مستندات للتسليم. اضغطي «إضافة مستندات للتسليم»، واختاري العميل واكتبي المستندات (كل مستند في سطر).</div>`}`;
+}
+function printDeliver() {
+  const L = dlList().filter(dlPend).sort((a, b) => String(a.d || '9999').localeCompare(String(b.d || '9999')));
+  printDoc({ title: 'كشف التسليم — مستندات مطلوب تسليمها', file: 'كشف_التسليم_' + today(), land: true,
+    info: [['عدد الملفات', String(L.length)], ['مستندات لم تُسلَّم', String(L.reduce((n, x) => n + dlPend(x), 0))]],
+    kpis: [['ملفات لسه فيها تسليم', L.length], ['مستندات لم تُسلَّم', L.reduce((n, x) => n + dlPend(x), 0)]],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'المستندات المطلوب تسليمها' }, { h: 'ملاحظة' }],
+    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, esc(x.d || ''), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
+}
+function dlForm(id, clientId) {
+  const cur = id ? (dlList().find(q => q.id === id) || {}) : {}; let pick = cur.c || clientId || '';
+  const m = modal(`<h3>${icon('archive', 20)} ${id ? 'تعديل مستندات التسليم' : 'مستندات للتسليم'}</h3>
+    ${pick ? `<p><b>${esc(clientName(pick))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="dl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="dl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="dl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
+    ${fld('المستندات (كل مستند في سطر)', `<textarea id="dl-t" class="inp" rows="5" placeholder="السجل التجاري&#10;البطاقة الضريبية&#10;عقد التأسيس">${esc((cur.docs || []).map(d => d.t).join('\\n'))}</textarea>`, { req: 1 })}
+    ${fld('الموعد (اختياري)', `<input id="dl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
+    ${fld('ملاحظة (اختياري)', `<input id="dl-n" class="inp" value="${esc(cur.n || '')}">`)}
+    <div class="acts"><button class="btn pri" id="dl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const paint = () => { const l = $('#dl-l'); if (l) l.innerHTML = clientSearch($('#dl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
+  if (!pick) paint();
+  m.addEventListener('input', e => { if (e.target.id === 'dl-q') paint(); });
+  m.addEventListener('click', e => { const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#dl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
+  m.querySelector('#dl-ok').onclick = () => {
+    if (!pick) return toast('اختاري العميل أولًا', 'err');
+    const names = $('#dl-t').value.split('\n').map(x => x.trim()).filter(Boolean);
+    if (!names.length) return toast('اكتبي مستند واحد على الأقل', 'err');
+    const old = Object.fromEntries((cur.docs || []).map(d => [d.t, d.x]));
+    const rec = { id: cur.id || uid('D-'), c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
+    dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
+  };
 }
 function printCollect() {
   const rows = collRows(), tot = r2(rows.reduce((n, q) => n + q.owe, 0));
@@ -3197,7 +3257,8 @@ function vClient(r, el) {
         </div>
         <div class="row wrap no-print">
           <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 16)} تعديل</button>
-          ${isPriv() ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 16)} ${collHas(c.id) ? 'في التحصيل ✓' : 'علّم للتحصيل'}</button>` : ''}
+          ${canTab('collect') ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 16)} ${collHas(c.id) ? 'في التحصيل ✓' : 'علّم للتحصيل'}</button>` : ''}
+          ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">${icon('archive', 16)} مستندات للتسليم</button>` : ''}
           ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 16)} كشف واتساب</button>` : ''}
           ${isAdmin() ? `<button class="btn sm" data-act="client-merge" data-id="${c.id}">${icon('merge', 16)} دمج</button><button class="btn sm" data-act="client-del" data-id="${c.id}">${icon('trash', 16)} حذف</button>` : ''}
         </div>
@@ -3366,7 +3427,7 @@ function vAccount(r, el) {
   const inT = r2(mv.filter(x => x.v > 0).reduce((s, x) => s + x.v, 0)), outT = r2(mv.filter(x => x.v < 0).reduce((s, x) => s - x.v, 0));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم</b><div class="small muted">كشف ${esc(a.name)} — ${dLong(today())}</div></div></div>
     ${isPriv() ? `<div class="row no-print" style="margin-bottom:8px"><a href="#accounts" class="btn ghost sm">${icon('back', 16)} الخزينة والعهد</a></div>` : ''}
-    <h1 class="pg">${esc(a.name)} <span class="sp"></span>${isFull() && a.type !== 'custody' && a.id !== 'TRS' ? `<button class="btn sm no-print" data-act="acc-edit" data-id="${a.id}">${icon('edit', 16)} تعديل</button>` : ''}<button class="btn sm pri no-print" data-act="pd-account" data-id="${a.id}">${icon('print', 16)} طباعة PDF</button></h1>
+    <h1 class="pg">${esc(a.name)} <span class="sp"></span>${isFull() && a.type === 'treasury' ? `<button class="btn sm no-print ${accHidden(a.id) ? '' : 'pri'}" data-act="acc-home" data-id="${a.id}">${accHidden(a.id) ? 'غير ظاهرة في الرئيسية' : '✓ تظهر وتُجمع في الرئيسية'}</button>` : ''}${isFull() && a.type !== 'custody' && a.id !== 'TRS' ? `<button class="btn sm no-print" data-act="acc-edit" data-id="${a.id}">${icon('edit', 16)} تعديل</button>` : ''}<button class="btn sm pri no-print" data-act="pd-account" data-id="${a.id}">${icon('print', 16)} طباعة PDF</button></h1>
     ${a.type === 'custody' ? `<div class="no-print">${reviewLine(a.id)}</div>` : ''}
     <div class="grid g4"><div class="card kpi hl"><div class="l">الرصيد الحالي</div><div class="v ${accBal(a.id) < 0 ? 'neg' : ''}">${money(accBal(a.id))} <small>ج.م</small></div></div>
       ${isPriv() ? `<div class="card kpi"><div class="l">رصيد أول الفترة</div><div class="v">${money(opening)}</div></div>
@@ -3870,6 +3931,9 @@ function vSettings(r, el) {
     <div class="row wrap" style="gap:10px;margin-bottom:10px"><div>التذكير الأول<br><input class="inp ltr" type="time" id="rm-t1" value="${rc.times[0] || '15:00'}"></div><div>التذكير الثاني<br><input class="inp ltr" type="time" id="rm-t2" value="${rc.times[1] || '16:00'}"></div></div>
     
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
+  if (isFull()) push('team', `<h2 class="sec">من يشوف تابَي التحصيل والتسليم</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه. الصلاحية الكاملة بتشوف الاتنين دايمًا.</p>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
+    <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="tabacc-save">حفظ</button></div></div>`);
   if (isFull()) push('team', `<h2 class="sec">صلاحية تسجيل الوارد</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد أنواع الوارد التي يمكن لكل شخص تسجيلها (محاسب أو محامي أو مشرف، واحد واحد). النوع غير المحدَّد لا يظهر لهم في البرنامج، وإن لم يُحدَّد أي نوع يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل أنواع الوارد دائمًا.</p>
     <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="inperm-save">حفظ</button></div></div>`);
@@ -3891,7 +3955,8 @@ function vSettings(r, el) {
     ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['rem', 'التذكير اليومي', 'alert', 'إشعار إدخال يومية اليوم الساعة 3 و4'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير']].filter(c => secs[c[0]]);
   if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|النسخ الاحتياطي)<\/h2>/, ''); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
-    <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
+    <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
+    ${[...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="go" data-h="${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
     <div style="text-align:center;margin-top:18px">${canInstallUI() ? `<button class="btn pri sm" data-act="pwa-install" style="margin-inline-end:8px">${icon('download', 15)} تثبيت التطبيق على هذا الجهاز</button>` : ''}<button class="btn sm" data-act="app-update">${icon('sync', 15)} تحديث البرنامج لآخر نسخة</button>
     <p class="small muted" style="margin-top:8px">إصدار التطبيق ${APP_VER} · ${BUILD}</p></div>`;
 }
@@ -4139,6 +4204,18 @@ const ACT = {
       })();
     };
   },
+  'dl-add': el => dlForm('', el.dataset.id || ''),
+  'dl-edit': el => dlForm(el.dataset.id),
+  'dl-del': async el => { if (!(await ask('حذف هذا البند من قائمة التسليم؟', 'حذف', true))) return; dlSave(dlList().filter(q => q.id !== el.dataset.id)); toast('تم الحذف'); render(); },
+  'dl-doc': el => { const L = dlList(), x = L.find(q => q.id === el.dataset.id); if (!x) return; const d = x.docs[+el.dataset.i]; d.x = d.x ? '' : today(); dlSave(L); render(); },
+  'pd-deliver': () => printDeliver(),
+  'tabacc-save': () => {
+    if (!isFull()) return;
+    const els = [...document.querySelectorAll('[data-tab]')], users = [...new Set(els.map(x => x.dataset.tab.split(':')[1]))];
+    const v = ['v1', ...users.map(u => 'u:' + u + ':v1'), ...els.filter(x => x.checked).map(x => x.dataset.tab)];
+    D.lists.tabAcc = v; queue('saveLists', { lists: { tabAcc: v } }); changed(); toast('تم حفظ الصلاحيات'); render();
+  },
+  'acc-home': el => { if (!isFull()) return; const id = el.dataset.id, cur = (D.lists.accHide || []).filter(x => x !== 'v1'); const nx = cur.includes(id) ? cur.filter(x => x !== id) : cur.concat(id); D.lists.accHide = ['v1', ...nx]; queue('saveLists', { lists: { accHide: D.lists.accHide } }); changed(); toast(nx.includes(id) ? 'الخزينة اتشالت من الرئيسية ومن إجمالياتها' : 'الخزينة ظهرت في الرئيسية'); render(); },
   'coll-add': () => collForm(''),
   'coll-edit': el => collForm(el.dataset.id),
   'coll-del': async el => { if (!(await ask(`إزالة <b>${esc(clientName(el.dataset.id))}</b> من قائمة التحصيل؟ (حسابه ما بيتأثرش)`, 'إزالة'))) return; collSave(collList().filter(q => q.c !== el.dataset.id)); toast('تمت الإزالة'); render(); },
