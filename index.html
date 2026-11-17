@@ -947,6 +947,10 @@ html{overscroll-behavior-y:none}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
+.cs-bar{margin:12px 0 4px}.cs-bar .chip{cursor:pointer}
+.stmt .stk{display:inline-block;font-size:11.5px;font-weight:600;color:var(--muted);background:var(--bg2,#f1f3f6);border-radius:6px;padding:1px 7px;margin-inline-end:4px}
+.stmt tr.st-open td{background:var(--bg2,#f6f7f9);font-weight:600}
+@media print{.stmt .stk{background:none;padding:0;color:#000}.stmt .stk::after{content:" —"}.stmt tr.st-open td{background:#eef1f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 /* ---- كشف الحساب المطبوع ---- */
 @page{size:A4;margin:12mm 11mm 14mm}
@@ -1201,7 +1205,7 @@ const ROLE_INFO = {
 };
 const ROLE_TYPES = {
   staff: ['IN_CLIENT', 'IN_OWNER', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP'],
-  sup: ['IN_CLIENT', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'IN_OWNER', 'OUT_OWNER', 'CLIENT_REFUND', 'FEE'],
+  sup: ['IN_CLIENT', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'IN_OWNER', 'OUT_OWNER', 'CLIENT_REFUND'],   // الأتعاب للصلاحية الكاملة فقط
   full: Object.keys(TYPES)
 };
 /* توافق مع الأسماء القديمة (admin / accountant / member) */
@@ -1558,7 +1562,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261117-035500';
+const BUILD = '20261117-043000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2918,6 +2922,16 @@ function clientStatement(id) {
     return { t, cr, dr, bal };
   });
 }
+const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all' };
+const ST_KINDS = [['all', 'الكل'], ['pay', 'المدفوعات'], ['fee', 'الأتعاب'], ['gov', 'الرسوم'], ['exp', 'المصروفات']];
+const stKind = t => t.type === 'IN_CLIENT' ? 'pay' : t.type === 'OPENING' ? 'open' : t.type === 'FEE' ? 'fee' : t.type === 'GOV_FEE' ? 'gov' : 'exp';
+function csPeriod(p) {
+  const d = today(), y = d.slice(0, 4), m = d.slice(0, 7);
+  const prev = (() => { const x = new Date(+y, +d.slice(5, 7) - 2, 1); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); })();
+  const end = ym => { const [yy, mm] = ym.split('-').map(Number); return ym + '-' + String(new Date(yy, mm, 0).getDate()).padStart(2, '0'); };
+  return ({ all: ['', ''], month: [m + '-01', d], prev: [prev + '-01', end(prev)], year: [y + '-01-01', d], lastyear: [(+y - 1) + '-01-01', (+y - 1) + '-12-31'] })[p] || ['', ''];
+}
+const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 function vClient(r, el) {
   const c = D.clients[r.arg];
   if (!c) { el.innerHTML = '<div class="empty">العميل غير موجود.</div>'; return; }
@@ -2931,13 +2945,26 @@ function vClient(r, el) {
   const wa = waNumber(c.phone);
   const saAll = mineOnly ? [] : saFor(c.id), sa = saAll, old = mineOnly ? [] : oldFor(c.id).slice().reverse();
   const types = roleTypes(ME.role).filter(k => TYPES[k].client);
+  if (CST.id !== c.id) Object.assign(CST, { id: c.id, from: '', to: '', kind: 'all', q: '', per: 'all' });
+  const qk = nkey(CST.q), kindOn = CST.kind !== 'all';
+  const inR = x => (!CST.from || x.t.date >= CST.from) && (!CST.to || x.t.date <= CST.to);
+  let rows = st.filter(inR);
+  if (kindOn) rows = rows.filter(x => stKind(x.t) === CST.kind);
+  if (qk) rows = rows.filter(x => nkey([x.t.category, x.t.description, x.t.receiptNo, (TYPES[x.t.type] || {}).s].join(' ')).includes(qk));
+  const showBal = !kindOn && !qk && !mineOnly;
+  const before = st.filter(x => CST.from && x.t.date < CST.from), openBal = before.length ? before[before.length - 1].bal : 0;
+  const openRow = showBal && !!CST.from && before.length > 0;
+  const P = rows.reduce((o, { t, cr, dr }) => { o.cr += cr; o.dr += dr; const k = stKind(t); if (k === 'pay' || (k === 'open' && cr)) o.paid += cr; else if (k === 'fee') o.fee += dr; else if (k === 'gov') o.gov += dr; else o.exp += dr; return o; }, { cr: 0, dr: 0, paid: 0, fee: 0, gov: 0, exp: 0 });
+  const endBal = showBal ? (rows.length ? rows[rows.length - 1].bal : openBal) : r2(P.cr - P.dr);
+  const filtered = !!(CST.from || CST.to || kindOn || qk);
+  const fDesc = [CST.from || CST.to ? `الفترة ${CST.from || 'البداية'} إلى ${CST.to || today()}` : '', kindOn ? 'النوع: ' + ST_KINDS.find(x => x[0] === CST.kind)[1] : '', qk ? 'بحث: ' + CST.q : ''].filter(Boolean).join(' · ');
   const balTxt = s.bal < -0.004 ? 'مستحق على العميل' : s.bal > 0.004 ? 'رصيد دائن للعميل (تحت الحساب)' : 'الحساب مسدَّد';
   el.innerHTML = `<div class="print-only st-head">
       <div class="st-top"><div class="st-org">${LOGO ? `<img src="${LOGO}" alt="">` : '<div class="mono">م س</div>'}<div><b>مكتب محمود سالم</b><span>للمحاسبة والمراجعة وتأسيس الشركات</span></div></div>
         <div class="st-title"><b>كشف حساب عميل</b><span>${dLong(today())}</span></div></div>
       <table class="st-info"><tr><th>اسم العميل</th><td><b>${esc(c.name)}</b></td><th>رقم الموبايل</th><td class="num">${esc(c.phone || '—')}</td></tr>
         <tr><th>تاريخ فتح الحساب</th><td class="num">${st.length ? st[0].t.date : '—'}</td><th>آخر حركة</th><td class="num">${st.length ? st[st.length - 1].t.date : '—'}</td></tr>
-        <tr><th>عدد الحركات</th><td>${st.length}</td><th>${c.address ? 'العنوان' : 'نوع العميل'}</th><td>${esc(c.address || c.kind || '—')}</td></tr></table></div>
+        <tr><th>عدد الحركات</th><td>${rows.length}</td><th>${c.address ? 'العنوان' : 'نوع العميل'}</th><td>${esc(c.address || c.kind || '—')}</td></tr>${filtered ? `<tr><th>الفلتر</th><td colspan="3">${esc(fDesc)}</td></tr>` : ''}</table></div>
     <div class="row no-print" style="margin-bottom:8px"><a href="#clients" class="btn ghost sm">${icon('back', 16)} العملاء</a></div>
     <div class="card pad no-print">
       <div class="row wrap" style="align-items:flex-start">
@@ -2951,30 +2978,43 @@ function vClient(r, el) {
         <div class="row wrap no-print">
           <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 16)} تعديل</button>
           ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 16)} كشف واتساب</button>` : ''}
-          <button class="btn sm" data-act="print">${icon('print', 16)} طباعة</button>
           ${isAdmin() ? `<button class="btn sm" data-act="client-merge" data-id="${c.id}">${icon('merge', 16)} دمج</button><button class="btn sm" data-act="client-del" data-id="${c.id}">${icon('trash', 16)} حذف</button>` : ''}
         </div>
       </div>
     </div>
     <div class="card sumrow">
-      <div><small>💰 المدفوع</small><b class="pos">${fmt(s.paid + Math.max(s.opening, 0))}</b></div>
-      <div><small>💼 الأتعاب</small><b style="color:#0f766e">${fmt(s.chg)}</b></div>
-      <div><small>🧾 الرسوم</small><b>${fmt(s.fees)}</b></div>
-      <div><small>🚗 مصروفات</small><b>${fmt(s.ops + s.refund)}</b></div>
-      <div class="bal ${s.bal < -0.004 ? 'neg' : ''}"><small>${s.bal < -0.004 ? '⚠️ عليه' : '✅ له'}</small><b class="${s.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(s.bal))}</b></div>
+      <div><small>💰 المدفوع</small><b class="pos">${fmt(P.paid)}</b></div>
+      <div><small>💼 الأتعاب</small><b style="color:#0f766e">${fmt(P.fee)}</b></div>
+      <div><small>🧾 الرسوم</small><b>${fmt(P.gov)}</b></div>
+      <div><small>🚗 المصروفات</small><b>${fmt(P.exp)}</b></div>
+      <div class="bal ${endBal < -0.004 ? 'neg' : ''}"><small>${showBal ? (endBal < -0.004 ? '⚠️ عليه' : '✅ له') : (endBal < -0.004 ? 'صافي الفلتر (عليه)' : 'صافي الفلتر (له)')}</small><b class="${endBal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(endBal))}</b></div>
     </div>
-    <div class="tiles2 no-print">${types.map(k => `<button class="btn" data-act="go" data-h="entry/${k}?client=${c.id}&amp;back=client/${c.id}"><i class="tdot" style="background:${TYPES[k].c}"></i>${TYPES[k].n}</button>`).join('')}</div>
-    <h2 class="sec">كشف الحساب <span class="small muted">(الأحدث أولًا)</span></h2>
-    <label class="row no-print small" style="margin-bottom:8px;gap:6px;cursor:pointer"><input type="checkbox" id="psrc"> طباعة عمود «المصدر» (مَن سجّل الحركة)</label>
+    ${types.length ? `<div class="tiles2 no-print">${types.map(k => `<button class="btn" data-act="go" data-h="entry/${k}?client=${c.id}&amp;back=client/${c.id}"><i class="tdot" style="background:${TYPES[k].c}"></i>${TYPES[k].n}</button>`).join('')}</div>` : ''}
+    <div class="card pad no-print cs-bar">
+      <div class="row wrap" style="gap:6px;align-items:center"><b class="small">الفترة:</b>
+        ${[['all', 'كل الحركات'], ['month', 'هذا الشهر'], ['prev', 'الشهر الماضي'], ['year', 'هذه السنة'], ['lastyear', 'السنة الماضية']].map(([k, l]) => `<button class="chip ${CST.per === k ? 'on' : ''}" data-act="cs-per" data-per="${k}">${l}</button>`).join('')}</div>
+      <div class="row wrap" style="gap:8px;margin-top:8px;align-items:center">
+        <label class="small">من <input type="date" class="inp" style="width:auto" data-cs="from" value="${esc(CST.from)}"></label>
+        <label class="small">إلى <input type="date" class="inp" style="width:auto" data-cs="to" value="${esc(CST.to)}"></label>
+        <div class="search grow" style="min-width:180px">${icon('search', 18)}<input class="inp" style="width:100%" data-cs="q" value="${esc(CST.q)}" placeholder="بحث في البيان…"></div></div>
+      <div class="row wrap" style="gap:6px;margin-top:8px;align-items:center"><b class="small">النوع:</b>
+        ${ST_KINDS.map(([k, l]) => `<button class="chip ${CST.kind === k ? 'on' : ''}" data-act="cs-kind" data-k="${k}">${l}</button>`).join('')}
+        <span class="grow"></span>
+        ${filtered ? `<button class="btn sm ghost" data-act="cs-clear">مسح الفلتر</button>` : ''}
+        <label class="row small" style="gap:6px;cursor:pointer"><input type="checkbox" id="psrc"> عمود «المصدر»</label>
+        <button class="btn sm pri" data-act="print">${icon('print', 16)} طباعة الكشف${filtered ? ' (حسب الفلتر)' : ''}</button></div>
+    </div>
+    <h2 class="sec">كشف الحساب ${filtered ? `<span class="small muted">— ${esc(fDesc)}</span>` : ''}</h2>
     ${mineOnly ? `<div class="note info" style="margin-bottom:10px">${icon('info', 18)}<div>يعرض كشف الحساب حركاتك أنت فقط على هذا العميل.</div></div>` : ''}
-    <div class="card tblwrap">${st.length ? `<table class="tbl stmt"><thead><tr><th class="c">م</th><th>التاريخ</th><th>التفاصيل</th><th class="src">المصدر</th><th class="n">عليه (مدين)</th><th class="n">له (دائن)</th><th class="n">الرصيد</th>${isPriv() ? '<th class="no-print">إجراء</th>' : ''}</tr></thead>
-      <tbody>${st.map((x, i) => [x, i + 1]).reverse().map(([{ t, cr, dr, bal }, no]) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="c">${no}</td><td class="num">${t.date}</td>
-        <td>${tBadge(t.type)}${isXL(t) ? ` <span class="xlb">إكسيل</span>` : ''} ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${t.category && t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
+    <div class="card tblwrap">${rows.length || openRow ? `<table class="tbl stmt"><thead><tr><th class="c">م</th><th>التاريخ</th><th>البيان</th><th class="src">المصدر</th><th class="n">عليه (مدين)</th><th class="n">له (دائن)</th>${showBal ? '<th class="n">الرصيد</th>' : ''}${isPriv() ? '<th class="no-print"></th>' : ''}</tr></thead>
+      <tbody>${openRow ? `<tr class="st-open"><td class="c">—</td><td class="num">${esc(CST.from)}</td><td><b>رصيد ما قبل الفترة</b></td><td class="src"></td><td class="n">${openBal < 0 ? fmt(-openBal) : '<span class="z">—</span>'}</td><td class="n">${openBal > 0 ? fmt(openBal) : '<span class="z">—</span>'}</td><td class="n"><b class="${openBal < 0 ? 'neg' : ''}">${fmt(openBal)}</b></td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr>` : ''}
+      ${rows.map(({ t, cr, dr, bal }, i) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="c">${i + 1}</td><td class="num">${t.date}</td>
+        <td><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${(d => d && d !== t.category ? `<div class="small muted">${esc(d)}</div>` : '')(t.category ? stDesc(t, c) : '')}</td>
         <td class="small src">${esc(accName(t.fromAcc || t.toAcc).replace('عهدة ', ''))}</td>
-        <td class="n neg">${dr ? fmt(dr) : '<span class="z">—</span>'}</td><td class="n pos">${cr ? fmt(cr) : '<span class="z">—</span>'}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td>${isPriv() && t.type !== 'OPENING' ? `<td class="no-print" style="white-space:nowrap"><button class="btn sm" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف">${icon('edit', 15)} تصنيف</button> <button class="btn sm danger" data-act="tx-del" data-id="${t.id}" title="حذف">${icon('trash', 15)}</button></td>` : (isPriv() ? '<td class="no-print"></td>' : '')}</tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="3">الإجمالي (${st.length} حركة)</td><td class="src"></td><td class="n">${fmt(st.reduce((a, x) => a + x.dr, 0))}</td><td class="n">${fmt(st.reduce((a, x) => a + x.cr, 0))}</td><td class="n"><b>${mineOnly ? '' : fmt(s.bal)}</b></td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr></tfoot></table>`
-      : '<div class="empty">لا توجد حركات لهذا العميل في التطبيق بعد.</div>'}</div>
-    ${mineOnly ? '' : `<div class="print-only st-close"><div class="st-bal ${s.bal < -0.004 ? 'neg' : ''}"><span>الرصيد الختامي في ${today()}</span><b>${fmt(Math.abs(s.bal))} ج.م</b><span>${balTxt}</span></div>
+        <td class="n neg">${dr ? fmt(dr) : '<span class="z">—</span>'}</td><td class="n pos">${cr ? fmt(cr) : '<span class="z">—</span>'}</td>${showBal ? `<td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td>` : ''}${isPriv() ? `<td class="no-print" style="white-space:nowrap">${t.type !== 'OPENING' ? `<button class="btn sm" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف">${icon('edit', 15)}</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="3">الإجمالي (${rows.length} حركة)</td><td class="src"></td><td class="n">${fmt(P.dr)}</td><td class="n">${fmt(P.cr)}</td>${showBal ? `<td class="n"><b>${fmt(endBal)}</b></td>` : ''}${isPriv() ? '<td class="no-print"></td>' : ''}</tr></tfoot></table>`
+      : `<div class="empty">${filtered ? 'لا توجد حركات تطابق الفلتر.' : 'لا توجد حركات لهذا العميل بعد.'}</div>`}</div>
+    ${mineOnly || !showBal ? '' : `<div class="print-only st-close"><div class="st-bal ${endBal < -0.004 ? 'neg' : ''}"><span>الرصيد ${CST.to ? 'في ' + esc(CST.to) : 'الختامي في ' + today()}</span><b>${fmt(Math.abs(endBal))} ج.م</b><span>${endBal < -0.004 ? 'مستحق على العميل' : endBal > 0.004 ? 'رصيد دائن للعميل (تحت الحساب)' : 'الحساب مسدَّد'}</span></div>
       <div class="st-sign"><div>المحاسب المسؤول<i></i></div><div>ختم المكتب<i></i></div><div>توقيع العميل<i></i></div></div>
       <div class="st-foot">صدر هذا الكشف من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · برجاء مراجعة الكشف وإبلاغنا بأي ملاحظات خلال 15 يومًا من تاريخه.</div></div>`}
     ${sa.length ? `<h2 class="sec">كشف حساب المحاسب الذكي</h2>
@@ -3827,7 +3867,7 @@ const ACT = {
   },
   'tx-retype': el => {
     const t = D.txs[el.dataset.id]; if (!t || !canEdit(t)) return;
-    const opts = ['IN_CLIENT', 'GOV_FEE', 'OP_EXP', 'FEE', 'CLIENT_REFUND', 'OFFICE_EXP'];
+    const opts = ['IN_CLIENT', 'GOV_FEE', 'OP_EXP', 'FEE', 'CLIENT_REFUND', 'OFFICE_EXP'].filter(k => k !== 'FEE' || isFull());
     const m = modal(`<h3>${icon('edit', 20)} تغيير تصنيف الحركة</h3>
       <p>${tBadge(t.type)} ${esc(txTitle(t))} — <b>${money(t.amount)}</b> ج.م${t.clientId ? `<br><span class="small muted">العميل: ${esc(clientName(t.clientId))}</span>` : ''}</p>
       <div class="chips" style="flex-wrap:wrap;gap:8px">${opts.map(k => `<button class="chip ${k === t.type ? 'on' : ''}" data-ty="${k}">${TYPES[k].n}</button>`).join('')}</div>
@@ -3910,6 +3950,9 @@ const ACT = {
   'clrep-export': () => exportClRep(),
   'aj-more': () => { AJ.limit += 300; render(); },
   'oj-more': () => { OJ.limit += 400; render(); },
+  'cs-per': el => { CST.per = el.dataset.per; [CST.from, CST.to] = csPeriod(el.dataset.per); render(); },
+  'cs-kind': el => { CST.kind = el.dataset.k; render(); },
+  'cs-clear': () => { Object.assign(CST, { from: '', to: '', kind: 'all', q: '', per: 'all' }); render(); },
   'cj-f': el => { CJ.f = el.dataset.v; CJ.limit = 80; history.replaceState(null, '', '#clients'); render(); },
   'cj-more': () => { CJ.limit += 120; render(); },
   'as-period': el => { AS.period = el.dataset.v; AS.limit = 200; render(); },
@@ -4251,7 +4294,7 @@ function bindEvents() {
     if (t.id === 'cp-q') return cpSearch(t.value);
     if (F && t.dataset.f && t.tagName === 'INPUT') { F[t.dataset.f] = t.value; if (t.dataset.f === 'amount') paintTotal(); return; }
     if (F && t.dataset.lf && t.tagName === 'INPUT') { F.lines[+t.dataset.i][t.dataset.lf] = t.value; paintTotal(); return; }
-    const filt = [['j', J], ['aj', AJ], ['oj', OJ], ['cj', CJ], ['as', AS], ['rp', RP], ['an', AN]].find(([k]) => t.dataset[k] !== undefined);
+    const filt = [['j', J], ['aj', AJ], ['oj', OJ], ['cj', CJ], ['as', AS], ['rp', RP], ['an', AN], ['cs', CST]].find(([k]) => t.dataset[k] !== undefined);
     if (filt && t.tagName === 'INPUT' && t.type !== 'date') {
       filt[1][t.dataset[filt[0]]] = t.value; clearTimeout(deb);
       deb = setTimeout(() => refocus(`[data-${filt[0]}="${t.dataset[filt[0]]}"]`), 250);
@@ -4279,8 +4322,8 @@ function bindEvents() {
       return;
     }
     if (F && t.dataset.lf && t.tagName === 'SELECT') { F.lines[+t.dataset.i][t.dataset.lf] = t.value; return; }
-    const filt = [['j', J], ['aj', AJ], ['oj', OJ], ['cj', CJ], ['as', AS], ['rp', RP], ['an', AN]].find(([k]) => t.dataset[k] !== undefined);
-    if (filt && (t.tagName === 'SELECT' || t.type === 'date')) { filt[1][t.dataset[filt[0]]] = t.value; render(); }
+    const filt = [['j', J], ['aj', AJ], ['oj', OJ], ['cj', CJ], ['as', AS], ['rp', RP], ['an', AN], ['cs', CST]].find(([k]) => t.dataset[k] !== undefined);
+    if (filt && (t.tagName === 'SELECT' || t.type === 'date')) { filt[1][t.dataset[filt[0]]] = t.value; if (filt[0] === 'cs') CST.per = 'custom'; render(); }
   });
   document.addEventListener('focusin', e => { if (e.target.id === 'cp-q') cpSearch(e.target.value); });
   document.addEventListener('keydown', e => {
