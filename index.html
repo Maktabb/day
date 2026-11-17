@@ -1071,10 +1071,25 @@ html{overscroll-behavior-y:none}
 [data-theme=dark] .note a{color:#9cc2ff}
 }
 
-.gk{grid-template-columns:repeat(2,minmax(0,1fr))}
-.gk>.kpi.hl:first-child:nth-last-child(odd){grid-column:1/-1}
-@media (min-width:760px){.gk{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.gk>.kpi.hl:first-child:nth-last-child(odd){grid-column:auto}}
 
+
+/* ====== تنسيق الرئيسية ====== */
+.hnotes{display:grid;gap:8px;margin:0 0 12px}.hnotes:empty{display:none}.hnotes .note{margin:0}
+.gk{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+.gk>.kpi{display:flex;flex-direction:column;justify-content:space-between;min-height:84px;margin:0}
+.gk>.kpi .v{white-space:nowrap}
+.gk1{margin-top:12px}.gk1 .kpi.owe{display:block;margin:0}.gk1 .kpi.owe .l{flex-wrap:wrap}
+.hops{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px;margin-top:12px;align-items:start}.hops:empty{display:none}.hops>.card{margin:0}
+.hbreak{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px;align-items:start}
+.hbreak>.card{margin:0!important}
+.pmb.rev{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(160deg,#f2b84b,#c98a12);--sh:rgba(201,138,18,.9);position:relative}
+.pmn{position:absolute;top:-6px;inset-inline-start:-4px;min-width:22px;height:22px;border-radius:11px;background:#d92d20;color:#fff;font-size:12px;font-weight:700;line-height:22px;font-style:normal;text-align:center;padding:0 5px;text-shadow:none;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.epick .pm.p4,.epick .pm.p4:has(.fee){grid-template-columns:repeat(2,minmax(0,1fr));max-width:560px;margin:0 auto}
+.epick .pm.p4 .pmb{height:58px;font-size:17px;gap:8px;padding:0 6px}
+@media (min-width:760px){
+  .gk{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .epick .pm.p4,.epick .pm.p4:has(.fee){grid-template-columns:repeat(4,minmax(0,1fr));max-width:720px}
+}
 </style>
 </head>
 <body>
@@ -1613,7 +1628,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-060000';
+const BUILD = '20261118-070000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2207,7 +2222,7 @@ function vHome(r, el) {
   if (mine) {
     const b = accBal(myAcc());
     body = `<div class="card mybal"><div class="l">👛 رصيد عهدتي</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)} <small>ج.م</small></div>
-      ${reviewLine(myAcc())}${entryPicker()}</div>`;
+      ${reviewLine(myAcc())}${entryPicker()}</div><div class="hops"></div>`;
   } else {
     const offA = officeTrs(), mainA = mainTrs();
     const trs = r2(offA.reduce((s, a) => s + accBal(a.id), 0)), trsMain = r2(mainA.reduce((s, a) => s + accBal(a.id), 0));
@@ -2218,28 +2233,30 @@ function vHome(r, el) {
     const noPhone = activeClients().filter(x => !x.phone).length;
     const dupN = (D.dups || []).filter(d => !d.status).length;
     const negs = cust.filter(a => accBal(a.id) < 0);
-    body = `<div class="grid gk">
+    const owe = isSup() ? (() => { const L = owingRecent(1), tt = r2(L.reduce((s, o) => s - o.b, 0)); return `<a class="card kpi owe" href="#clients?f=owing1"><div class="l">⚠️ عملاء آخر شهر عليهم رصيد <span class="badge" style="margin-inline-start:6px">${L.length}</span><span class="sp"></span><small>عرض القائمة ←</small></div><div class="v ${tt ? 'neg' : ''}">${money(tt)} <small>ج.م</small></div></a>`; })() : '';
+    const notes = `${!cfgOk() ? `<div class="note info">${icon('info', 18)}<div>التطبيق يعمل الآن على هذا الجهاز فقط. لربطه بالشيت ومزامنته بين أجهزة الفريق: <a href="#settings"><b>الإعدادات ← الاتصال بالشيت</b></a>.</div></div>` : ''}
+      ${noPhone && !isSup() ? `<div class="note warn">${icon('phone', 18)}<div><b>${noPhone}</b> عميلًا مرحّلين من الإكسيل بدون رقم موبايل. أضف الرقم عند أول حركة للعميل لمنع التكرار. <a href="#clients?f=nophone">عرضهم</a></div></div>` : ''}
+      ${dupN && isFull() ? `<div class="note warn">${icon('merge', 18)}<div><b>${dupN}</b> حالة تشابه محتملة بين أسماء العملاء تحتاج مراجعة. <a href="#dups">مراجعة الآن</a></div></div>` : ''}
+      ${negs.length ? `<div class="note err">${icon('alert', 18)}<div>عهد بالسالب: ${negs.map(a => `<b>${esc(a.name.replace('عهدة ', ''))}</b> (${money(accBal(a.id))})`).join('، ')}</div></div>` : ''}
+      ${FAILED.length ? `<div class="note err">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings">التفاصيل</a></div></div>` : ''}`;
+    const mo = AR_MONTHS[+ms.slice(5, 7) - 1];
+    body = `<div class="hnotes">${notes}</div>
+    <div class="grid gk">
       <div class="card kpi hl"><div class="l">🏦 خزنة المكتب</div><div class="v ${trs < 0 ? 'neg' : ''}">${money(trs)} <small>ج.م</small></div></div>
       ${mainA.length ? `<div class="card kpi hl"><div class="l">🔐 الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span></div><div class="v ${trsMain < 0 ? 'neg' : ''}">${money(trsMain)} <small>ج.م</small></div></div>
       <div class="card kpi"><div class="l">🧮 إجمالي الخزنتين</div><div class="v ${r2(trs + trsMain) < 0 ? 'neg' : ''}">${money(r2(trs + trsMain))} <small>ج.م</small></div></div>` : ''}
-      <div class="card kpi"><div class="l">👛 العهد لدى الفريق</div><div class="v">${money(custTot)}</div></div>
-      ${isSup() ? (() => { const L = owingRecent(1), tt = r2(L.reduce((s, o) => s - o.b, 0)); return `<a class="card kpi owe" href="#clients?f=owing1" style="grid-column:1/-1"><div class="l">⚠️ عملاء آخر شهر عليهم رصيد <span class="badge" style="margin-inline-start:6px">${L.length}</span><span class="sp"></span><small>عرض القائمة ←</small></div><div class="v ${tt ? 'neg' : ''}">${money(tt)} <small>ج.م</small></div></a>`; })() : ''}
-      ${isSup() ? '' : `<div class="card kpi"><div class="l">📥 وارد العملاء — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v pos">${money(inc)}</div></div>
-      <div class="card kpi"><div class="l">📤 المصروفات — ${AR_MONTHS[+ms.slice(5, 7) - 1]}</div><div class="v neg">${money(exp)}</div></div>`}
+      <div class="card kpi"><div class="l">👛 العهد لدى الفريق</div><div class="v ${custTot < 0 ? 'neg' : ''}">${money(custTot)} <small>ج.م</small></div></div>
     </div>
+    ${owe ? `<div class="gk1">${owe}</div>` : ''}
+    ${isSup() ? '' : `<div class="grid gk" style="margin-top:12px">
+      <div class="card kpi"><div class="l">📥 وارد العملاء — ${mo}</div><div class="v pos">${money(inc)} <small>ج.م</small></div></div>
+      <div class="card kpi"><div class="l">📤 المصروفات — ${mo}</div><div class="v neg">${money(exp)} <small>ج.م</small></div></div></div>`}
+    <div class="hops"></div>
+    <div class="hbreak">
     ${trsBreakdown()}
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));margin-top:12px">
-      <div class="card" style="grid-column:1/-1"><h2 class="sec" style="margin:14px 14px 6px">👛 أرصدة العهد</h2>
-        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${cust.map(a => { const b = accBal(a.id), p = (c.acc[a.id] || {}).pend; return `<a class="card kpi" href="#account/${a.id}"><div class="l">${esc(a.name.replace('عهدة ', ''))}</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)}</div>${p ? `<div class="small" style="color:#b45309">⏳ ${money(p)} بانتظار الاعتماد</div>` : ''}</a>`; }).join('') || '<div class="empty">لا توجد عُهد.</div>'}</div>
-      </div>
-      <div class="grid" style="align-content:start">
-        ${!cfgOk() ? `<div class="note info">${icon('info', 18)}<div>التطبيق يعمل الآن على هذا الجهاز فقط. لربطه بالشيت ومزامنته بين أجهزة الفريق: <a href="#settings"><b>الإعدادات ← الاتصال بالشيت</b></a>.</div></div>` : ''}
-        ${noPhone && !isSup() ? `<div class="note warn">${icon('phone', 18)}<div><b>${noPhone}</b> عميلًا مرحّلين من الإكسيل بدون رقم موبايل. أضف الرقم عند أول حركة للعميل لمنع التكرار. <a href="#clients?f=nophone">عرضهم</a></div></div>` : ''}
-        ${dupN && isFull() ? `<div class="note warn">${icon('merge', 18)}<div><b>${dupN}</b> حالة تشابه محتملة بين أسماء العملاء تحتاج مراجعة. <a href="#dups">مراجعة الآن</a></div></div>` : ''}
-        ${negs.length ? `<div class="note err">${icon('alert', 18)}<div>عهد بالسالب: ${negs.map(a => `<b>${esc(a.name.replace('عهدة ', ''))}</b> (${money(accBal(a.id))})`).join('، ')}</div></div>` : ''}
-        ${FAILED.length ? `<div class="note err">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings">التفاصيل</a></div></div>` : ''}
-      </div>
-    </div>
+    <div class="card hcust"><h2 class="sec" style="margin:14px 14px 6px">👛 أرصدة العهد</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${cust.map(a => { const b = accBal(a.id), p = (c.acc[a.id] || {}).pend; return `<a class="card kpi" href="#account/${a.id}"><div class="l">${esc(a.name.replace('عهدة ', ''))}</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)}</div>${p ? `<div class="small" style="color:#b45309">⏳ ${money(p)} بانتظار الاعتماد</div>` : ''}</a>`; }).join('') || '<div class="empty">لا توجد عُهد.</div>'}</div>
+    </div></div>
 `;
   }
   if (mine) { el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + body; return; }
@@ -2256,9 +2273,9 @@ function entryPicker() {
   const o = (k, md, n) => (allowed.includes(k) && !(k === 'TRANSFER' && md === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))) ? `<option value="entry/${k}${md ? '?mode=' + md : ''}">${n}</option>` : '';
   const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
   const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
-  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm">
+  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm ${isPriv() ? 'p4' : ''}">
       ${IN ? `<button class="pmb in" data-act="pick-open" data-g="in"><span>📥</span>وارد</button>` : ''}
-      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${isPriv() ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button>` : ''}</div>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${isPriv() ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button><button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}</div>
     <div class="eplist"></div></div>`;
 }
 function mainPair() {
@@ -3242,19 +3259,19 @@ function dlForm(id, clientId) {
 }
 function collHomeCard(view) {
   const rows = collRows(), td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
-  const d = document.createElement('div'); d.className = 'card'; d.style.marginTop = '12px';
+  const d = document.createElement('div'); d.className = 'card';
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>💰 التحصيل</b><span class="sp"></span><a href="#collect" class="small">كل التحصيل ←</a></div>
     ${rows.length ? `<div class="tks"><div class="tks-i"><b>${rows.length}</b><small>عملاء</small></div><div class="tks-i ${tot ? 'late' : ''}"><b>${fmt(tot)}</b><small>المتوقع تحصيله</small></div><div class="tks-i ${late ? 'late' : ''}"><b>${late}</b><small>متأخر</small></div></div>
     ${open.slice(0, 4).map(q => `<a class="lrow" href="#client/${q.x.c}"><b class="grow">${esc(clientName(q.x.c))}</b><span class="num neg">${fmt(q.owe)}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">لا يوجد عملاء في قائمة التحصيل.</div>`}`;
-  view.appendChild(d);
+  (view.querySelector('.hops') || view).appendChild(d);
 }
 function dlHomeCard(view) {
   const td = today(), L = dlList().filter(dlPend).sort((a, b) => String(a.d || '9999').localeCompare(String(b.d || '9999'))), left = L.reduce((n, x) => n + dlPend(x), 0), late = L.filter(x => x.d && x.d < td).length;
-  const d = document.createElement('div'); d.className = 'card'; d.style.marginTop = '12px';
+  const d = document.createElement('div'); d.className = 'card';
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>📦 التسليم</b><span class="sp"></span><a href="#deliver" class="small">كل التسليمات ←</a></div>
     ${L.length ? `<div class="tks"><div class="tks-i"><b>${L.length}</b><small>ملفات</small></div><div class="tks-i"><b>${left}</b><small>مستندات لم تُسلَّم</small></div><div class="tks-i ${late ? 'late' : ''}"><b>${late}</b><small>متأخر</small></div></div>
     ${L.slice(0, 4).map(x => `<a class="lrow" href="#deliver"><b class="grow">${esc(clientName(x.c))}</b><span class="small muted">${dlPend(x)} مستند${x.d ? ' · ' + esc(x.d) : ''}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">✅ لا توجد مستندات مطلوب تسليمها.</div>`}`;
-  view.appendChild(d);
+  (view.querySelector('.hops') || view).appendChild(d);
 }
 function printCollect() {
   const rows = collRows(), tot = r2(rows.reduce((n, q) => n + q.owe, 0));
@@ -5074,8 +5091,8 @@ function opsHomeCard(view) {
     ${L.length > 5 ? `<a href="#tasks" class="tk small muted" style="justify-content:center">و${L.length - 5} مهام أخرى</a>` : ''}`
     : `<div class="tk small muted" style="justify-content:center">✅ لا توجد مهام مفتوحة عليك الآن.</div>`}
     ${teamLate ? `<a href="#tasks" class="tk small tk-late" data-act="tk-who" data-k="all">متأخرات لدى الفريق: ${teamLate}</a>` : ''}</div>`;
-  const anchor = view.querySelector('.mybal') || view.querySelector('.grid.gk');
-  if (anchor) anchor.insertAdjacentHTML('afterend', html);
+  const anchor = view.querySelector('.hops');
+  if (anchor) anchor.insertAdjacentHTML('beforeend', html);
   else { const h = view.querySelector('h1.pg'); if (h) h.insertAdjacentHTML('afterend', html); else view.insertAdjacentHTML('afterbegin', html); }
 }
 /* ---- داخل نموذج الحركة: مهام العميل المختار (ثم باقي مهام الموظف) تُغلق مع الحفظ ---- */
