@@ -1084,6 +1084,8 @@ html{overscroll-behavior-y:none}
 .hbreak>.card{margin:0!important}
 .pmb.rev{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(160deg,#f2b84b,#c98a12);--sh:rgba(201,138,18,.9);position:relative}
 .pmn{position:absolute;top:-6px;inset-inline-start:-4px;min-width:22px;height:22px;border-radius:11px;background:#d92d20;color:#fff;font-size:12px;font-weight:700;line-height:22px;font-style:normal;text-align:center;padding:0 5px;text-shadow:none;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.epick .pm.p3,.epick .pm.p3:has(.fee){grid-template-columns:repeat(3,minmax(0,1fr));max-width:560px;margin:0 auto}
+.epick .pm.p3 .pmb{height:58px;font-size:16px;gap:6px;padding:0 6px}
 .epick .pm.p4,.epick .pm.p4:has(.fee){grid-template-columns:repeat(2,minmax(0,1fr));max-width:560px;margin:0 auto}
 .epick .pm.p4 .pmb{height:58px;font-size:17px;gap:8px;padding:0 6px}
 @media (min-width:760px){
@@ -1276,7 +1278,9 @@ const normRole = r => ({ full: 'full', sup: 'sup', staff: 'staff', admin: 'full'
 const IN_KINDS = [['IN_CLIENT', 'وارد من عميل'], ['IN_OWNER', 'وارد من الأستاذ محمود'], ['TRANSFER_in', 'وارد من خزنة المكتب']];
 const IN_ROLES = [['staff', 'محاسب / محامي'], ['sup', 'أدمن / مشرف']];
 const inAllowed = (role, k, uid) => { if (role === 'full') return true; const L = (D.lists || {}).inAllow; if (!L || !L.includes('v1')) return true; if (uid === undefined) uid = typeof ME !== 'undefined' && ME ? ME.id : ''; if (uid && L.includes('u:' + uid + ':v1')) return L.includes('u:' + uid + ':' + k); return L.includes(role + ':' + k); };
-const roleTypes = role => (ROLE_TYPES[role] || []).filter(k => !['IN_CLIENT', 'IN_OWNER'].includes(k) || inAllowed(role, k));
+/* صلاحية الأتعاب: للصلاحية الكاملة دائمًا، ولغيرها بتعليم من الإعدادات (الافتراضي: غير مسموح) */
+const feeAllowed = (role, uid) => { if (role === 'full') return true; const L = (D.lists || {}).inAllow || []; if (uid === undefined) uid = typeof ME !== 'undefined' && ME ? ME.id : ''; return !!uid && L.includes('u:' + uid + ':v1') && L.includes('u:' + uid + ':FEE'); };
+const roleTypes = role => (ROLE_TYPES[role] || []).filter(k => !['IN_CLIENT', 'IN_OWNER'].includes(k) || inAllowed(role, k)).concat(role !== 'full' && feeAllowed(role) ? ['FEE'] : []);
 const canInAny = role => IN_KINDS.some(([k]) => inAllowed(role, k)) && IN_KINDS.some(([k]) => k === 'TRANSFER_in' ? (ROLE_TYPES[role] || []).includes('TRANSFER') && inAllowed(role, k) : roleTypes(role).includes(k));
 const normUser = u => ({ ...u, role: normRole(u.role), code: String(u.code), active: +u.active, deleted: +u.deleted || 0 });
 /* طرق الدفع: ثلاثة فقط. الفيزا والإنستاباي والتحويل البنكي حساب واحد */
@@ -1628,7 +1632,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-070000';
+const BUILD = '20261118-074500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2273,14 +2277,14 @@ function entryPicker() {
   const o = (k, md, n) => (allowed.includes(k) && !(k === 'TRANSFER' && md === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))) ? `<option value="entry/${k}${md ? '?mode=' + md : ''}">${n}</option>` : '';
   const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
   const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
-  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm ${isPriv() ? 'p4' : ''}">
+  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (roleTypes(ME.role).includes('FEE') ? 1 : 0) + (isPriv() ? 1 : 0); return n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
       ${IN ? `<button class="pmb in" data-act="pick-open" data-g="in"><span>📥</span>وارد</button>` : ''}
-      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${isPriv() ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button><button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}</div>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${roleTypes(ME.role).includes('FEE') ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}</div>
     <div class="eplist"></div></div>`;
 }
 function mainPair() {
-  const inOk = canInAny(ME.role), n = 1 + (inOk ? 1 : 0) + (isPriv() ? 1 : 0);
-  return `<div class="bigpair ${n === 3 ? 'p3' : ''}">${inOk ? bigBtn('📥', 'وارد', 'من الخزنة أو الأستاذ محمود أو عميل', TYPES.IN_CLIENT.c, 'entry/in', 'v') : ''}${bigBtn('📤', 'صرف', 'رسوم، مصروفات، أو تحويل عهدة', TYPES.OFFICE_EXP.c, 'entry/out', 'v')}${isPriv() ? bigBtn('💼', 'أتعاب', 'أتعاب مستحقة على عميل', TYPES.FEE.c, 'entry/FEE', 'v') : ''}</div>`;
+  const inOk = canInAny(ME.role), feeOk = roleTypes(ME.role).includes('FEE'), n = 1 + (inOk ? 1 : 0) + (feeOk ? 1 : 0);
+  return `<div class="bigpair ${n === 3 ? 'p3' : ''}">${inOk ? bigBtn('📥', 'وارد', 'من الخزنة أو الأستاذ محمود أو عميل', TYPES.IN_CLIENT.c, 'entry/in', 'v') : ''}${bigBtn('📤', 'صرف', 'رسوم، مصروفات، أو تحويل عهدة', TYPES.OFFICE_EXP.c, 'entry/out', 'v')}${feeOk ? bigBtn('💼', 'أتعاب', 'أتعاب مستحقة على عميل', TYPES.FEE.c, 'entry/FEE', 'v') : ''}</div>`;
 }
 function typeTile(k) {
   const m = TYPES[k];
@@ -4022,8 +4026,8 @@ function vSettings(r, el) {
   if (isFull()) push('team', `<h2 class="sec">من يشوف تابَي التحصيل والتسليم</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه. الصلاحية الكاملة بتشوف الاتنين دايمًا.</p>
     <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="tabacc-save">حفظ</button></div></div>`);
-  if (isFull()) push('team', `<h2 class="sec">صلاحية تسجيل الوارد</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد أنواع الوارد التي يمكن لكل شخص تسجيلها (محاسب أو محامي أو مشرف، واحد واحد). النوع غير المحدَّد لا يظهر لهم في البرنامج، وإن لم يُحدَّد أي نوع يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل أنواع الوارد دائمًا.</p>
-    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
+  if (isFull()) push('team', `<h2 class="sec">صلاحية الوارد والأتعاب</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد لكل شخص (محاسب أو محامي أو مشرف، واحد واحد) أنواع الوارد اللي يسجّلها، وهل يسجّل «أتعاب» ولا لأ. النوع غير المحدَّد لا يظهر له في البرنامج، وإن لم يُحدَّد أي وارد يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل شيء دائمًا. الأتعاب افتراضيًا للصلاحية الكاملة فقط.</p>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-inp="u:${u.id}:FEE" ${feeAllowed(u.role, u.id) ? 'checked' : ''}> 💼 أتعاب</label></div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="inperm-save">حفظ</button></div></div>`);
   if (isFull()) push('sec', `<h2 class="sec">تسجيل الخروج التلقائي</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">يخرج البرنامج تلقائيًا من حساب أي مستخدم ترك الجهاز دون استخدام لهذه المدة، ولا يدخل بعدها إلا برمز الدخول. قبل انتهاء المدة يبقى مفتوحًا كما هو. يسري على كل أجهزة الفريق.</p>
     <div class="row wrap"><select class="inp" id="al-min" style="max-width:260px">${AUTO_LOGOUT_OPTS.map(([m, l]) => `<option value="${m}" ${autoLogoutMin() === m ? 'selected' : ''}>${l}</option>`).join('')}</select><button class="btn pri" data-act="autologout-save">حفظ</button></div></div>`);
@@ -4630,7 +4634,7 @@ const ACT = {
     if (!isFull()) return;
     const old = ((D.lists || {}).inAllow || []).filter(x => /^(staff|sup):/.test(x)), users = [...new Set([...document.querySelectorAll('[data-inp]')].map(x => x.dataset.inp.split(':')[1]))];
     const v = ['v1', ...old, ...users.map(u => 'u:' + u + ':v1'), ...[...document.querySelectorAll('[data-inp]')].filter(x => x.checked).map(x => x.dataset.inp)];
-    D.lists.inAllow = v; queue('saveLists', { lists: { inAllow: v } }); changed(); toast('تم حفظ صلاحيات الوارد'); render();
+    D.lists.inAllow = v; queue('saveLists', { lists: { inAllow: v } }); changed(); toast('تم حفظ صلاحيات الوارد والأتعاب'); render();
   },
   'rem-save': () => {
     const t = [$('#rm-t1').value, $('#rm-t2').value].filter(Boolean).sort();
