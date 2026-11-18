@@ -1647,7 +1647,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-190000';
+const BUILD = '20261118-191500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3245,7 +3245,7 @@ function vDeliver(r, el) {
   const open = L.filter(dlPend), docsLeft = open.reduce((n, x) => n + dlPend(x), 0), late = open.filter(x => x.d && x.d < td).length;
   const nOut = open.filter(x => dlKind(x) === 'out').reduce((n, x) => n + dlPend(x), 0), nIn = open.filter(x => dlKind(x) === 'in').reduce((n, x) => n + dlPend(x), 0);
   el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">📦 التسليم والاستلام</h1>
-      <button class="btn pri" data-act="dl-add">${icon('plus', 17)} إضافة تسليم / استلام</button>
+      <button class="btn" data-act="dl-wa">📲 واتساب</button><button class="btn pri" data-act="dl-add">${icon('plus', 17)} إضافة تسليم / استلام</button>
       ${L.length ? `<button class="btn" data-act="pd-deliver">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
     <div class="chips" style="margin-bottom:10px">${[['all', 'الكل'], ['out', '📤 تسليم للعميل'], ['in', '📥 استلام من العميل']].map(([k, l]) => `<button class="chip ${DLF === k ? 'on' : ''}" data-act="dl-filt" data-k="${k}">${l}</button>`).join('')}</div>
     <div class="card sumrow">
@@ -3299,6 +3299,25 @@ function dsumHomeCard(view) {
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>⭐ ملاحظات مهمة من الفريق</b><span class="sp"></span><span class="small muted">${imp.length}</span></div>
     ${imp.slice(0, 6).map(r => `<div class="lrow" style="align-items:flex-start"><div class="grow"><b>${esc(hrName(r.u))}</b> <span class="small muted">${esc(r.d)}</span><div style="white-space:pre-wrap">${esc(r.n)}</div></div><button class="btn sm" data-act="dsum-ok" data-k="${esc(r._k)}">تمت ✓</button></div>`).join('')}`;
   (view.querySelector('.hops') || view).prepend(d);
+}
+function dlWaText(c, recs) {
+  const g = (title, k) => { const a = recs.filter(x => dlKind(x) === k).flatMap(x => x.docs.filter(d => !d.x).map(d => d.t)); return a.length ? `\n*${title}*\n` + a.map(t => '• ' + t).join('\n') : ''; };
+  return `السادة / ${c.name}\nتحية طيبة من مكتب محمود سالم للمحاسبة والمراجعة${g('📥 مستندات برجاء موافاتنا بها', 'in')}${g('📤 مستندات جاهزة للاستلام من المكتب', 'out')}\n\nشكرًا لتعاونكم.`;
+}
+function dlWaModal() {
+  const by = {}; dlList().filter(dlPend).forEach(x => (by[x.c] = by[x.c] || []).push(x));
+  const rows = Object.entries(by).map(([id, recs]) => ({ c: D.clients[id], recs, n: recs.reduce((n, x) => n + dlPend(x), 0) })).sort((a, b) => b.n - a.n);
+  const ap = waApp();
+  const m = modal(`<h3>📲 تذكير العملاء بالمستندات</h3>
+    <div class="chips" style="margin-bottom:10px">${[['auto', 'اختيار تلقائي'], ['reg', WAK.reg[0]], ['biz', WAK.biz[0]]].map(([k, l]) => `<button class="chip ${ap === k ? 'on' : ''}" data-wk="${k}">${l}</button>`).join('')}</div>
+    <p class="small muted" style="margin:0 0 8px">رسالة لكل عميل بالمستندات اللي لسه ما اتسلّمتش/ما اتستلمتش، مجمّعة (استلام منه + تسليم له).</p>
+    ${rows.length ? rows.map((x, i) => `<div class="card pad" style="margin-top:6px"><div class="row wrap"><b class="grow">${esc(x.c.name)}</b><span class="badge warn">${x.n} مستند</span></div><div class="row wrap" style="margin-top:6px;gap:6px"><button class="btn sm pri" data-wi="${i}">📲 إرسال</button><button class="btn sm" data-wc="${i}">نسخ</button>${x.c.phone ? `<span class="small muted num">${esc(x.c.phone)}</span>` : '<span class="small muted">مفيش رقم — هتختاري من واتساب</span>'}</div></div>`).join('') : '<div class="empty">لا توجد مستندات معلّقة ✅</div>'}
+    <div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  m.addEventListener('click', e => {
+    const wk = e.target.closest('[data-wk]'); if (wk) { try { localStorage.setItem('waApp', wk.dataset.wk); } catch (x) { } m.querySelectorAll('[data-wk]').forEach(b => b.classList.toggle('on', b === wk)); return; }
+    const wi = e.target.closest('[data-wi]'); if (wi) { const x = rows[wi.dataset.wi], u = waUrl(x.c.phone, dlWaText(x.c, x.recs), waApp()); if (u.startsWith('intent:')) location.href = u; else window.open(u, '_blank'); return; }
+    const wc = e.target.closest('[data-wc]'); if (wc) { const x = rows[wc.dataset.wc]; (navigator.clipboard ? navigator.clipboard.writeText(dlWaText(x.c, x.recs)) : Promise.reject()).then(() => toast('تم النسخ'), () => toast('تعذّر النسخ', 'err')); }
+  });
 }
 function dlForm(id, clientId) {
   const cur = id ? (dlList().find(q => q.id === id) || {}) : {}; let pick = cur.c || clientId || '';
@@ -4545,6 +4564,7 @@ const ACT = {
       })();
     };
   },
+  'dl-wa': () => dlWaModal(),
   'dl-filt': el => { DLF = el.dataset.k; render(); },
   'dl-add': el => dlForm('', el.dataset.id || ''),
   'dl-edit': el => dlForm(el.dataset.id),
