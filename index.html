@@ -1097,6 +1097,10 @@ html{overscroll-behavior-y:none}
 .epick .pm.p5,.epick .pm.p5:has(.fee){grid-template-columns:repeat(2,minmax(0,1fr));max-width:560px;margin:0 auto}
 .epick .pm.p5 .pmb{height:58px;font-size:17px;gap:8px;padding:0 6px}
 .epick .pm.p5>.pmb:last-child:nth-child(odd){grid-column:1/-1}
+.epick .pm.p6{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:560px;margin:0 auto}
+.epick .pm.p6 .pmb{flex-direction:column;height:78px;gap:4px;font-size:15px;padding:0 4px}
+.epick .pm.p6 .pmb span{font-size:26px}
+@media (min-width:760px){.epick .pm.p6{grid-template-columns:repeat(6,minmax(0,1fr));max-width:980px}.epick .pm.p6 .pmb{flex-direction:row;height:58px;gap:8px;font-size:17px}.epick .pm.p6 .pmb span{font-size:26px}}
 @media (min-width:760px){.epick .pm.p5,.epick .pm.p5:has(.fee){grid-template-columns:repeat(5,minmax(0,1fr));max-width:860px}.epick .pm.p5>.pmb:last-child:nth-child(odd){grid-column:auto}}
 
 .stmt tbody.st-p{display:none}
@@ -1647,7 +1651,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-213000';
+const BUILD = '20261118-212000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2290,9 +2294,9 @@ function entryPicker() {
   const o = (k, md, n) => (allowed.includes(k) && !(k === 'TRANSFER' && md === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))) ? `<option value="entry/${k}${md ? '?mode=' + md : ''}">${n}</option>` : '';
   const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
   const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
-  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}' data-claim='${esc(o('FEE', '', 'مطالبة أتعاب') + o('TAXC', '', 'مطالبة ضرائب'))}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (claimOk() ? 1 : 0) + (isPriv() ? 1 : 0) + (canAddTask() ? 1 : 0) + (isFull() ? 1 : 0); return n >= 5 ? 'p5' : n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
+  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}' data-claim='${esc(o('FEE', '', 'مطالبة أتعاب') + o('TAXC', '', 'مطالبة ضرائب'))}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (claimOk() ? 1 : 0) + (isPriv() ? 1 : 0) + (canAddTask() ? 1 : 0) + (isFull() ? 1 : 0); return n >= 6 ? 'p6' : n >= 5 ? 'p5' : n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
       ${IN ? `<button class="pmb in" data-act="pick-open" data-g="in"><span>📥</span>وارد</button>` : ''}
-      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${claimOk() ? `<button class="pmb fee" data-act="pick-open" data-g="claim"><span>💼</span>مطالبة</button>` : ''}${canAddTask() ? `<button class="pmb task" data-act="tk-add"><span>📋</span>مهمة</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}${isFull() ? `<button class="pmb" data-act="nt-manage" style="background:linear-gradient(135deg,#8b6bd6,#5f43ae);color:#fff;border:0"><span>📣</span>ملاحظات</button>` : ''}</div>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${claimOk() ? `<button class="pmb fee" data-act="pick-open" data-g="claim"><span>💼</span>مطالبة</button>` : ''}${canAddTask() ? `<button class="pmb task" data-act="tk-add"><span>📋</span>مهمة</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}${isFull() ? `<button class="pmb" data-act="nt-manage" style="background:linear-gradient(135deg,#8b6bd6,#5f43ae);color:#fff;border:0"><span>🔔</span>إشعارات</button>` : ''}</div>
     <div class="eplist"></div></div>`;
 }
 function mainPair() {
@@ -3237,9 +3241,6 @@ function dlSave(arr) { D.lists = D.lists || {}; D.lists.deliver = arr.map(x => J
 const dlPend = x => x.docs.filter(d => !d.x).length;
 const DLK = { out: ['تسليم للعميل', 'سُلِّم', 'لم تُسلَّم', '📤'], in: ['استلام من العميل', 'استُلِم', 'لم تُستلَم', '📥'] };
 const dlKind = x => x.k === 'in' ? 'in' : 'out';
-/* وسيلة التسليم / الاستلام */
-const DLM = [['uber', 'أوبر'], ['aramex', 'أرامكس'], ['office', 'بالمكتب'], ['colleague', 'مع زميل'], ['station', 'مع موقف'], ['other', 'أخرى']];
-const dlVia = x => { if (!x.m) return ''; if (x.m === 'other') return x.mo || 'أخرى'; const f = DLM.find(q => q[0] === x.m); return f ? f[1] : ''; };
 let DLF = 'all';
 function vDeliver(r, el) {
   const td = today(), L0 = dlList(), L = L0.filter(x => DLF === 'all' || dlKind(x) === DLF).sort((a, b) => (!!dlPend(b) - !!dlPend(a)) || String(a.d || '9999').localeCompare(String(b.d || '9999')));
@@ -3261,7 +3262,7 @@ function vDeliver(r, el) {
         <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
           <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
           ${dlWho(x) ? `<div class="small" style="margin-top:4px">👤 القائم بالمهمة: <b>${esc(bareName(dlWho(x).name))}</b></div>` : ''}${x.cn || x.cp ? `<div class="small" style="margin-top:2px">☎️ جهة التواصل: ${esc(x.cn || '')} <span class="num">${esc(x.cp || '')}</span></div>` : ''}
-          ${dlVia(x) ? `<div class="small" style="margin-top:4px">🚚 وسيلة ${dlKind(x) === 'in' ? 'الاستلام' : 'التسليم'}: <b>${esc(dlVia(x))}</b></div>` : ''}${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
+          ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
         <span class="badge">${DLK[dlKind(x)][3]} ${DLK[dlKind(x)][0]}</span><span class="badge ${p ? 'warn' : ''}">${p ? p + ' ' + DLK[dlKind(x)][2] : (dlKind(x) === 'in' ? 'تم الاستلام كله ✓' : 'تم التسليم كله ✓')}</span></div>
         <div style="margin-top:8px">${x.docs.map((d, i) => `<label class="row" style="gap:8px;align-items:center;cursor:pointer;padding:5px 0"><input type="checkbox" data-act="dl-doc" data-id="${x.id}" data-i="${i}" ${d.x ? 'checked' : ''} style="width:20px;height:20px"><span style="${d.x ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(d.t)}</span>${d.x ? `<small class="muted num">${esc(d.x)}</small>` : ''}</label>`).join('')}</div>
         <div class="row wrap no-print" style="margin-top:8px;gap:6px">
@@ -3276,8 +3277,8 @@ function printDeliver() {
   printDoc({ title: 'كشف التسليم والاستلام — مستندات مطلوبة', file: 'كشف_التسليم_' + today(), land: true,
     info: [['عدد الملفات', String(L.length)], ['مستندات لم تُسلَّم', String(L.reduce((n, x) => n + dlPend(x), 0))]],
     kpis: [['ملفات لسه فيها تسليم', L.length], ['مستندات لم تُسلَّم', L.reduce((n, x) => n + dlPend(x), 0)]],
-    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'العملية', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'الوسيلة', c: 1 }, { h: 'المستندات المطلوبة' }, { h: 'ملاحظة' }],
-    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, DLK[dlKind(x)][0], esc(x.d || ''), esc(dlVia(x)), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'العملية', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'المستندات المطلوبة' }, { h: 'ملاحظة' }],
+    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, DLK[dlKind(x)][0], esc(x.d || ''), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
 }
 /* ملخص اليوم: كل موظف يدوّن اللي عمله وملاحظاته، والإدارة تشوف الفريق */
 function dsumOpen(d) {
@@ -3347,7 +3348,7 @@ const dlCont = x => { const c = D.clients[x.c] || {}; return { n: x.cn || c.name
 const dlDocs = x => { const a = x.docs.filter(d => !d.x); return (a.length ? a : x.docs).map(d => '• ' + d.t).join('\n'); };
 function dlMsg(x, to) {
   const u = dlWho(x), ct = dlCont(x), c = D.clients[x.c] || {}, me = u ? bareName(u.name) : 'مندوب المكتب', mp = dlWhoPh(u), docs = dlDocs(x), out = dlKind(x) === 'out';
-  const tail = `${x.d ? '\nالموعد: ' + x.d : ''}${dlVia(x) ? '\nوسيلة ' + (out ? 'التسليم' : 'الاستلام') + ': ' + dlVia(x) : ''}${x.n ? '\nملاحظة: ' + x.n : ''}`;
+  const tail = `${x.d ? '\nالموعد: ' + dayAr(x.d) : ''}${x.n ? '\nملاحظة: ' + x.n : ''}`;
   if (to === 'client') return `السادة / ${ct.n || c.name}\nتحية طيبة من مكتب محمود سالم للمحاسبة والمراجعة\n\nسيقوم الأستاذ *${me}*${mp ? ' (رقم التواصل: ' + mp + ')' : ''} بالتواصل مع حضرتكم ${out ? 'لتسليمكم' : 'لاستلام'} المستندات التالية${out ? '' : ' منكم'}:\n${docs}${tail}\n\nشكرًا لتعاونكم.`;
   const who = `*${c.name}*${ct.n && ct.n !== c.name ? ' — ' + (/^(أ|الأستاذ|السيد|م|د)[\/.]/.test(ct.n) ? '' : 'الأستاذ/ ') + ct.n : ''}`;
   return `أ/ ${me}\n${out ? `برجاء التواصل مع ${who}${ct.p ? ' (رقم التواصل: ' + ct.p + ')' : ''} لتسليم المستندات التالية:` : `سيقوم ${who} بتسليمك أو إرسال المستندات التالية إليك${ct.p ? '، ورقم التواصل والتنسيق: ' + ct.p : ''}:`}\n${docs}${tail}`;
@@ -3355,8 +3356,7 @@ function dlMsg(x, to) {
 function dlSend(id, to) {
   const x = dlList().find(q => q.id === id); if (!x) return;
   if (to === 'me' && !dlWho(x)) return toast('حدّدي «القائم بالمهمة» من تعديل السجل أولًا', 'err');
-  const ph = to === 'client' ? dlCont(x).p : dlWhoPh(dlWho(x)), u = waUrl(ph, dlMsg(x, to), waApp());
-  if (u.startsWith('intent:')) location.href = u; else window.open(u, '_blank');
+  waGo(to === 'client' ? dlCont(x).p : dlWhoPh(dlWho(x)), dlMsg(x, to));
 }
 function dlWaText(c, recs) {
   const g = (title, k) => { const a = recs.filter(x => dlKind(x) === k).flatMap(x => x.docs.filter(d => !d.x).map(d => d.t)); return a.length ? `\n*${title}*\n` + a.map(t => '• ' + t).join('\n') : ''; };
@@ -3367,13 +3367,13 @@ function dlWaModal() {
   const rows = Object.entries(by).map(([id, recs]) => ({ c: D.clients[id], recs, n: recs.reduce((n, x) => n + dlPend(x), 0) })).sort((a, b) => b.n - a.n);
   const ap = waApp();
   const m = modal(`<h3>📲 تذكير العملاء بالمستندات</h3>
-    <div class="chips" style="margin-bottom:10px">${[['auto', 'اختيار تلقائي'], ['reg', WAK.reg[0]], ['biz', WAK.biz[0]]].map(([k, l]) => `<button class="chip ${ap === k ? 'on' : ''}" data-wk="${k}">${l}</button>`).join('')}</div>
+    <div class="chips" style="margin-bottom:10px">${[['ask', 'يسألني كل مرة'], ['reg', WAK.reg[0]], ['biz', WAK.biz[0]]].map(([k, l]) => `<button class="chip ${ap === k ? 'on' : ''}" data-wk="${k}">${l}</button>`).join('')}</div>
     <p class="small muted" style="margin:0 0 8px">رسالة لكل عميل بالمستندات اللي لسه ما اتسلّمتش/ما اتستلمتش، مجمّعة (استلام منه + تسليم له).</p>
     ${rows.length ? rows.map((x, i) => `<div class="card pad" style="margin-top:6px"><div class="row wrap"><b class="grow">${esc(x.c.name)}</b><span class="badge warn">${x.n} مستند</span></div><div class="row wrap" style="margin-top:6px;gap:6px"><button class="btn sm pri" data-wi="${i}">📲 إرسال</button><button class="btn sm" data-wc="${i}">نسخ</button>${x.c.phone ? `<span class="small muted num">${esc(x.c.phone)}</span>` : '<span class="small muted">مفيش رقم — هتختاري من واتساب</span>'}</div></div>`).join('') : '<div class="empty">لا توجد مستندات معلّقة ✅</div>'}
     <div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`);
   m.addEventListener('click', e => {
     const wk = e.target.closest('[data-wk]'); if (wk) { try { localStorage.setItem('waApp', wk.dataset.wk); } catch (x) { } m.querySelectorAll('[data-wk]').forEach(b => b.classList.toggle('on', b === wk)); return; }
-    const wi = e.target.closest('[data-wi]'); if (wi) { const x = rows[wi.dataset.wi], u = waUrl(x.c.phone, dlWaText(x.c, x.recs), waApp()); if (u.startsWith('intent:')) location.href = u; else window.open(u, '_blank'); return; }
+    const wi = e.target.closest('[data-wi]'); if (wi) { const x = rows[wi.dataset.wi]; waGo(x.c.phone, dlWaText(x.c, x.recs)); return; }
     const wc = e.target.closest('[data-wc]'); if (wc) { const x = rows[wc.dataset.wc]; (navigator.clipboard ? navigator.clipboard.writeText(dlWaText(x.c, x.recs)) : Promise.reject()).then(() => toast('تم النسخ'), () => toast('تعذّر النسخ', 'err')); }
   });
 }
@@ -3384,7 +3384,6 @@ function dlForm(id, clientId) {
     ${pick ? `<p><b>${esc(clientName(pick))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="dl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="dl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="dl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
     ${fld('المستندات (كل مستند في سطر)', `<textarea id="dl-t" class="inp" rows="5" placeholder="السجل التجاري&#10;البطاقة الضريبية&#10;عقد التأسيس">${esc((cur.docs || []).map(d => d.t).join('\\n'))}</textarea>`, { req: 1 })}
     ${fld('الموعد (اختياري)', `<input id="dl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
-    ${fld('وسيلة التسليم / الاستلام', `<select id="dl-m" class="inp"><option value="">— غير محددة —</option>${DLM.map(([k, l]) => `<option value="${k}" ${cur.m === k ? 'selected' : ''}>${l}</option>`).join('')}</select><input id="dl-mo" class="inp" style="margin-top:6px;${cur.m === 'other' ? '' : 'display:none'}" placeholder="اكتب طريقة التسليم / الاستلام" value="${esc(cur.mo || '')}">`)}
     ${fld('القائم بالمهمة (من الفريق)', `<select id="dl-w" class="inp"><option value="">— بدون —</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}" ${cur.who === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
     ${fld('جهة التواصل (فاضية = بيانات العميل)', `<div class="row" style="gap:6px"><input id="dl-cn" class="inp grow" placeholder="الاسم" value="${esc(cur.cn || '')}"><input id="dl-cp" class="inp grow ltr" inputmode="tel" placeholder="الموبايل" value="${esc(cur.cp || '')}"></div>`)}
     ${fld('ملاحظة (اختياري)', `<input id="dl-n" class="inp" value="${esc(cur.n || '')}">`)}
@@ -3393,16 +3392,13 @@ function dlForm(id, clientId) {
   const paint = () => { const l = $('#dl-l'); if (l) l.innerHTML = clientSearch($('#dl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
   if (!pick) paint();
   m.addEventListener('input', e => { if (e.target.id === 'dl-q') paint(); });
-  m.querySelector('#dl-m').onchange = e => { const o = m.querySelector('#dl-mo'); o.style.display = e.target.value === 'other' ? '' : 'none'; if (e.target.value === 'other') o.focus(); };
   m.addEventListener('click', e => { const dk = e.target.closest('[data-dk]'); if (dk) { kind = dk.dataset.dk; m.querySelectorAll('[data-dk]').forEach(b => b.classList.toggle('on', b === dk)); return; } const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#dl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
   m.querySelector('#dl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
     const names = $('#dl-t').value.split('\n').map(x => x.trim()).filter(Boolean);
     if (!names.length) return toast('اكتبي مستند واحد على الأقل', 'err');
-    const via = $('#dl-m').value, viaO = via === 'other' ? $('#dl-mo').value.trim() : '';
-    if (via === 'other' && !viaO) return toast('اكتبي وسيلة التسليم في خانة «أخرى»', 'err');
     const old = Object.fromEntries((cur.docs || []).map(d => [d.t, d.x]));
-    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), who: $('#dl-w').value, cn: $('#dl-cn').value.trim(), cp: $('#dl-cp').value.trim(), m: via, mo: viaO, by: cur.by || ME.id, at: cur.at || today() };
+    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), who: $('#dl-w').value, cn: $('#dl-cn').value.trim(), cp: $('#dl-cp').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
     dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
   };
 }
@@ -4379,7 +4375,7 @@ function vSettings(r, el) {
   if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|كود التعديل|النسخ الاحتياطي|سجل التعديلات)<\/h2>/, ''); if (r.arg === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
     <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
-    ${[...(isPriv() ? [['journal', 'اليومية', 'كل الحركات والبحث والتصدير'], ['accounts', 'الخزينة والعهد', 'الأرصدة وحركات العهد'], ['review', 'مراجعة الاعتماد', 'المعتمد وبانتظار الاعتماد']] : []), ...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="go" data-h="${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
+    ${[...(isFull() ? [['ntlog', 'سجل الإشعارات', 'الإشعارات المرسلة للفريق ومين شافها']] : []), ...(isPriv() ? [['journal', 'اليومية', 'كل الحركات والبحث والتصدير'], ['accounts', 'الخزينة والعهد', 'الأرصدة وحركات العهد'], ['review', 'مراجعة الاعتماد', 'المعتمد وبانتظار الاعتماد']] : []), ...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="${k === 'ntlog' ? 'nt-log' : 'go'}" data-h="${k}">${appic(k === 'ntlog' ? 'review' : k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
     <div style="text-align:center;margin-top:18px">${canInstallUI() ? `<button class="btn pri sm" data-act="pwa-install" style="margin-inline-end:8px">${icon('download', 15)} تثبيت التطبيق على هذا الجهاز</button>` : ''}<button class="btn sm" data-act="app-update">${icon('sync', 15)} تحديث البرنامج لآخر نسخة</button>
     <p class="small muted" style="margin-top:8px">إصدار التطبيق ${APP_VER} · ${BUILD}</p></div>`;
 }
@@ -4863,6 +4859,7 @@ const ACT = {
   'day-review': () => dayReview(),
   dsum: () => dsumOpen(),
   'nt-manage': () => ntManage(),
+  'nt-log': () => ntLog(),
   'ac-add': () => acForm(),
   'ac-del': el => { const r = hrGet(el.dataset.k); if (r && r.u === ME.id) { r.del = 1; hrPut({ [el.dataset.k]: r }); render(); } },
   'dsum-ok': el => { const r = hrGet(el.dataset.k); if (r) { r.ok = 1; hrPut({ [el.dataset.k]: r }); render(); } },
@@ -5380,16 +5377,33 @@ async function opsSync(force) {
 /* ---- عرض المهمة ---- */
 /* إشعار المهام عبر واتساب (عادي / بيزنس) — مهام غير منجزة مجمّعة */
 const WAK = { reg: ['واتساب العادي', 'com.whatsapp'], biz: ['واتساب بيزنس', 'com.whatsapp.w4b'] };
-const waApp = () => { try { return localStorage.getItem('waApp') || 'auto'; } catch (e) { return 'auto'; } };
+const waApp = () => { try { const v = localStorage.getItem('waApp'); return v === 'reg' || v === 'biz' ? v : 'ask'; } catch (e) { return 'ask'; } };
+const DAYS_AR = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const dayAr = d => { if (!d) return ''; const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); return isNaN(x) ? String(d) : `يوم ${DAYS_AR[x.getDay()]} الموافق ${String(x.getDate()).padStart(2, '0')}/${String(x.getMonth() + 1).padStart(2, '0')}`; };
+function waOpen(phone, text, app) {
+  const n = waNumber(phone || ''), q = encodeURIComponent(text), ua = navigator.userAgent;
+  if (/Android/i.test(ua)) { location.href = `intent://send?${n ? 'phone=' + n + '&' : ''}text=${q}#Intent;scheme=whatsapp;package=${WAK[app][1]};end`; return; }
+  if (/iPhone|iPad|iPod/i.test(ua)) { location.href = `${app === 'biz' ? 'whatsapp-business' : 'whatsapp'}://send?${n ? 'phone=' + n + '&' : ''}text=${q}`; return; }
+  window.open(`https://wa.me/${n}?text=${q}`, '_blank');
+}
+/* بيسأل: واتساب العادي ولا بيزنس؟ (إلا لو مثبّتة في الاختيار) */
+function waGo(phone, text) {
+  const a = waApp(); if (a !== 'ask') return waOpen(phone, text, a);
+  const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+  o.innerHTML = `<div style="background:var(--card,#fff);color:inherit;width:100%;max-width:420px;border-radius:18px 18px 0 0;padding:16px;direction:rtl"><b style="display:block;margin-bottom:10px">إرسال عن طريق:</b>
+    <button class="btn pri block" data-w="reg" style="width:100%;margin-bottom:8px">💬 واتساب العادي</button><button class="btn gold block" data-w="biz" style="width:100%;margin-bottom:8px">🏢 واتساب بيزنس</button><button class="btn block" data-w="" style="width:100%">إلغاء</button></div>`;
+  o.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (b || e.target === o) { o.remove(); if (b && b.dataset.w) waOpen(phone, text, b.dataset.w); } });
+  document.body.appendChild(o);
+}
 function waUrl(phone, text, app) {
   const n = waNumber(phone || ''), q = encodeURIComponent(text);
   if (/Android/i.test(navigator.userAgent) && WAK[app]) return `intent://send?${n ? 'phone=' + n + '&' : ''}text=${q}#Intent;scheme=whatsapp;package=${WAK[app][1]};end`;
   return `https://wa.me/${n}?text=${q}`;
 }
 function tkWaText(name, arr) {
-  const td = today(), g = (title, a) => a.length ? `\n*${title} (${a.length})*\n` + a.map(t => `• ${t.clientName ? t.clientName + ' — ' : ''}${t.text}${t.due ? ' (' + t.due + ')' : ''}`).join('\n') : '';
+  const td = today(), g = (title, a) => a.length ? `\n*${title} (${a.length})*\n` + a.map(t => `• ${t.clientName ? t.clientName + ' — ' : ''}${t.text}${t.due ? ' (' + dayAr(t.due) + ')' : ''}`).join('\n') : '';
   const late = arr.filter(tkLate), now = arr.filter(t => t.due === td), rest = arr.filter(t => !tkLate(t) && t.due !== td);
-  return `مكتب محمود سالم — مهام غير منجزة${name ? ' لـ ' + name : ''}\n${td}${g('⚠️ متأخرة', late)}${g('📌 اليوم', now)}${g('🗓️ باقي المهام', rest)}\n\nمن فضلك أنجز أو حدّث حالة المهام في البرنامج.`;
+  return `مكتب محمود سالم — مهام غير منجزة${name ? ' لـ ' + name : ''}\n${dayAr(td)}${g('⚠️ متأخرة', late)}${g('📌 اليوم', now)}${g('🗓️ باقي المهام', rest)}\n\nمن فضلك أنجز أو حدّث حالة المهام في البرنامج.`;
 }
 function tkWaModal() {
   const all = tkAll().filter(tkOpen).sort(tkSort), by = {};
@@ -5397,7 +5411,7 @@ function tkWaModal() {
   const rows = Object.entries(by).map(([k, arr]) => { const u = tkUserOf(k), ph = u ? (hrGet('hr_p_' + u.id) || {}).ph : ''; return { k, arr, ph: ph || '', late: arr.filter(tkLate).length }; }).sort((a, b) => b.arr.length - a.arr.length);
   const ap = waApp();
   const m = modal(`<h3>📲 إشعار المهام على واتساب</h3>
-    <div class="chips" style="margin-bottom:10px">${[['auto', 'اختيار تلقائي'], ['reg', WAK.reg[0]], ['biz', WAK.biz[0]]].map(([k, l]) => `<button class="chip ${ap === k ? 'on' : ''}" data-wk="${k}">${l}</button>`).join('')}</div>
+    <div class="chips" style="margin-bottom:10px">${[['ask', 'يسألني كل مرة'], ['reg', WAK.reg[0]], ['biz', WAK.biz[0]]].map(([k, l]) => `<button class="chip ${ap === k ? 'on' : ''}" data-wk="${k}">${l}</button>`).join('')}</div>
     <p class="small muted" style="margin:0 0 8px">بيفتح واتساب بالرسالة جاهزة (المهام الغير منجزة مجمّعة: متأخرة / اليوم / باقي)، وانتي بتضغطي إرسال. اختيار «عادي/بيزنس» شغّال على أندرويد.</p>
     ${rows.length ? rows.map((x, i) => `<div class="card pad" style="margin-top:6px"><div class="row wrap"><b class="grow">${esc(x.k)}</b><span class="badge ${x.late ? 'warn' : ''}">${x.arr.length} مهمة${x.late ? ' · ' + x.late + ' متأخرة' : ''}</span></div>
       <div class="row wrap" style="margin-top:6px;gap:6px"><button class="btn sm pri" data-wi="${i}">📲 إرسال</button><button class="btn sm" data-wc="${i}">نسخ</button>${x.ph ? `<span class="small muted num">${esc(x.ph)}</span>` : '<span class="small muted">مفيش رقم (HR ← بيانات الموظفين) — هتختاري الشخص من واتساب</span>'}</div></div>`).join('') : '<div class="empty">لا توجد مهام غير منجزة 🎉</div>'}
@@ -5406,7 +5420,7 @@ function tkWaModal() {
   const txt = i => i === 'all' ? rows.map(x => tkWaText(x.k, x.arr)).join('\n\n━━━━━━\n\n') : tkWaText(rows[i].k, rows[i].arr);
   m.addEventListener('click', e => {
     const wk = e.target.closest('[data-wk]'); if (wk) { try { localStorage.setItem('waApp', wk.dataset.wk); } catch (x) { } m.querySelectorAll('[data-wk]').forEach(b => b.classList.toggle('on', b === wk)); return; }
-    const wi = e.target.closest('[data-wi]'); if (wi) { const i = wi.dataset.wi, u = waUrl(i === 'all' ? '' : rows[i].ph, txt(i), waApp()); if (u.startsWith('intent:')) location.href = u; else window.open(u, '_blank'); return; }
+    const wi = e.target.closest('[data-wi]'); if (wi) { const i = wi.dataset.wi; waGo(i === 'all' ? '' : rows[i].ph, txt(i)); return; }
     const wc = e.target.closest('[data-wc]'); if (wc) { const t = txt(wc.dataset.wc); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('تم النسخ'), () => toast('تعذّر النسخ', 'err')); }
   });
 }
@@ -5433,7 +5447,7 @@ function opsSetupCard() {
 }
 function vTasks(r, el) {
   const cfg = opsCfg();
-  const head = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">المهام</h1>${isPriv() ? `<button class="btn" data-act="tk-wa">📲 واتساب</button>` : ''}${canAddTask() ? `<button class="btn pri" data-act="tk-add">${icon('plus', 17)} إضافة مهمة</button>` : ''}</div>`;
+  const head = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">المهام</h1>${isFull() ? `<button class="btn" data-act="nt-log">📜 سجل الإشعارات</button>` : ''}${isPriv() ? `<button class="btn" data-act="tk-wa">📲 واتساب</button>` : ''}${canAddTask() ? `<button class="btn pri" data-act="tk-add">${icon('plus', 17)} إضافة مهمة</button>` : ''}</div>`;
   if (TK.setup && isFull()) { el.innerHTML = head + opsSetupCard(); return; }
   if (Date.now() - OPS_ST.last > 8000) opsSync();
   const all = tkAll();
@@ -5561,18 +5575,18 @@ function notePop() {
   if (!ME || modalOpen()) return;
   const L = ntAll().filter(n => n.by !== ME.id && ntFor(n, ME.id) && !ntRead(n.id, ME.id));
   if (!L.length) return;
-  const m = modal(`<h3>📣 ملاحظات من الإدارة</h3>
+  const m = modal(`<h3>🔔 إشعارات</h3>
     ${L.map(n => `<div class="card pad" style="margin-top:8px"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="small muted" style="margin-top:6px">${esc(bareName((userById(n.by) || {}).name || ''))} · ${esc(String(n.at).slice(0, 10))}</div></div>`).join('')}
     <div class="acts"><button class="btn pri" id="nt-ok">تمام ✓ قريتها</button></div>`);
   m.querySelector('#nt-ok').onclick = () => { const map = {}; L.forEach(n => map[`nr_${n.id}_${ME.id}`] = { n: n.id, u: ME.id, at: nowIso() }); hrPut(map); closeModal(); if (canTab('tasks')) setTimeout(tkMorningPop, 300); };
 }
 function ntManage() {
   const us = liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id), L = ntAll().reverse();
-  const m = modal(`<h3>📣 ملاحظات للفريق</h3>
-    ${fld('الملاحظة (تظهر لكل واحد مرة واحدة عند فتح البرنامج)', `<textarea id="nt-t" class="inp" rows="3"></textarea>`)}
+  const m = modal(`<h3>🔔 إشعار للفريق</h3>
+    ${fld('نص الإشعار (يظهر لكل واحد مرة واحدة عند فتح البرنامج)', `<textarea id="nt-t" class="inp" rows="3"></textarea>`)}
     <div class="chips" style="margin:6px 0" id="nt-to"><button class="chip on" data-n="all">الكل</button>${us.map(u => `<button class="chip" data-n="${u.id}">${esc(bareName(u.name))}</button>`).join('')}</div>
-    <div class="acts"><button class="btn pri" id="nt-add">إرسال الملاحظة</button><button class="btn" data-act="mclose">إغلاق</button></div>
-    <h4 style="margin:14px 0 6px">الملاحظات السابقة</h4>
+    <div class="acts"><button class="btn pri" id="nt-add">إرسال الإشعار</button><button class="btn" data-act="nt-log">📜 سجل الإشعارات</button><button class="btn" data-act="mclose">إغلاق</button></div>
+    <h4 style="margin:14px 0 6px">آخر الإشعارات</h4>
     ${L.length ? L.slice(0, 15).map(n => { const tg = n.to === 'all' ? us : us.filter(u => n.to.includes(u.id)), rd = tg.filter(u => ntRead(n.id, u.id)); return `<div class="card pad" style="margin-top:6px"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="small muted" style="margin-top:6px">${esc(String(n.at).slice(0, 10))} · ${n.to === 'all' ? 'الكل' : tg.map(u => bareName(u.name)).join('، ')}</div><div class="small" style="margin-top:4px">✓ قرأها ${rd.length}/${tg.length}${rd.length < tg.length ? ' — لسه: ' + esc(tg.filter(u => !ntRead(n.id, u.id)).map(u => bareName(u.name)).join('، ')) : ''}</div><button class="btn sm" data-nd="${n._k}" style="margin-top:6px">حذف</button></div>`; }).join('') : '<div class="small muted">لا توجد.</div>'}`);
   m.addEventListener('click', e => {
     const c = e.target.closest('#nt-to .chip'); if (c) { const all = m.querySelector('[data-n=all]'); if (c.dataset.n === 'all') { m.querySelectorAll('#nt-to .chip').forEach(x => x.classList.toggle('on', x === c)); } else { c.classList.toggle('on'); all.classList.remove('on'); if (!m.querySelector('#nt-to .chip.on')) all.classList.add('on'); } return; }
@@ -5581,8 +5595,17 @@ function ntManage() {
   m.querySelector('#nt-add').onclick = () => {
     const text = m.querySelector('#nt-t').value.trim(); if (!text) return toast('اكتبي الملاحظة', 'err');
     const sel = [...m.querySelectorAll('#nt-to .chip.on')].map(x => x.dataset.n), id = uid('NT');
-    hrPut({ ['nt_' + id]: { id, by: ME.id, at: nowIso(), text, to: sel.includes('all') ? 'all' : sel } }); toast('تم الإرسال — هتظهر لهم عند فتح البرنامج'); ntManage();
+    hrPut({ ['nt_' + id]: { id, by: ME.id, at: nowIso(), text, to: sel.includes('all') ? 'all' : sel } }); toast('تم الإرسال — هيظهر لهم عند فتح البرنامج'); ntManage();
   };
+}
+const ntTs = iso => { try { return new Date(iso).toLocaleString('ar-EG-u-nu-latn', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return String(iso).slice(0, 16); } };
+function ntLog() {
+  const us = liveUsers().filter(u => +u.active !== 0), L = ntAll().reverse();
+  const m = modal(`<h3>📜 سجل الإشعارات المرسلة</h3>
+    ${L.length ? L.map(n => { const tg = us.filter(u => u.id !== n.by && ntFor(n, u.id)); return `<div class="card pad" style="margin-top:8px"><div style="white-space:pre-wrap">${esc(n.text)}</div>
+      <div class="small muted" style="margin:6px 0">${esc(ntTs(n.at))} · من ${esc(bareName((userById(n.by) || {}).name || ''))} · إلى ${n.to === 'all' ? 'الكل' : esc(tg.map(u => bareName(u.name)).join('، '))}</div>
+      ${tg.map(u => { const r = ntRead(n.id, u.id); return `<div class="small" style="display:flex;gap:6px"><span>${r ? '✅' : '⏳'}</span><b>${esc(bareName(u.name))}</b><span class="muted">${r ? 'شافه ' + esc(ntTs(r.at)) : 'لسه ما شافهوش'}</span></div>`; }).join('')}</div>`; }).join('') : '<div class="empty">لا توجد إشعارات مرسلة.</div>'}
+    <div class="acts"><button class="btn pri" data-act="nt-manage">🔔 إشعار جديد</button><button class="btn" data-act="mclose">إغلاق</button></div>`);
 }
 function tkMorningPop() {
   if (!ME || !canTab('tasks') || modalOpen()) return;
