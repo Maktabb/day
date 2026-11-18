@@ -1239,7 +1239,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1461,7 +1461,7 @@ const isFull = () => ME && ME.role === 'full';           // إدارة الفر�
 const liveUsers = () => D.users.filter(u => !+u.deleted);
 const activeFull = () => liveUsers().filter(u => u.role === 'full' && +u.active !== 0);
 const myAcc = () => ME ? ME.account : '';
-const LIST_DEF = { taskCats: ['تأسيس', 'تعديل', 'فواتير إلكترونية', 'ضرائب', 'تأمينات', 'علامات تجارية', 'سجل تجاري', 'بطاقة ضريبية', 'أخرى'], taxKinds: ['ضريبة دخل', 'قيمة مضافة', 'مساهمة تكافلية', 'أخرى'] };
+const LIST_DEF = { crmInc: ['أشخاص اعتبارية (شركات)', 'أشخاص طبيعيين — نشاط تجاري وصناعي', 'أشخاص طبيعيين — مهن حرة', 'مشروعات صغيرة (نظام مبسط)'], taskCats: ['تأسيس', 'تعديل', 'فواتير إلكترونية', 'ضرائب', 'تأمينات', 'علامات تجارية', 'سجل تجاري', 'بطاقة ضريبية', 'أخرى'], taxKinds: ['ضريبة دخل', 'قيمة مضافة', 'مساهمة تكافلية', 'أخرى'] };
 const list = n => (D.lists && D.lists[n] && D.lists[n].length) ? D.lists[n] : (LIST_DEF[n] || []);
 const activeClients = () => Object.values(D.clients).filter(c => +c.active !== 0);
 
@@ -1651,7 +1651,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-212000';
+const BUILD = '20261118-233000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1991,6 +1991,9 @@ function navItems() {
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
     ...(canTab('collect') ? [['collect', 'التحصيل', 'wallet']] : []),
     ...(canTab('deliver') ? [['deliver', 'التسليم', 'archive']] : []),
+    ...(canTab('crm') ? [['crm', 'قاعدة البيانات', 'users']] : []),
+    ...(canTab('taxes') ? [['taxes', 'الضرائب', 'list']] : []),
+    ...(canTab('formation') ? [['formation', 'مشاريع التأسيس', 'archive']] : []),
     ...(priv ? [] : [['journal', 'حركاتي', 'list'], ['accounts', 'عهدتي', 'wallet']]),
     ['settings', 'الإعدادات', 'sliders']
   ];
@@ -2053,7 +2056,7 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation };
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   if ((r.name === 'collect' || r.name === 'deliver' || r.name === 'tasks') && !canTab(r.name)) return go('home');
@@ -3162,8 +3165,8 @@ function csPeriod(p) {
 }
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
-const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام']];
-const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && k !== 'tax' && k !== 'addtask'); };
+const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام'], ['crm', 'قاعدة البيانات'], ['taxes', 'الضرائب'], ['formation', 'مشاريع التأسيس']];
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'crm', 'taxes', 'formation'].includes(k)); };
 const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
 const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
@@ -3477,7 +3480,7 @@ function collForm(id) {
   };
 }
 function clientTasksBlock(c) {
-  const all = tkAll().filter(t => (t.local ? t.cid === c.id : tkSameName(t.clientName, c.name)));
+  const all = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name)));
   const mineOnly = !isPriv(), vis = mineOnly ? all.filter(tkMine) : all;
   const open = vis.filter(tkOpen).sort(tkSort), fin = vis.filter(t => !tkOpen(t)).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
   if (!canTab('tasks') && !canAddTask()) return '';
@@ -4346,7 +4349,7 @@ function vSettings(r, el) {
     
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
   if (isFull()) push('team', `<h2 class="sec">صلاحيات التاب والمهام لكل شخص</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه، وعلى «➕ يضيف مهام» لو عايزاه يقدر يضيف مهمة من اليومية، وعلى «مطالبات الضرائب» لو عايزة المطالبات تظهر عنده (جدول المتابعة في التحصيل + المطالبات في اليومية وكشف العميل). اللي بيسجّل مطالبة بنفسه بيشوفها هو دايمًا. الصلاحية الكاملة بتشوف كل ده.</p>
-    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label></div>`).join('')}</div>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:sec" ${canTab('sec', u) ? 'checked' : ''}> 🔒 يشوف الباسوردات</label></div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="tabacc-save">حفظ</button></div></div>`);
   if (isFull()) push('team', `<h2 class="sec">صلاحية الوارد والأتعاب</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد لكل شخص (محاسب أو محامي أو مشرف، واحد واحد) أنواع الوارد اللي يسجّلها، وهل يسجّل «أتعاب» و«مطالبات ضرائب» (كل واحدة لوحدها). النوع غير المحدَّد لا يظهر له في البرنامج، وإن لم يُحدَّد أي وارد يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل شيء دائمًا. المطالبات افتراضيًا للصلاحية الكاملة فقط.</p>
     <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-inp="u:${u.id}:FEE" ${feeAllowed(u.role, u.id) ? 'checked' : ''}> 💼 أتعاب</label><label class="ipc"><input type="checkbox" data-inp="u:${u.id}:TAXC" ${taxcAllowed(u.role, u.id) ? 'checked' : ''}> 🏛️ مطالبات ضرائب</label></div>`).join('')}</div>
@@ -4637,7 +4640,7 @@ const ACT = {
     if (!isFull()) return;
     const els = [...document.querySelectorAll('[data-tab]')], users = [...new Set(els.map(x => x.dataset.tab.split(':')[1]))];
     const v = ['v1', ...users.map(u => 'u:' + u + ':v1'), ...els.filter(x => x.checked).map(x => x.dataset.tab)];
-    D.lists.tabAcc = v; queue('saveLists', { lists: { tabAcc: v } }); changed(); toast('تم حفظ الصلاحيات'); render();
+    D.lists.tabAcc = v; queue('saveLists', { lists: { tabAcc: v } }); changed(); toast('تم حفظ الصلاحيات'); render(); if (crmCfg()) crmPushPerms(true);
   },
   'acc-home': el => { if (!isFull()) return; const id = el.dataset.id, cur = (D.lists.accHide || []).filter(x => x !== 'v1'); const nx = cur.includes(id) ? cur.filter(x => x !== id) : cur.concat(id); D.lists.accHide = ['v1', ...nx]; queue('saveLists', { lists: { accHide: D.lists.accHide } }); changed(); toast(nx.includes(id) ? 'الخزينة اتشالت من الرئيسية ومن إجمالياتها' : 'الخزينة ظهرت في الرئيسية'); render(); },
   'log-reload': () => logLoad(),
@@ -5269,8 +5272,8 @@ const tkAuto = linked => { const from = (D.meta || {}).cutover || '0000'; return
   return { id: 'AX-' + t.id, local: true, auto: true, cid: c.id, clientName: c.name, text: t.category || TYPES[t.type].n, cat: '', note: t.description || '', who: u ? u.name : '', due: t.date, d: t.date, status: 'done', why: '', doneAt: t.createdAt || t.date, txId: t.id, by: t.userId };
 }); };
 const tkLocal = () => { if (_tkl && _tklV === VER) return _tkl; const L = Object.values(tkRecs()).map(tkFromRec), linked = new Set(Object.values(OPS.tasks).map(t => t.txId).concat(L.map(t => t.txId)).filter(Boolean)); _tkl = L.concat(tkAuto(linked)); _tklV = VER; return _tkl; };
-const tkAll = () => Object.values(OPS.tasks).concat(tkLocal());
-const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id);
+const tkAll = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks());
+const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id) || crmTasks().find(t => t.id === id);
 function tkRecSave(r) { D.lists = D.lists || {}; D.lists[TKL + r.id] = [JSON.stringify(r)]; queue('saveLists', { lists: { [TKL + r.id]: D.lists[TKL + r.id] } }); changed(); }
 function tkLocalSet(id, p) {
   const r = tkRecs()[id]; if (!r) return;
@@ -5325,6 +5328,7 @@ function opsBuild(projects) {
 }
 // تعديل حالة مهمة: يُحدَّث محليًا فورًا ويُرفع إلى إدارة المكتب دمجًا على مستوى المهمة (taskops) فلا يطغى على تعديل آخر في الملف
 function opsSet(id, patch, touch) {
+  if (/^(TF|RN)-/.test(id)) return crmTaskSet(id, patch);
   if (!OPS.tasks[id] && tkLocal().some(x => x.id === id)) return tkLocalSet(id, patch);
   const t = OPS.tasks[id]; if (!t) return;
   const raw = { ...t.raw, ...patch };
@@ -5620,7 +5624,7 @@ function tkMorningPop() {
 }
 /* ====== دمج مهمة مع مصروف اتسجّل عليها (المصروف يقفل المهمة ولا يتكرر) ====== */
 const tkSameClient = (t, cid) => t.local ? t.cid === cid : !!D.clients[cid] && tkSameName(t.clientName, D.clients[cid].name);
-const tkMergeCands = cid => tkAll().filter(t => !t.auto && !t.txId && t.status !== 'nx' && tkSameClient(t, cid) && (isPriv() || tkMine(t))).sort(tkSort);
+const tkMergeCands = cid => tkAll().filter(t => !t.auto && !t.crm && !t.txId && t.status !== 'nx' && tkSameClient(t, cid) && (isPriv() || tkMine(t))).sort(tkSort);
 const tkMergeTxs = t => { const cid = t.local ? t.cid : tkClientId(t); return cid ? tkAll().filter(x => x.auto && x.cid === cid && (isPriv() || x.by === ME.id)) : []; };
 function tkMerge(taskId, txId) {
   const t = tkGet(taskId), x = D.txs[txId]; if (!t || !x) return;
@@ -5637,6 +5641,8 @@ function tkMergePick(autoId) {
   m.addEventListener('click', e => { const r = e.target.closest('[data-mt]'); if (r) tkMerge(r.dataset.mt, a.txId); });
 }
 function openTaskMore(id) {
+  if (id.startsWith('TF-')) return crmTfMore(id.slice(3));
+  if (id.startsWith('RN-')) return crmRenewForm(id);
   const t = tkGet(id); if (!t) return;
   const cid = t.local ? t.cid : tkClientId(t);
   const types = cid ? ['GOV_FEE', 'OP_EXP', 'IN_CLIENT'].filter(k => TYPES[k] && roleTypes(ME.role).includes(k)) : [];
@@ -5672,6 +5678,7 @@ Object.assign(ACT, {
   'tk-cat': el => { TK.cat = el.dataset.k || ''; render(); },
   'mgo': el => { closeModal(); go(el.dataset.h); },
   'tk-done': el => {
+    if (el.dataset.id.startsWith('RN-')) return crmRenewForm(el.dataset.id);
     const t = tkGet(el.dataset.id); if (!t || !tkOpen(t)) return;
     opsSet(t.id, { done: true, nx: false, doneAt: nowIso(), doneBy: bareName(ME.name) }, true);
     toast('أُغلقت المهمة'); opsRefresh(); if (route().name === 'client') render();
@@ -5753,6 +5760,470 @@ document.addEventListener('change', e => {
   if (t.id === 'hr-day' && t.value) { HR.day = t.value; hrRefresh(); }
   if (t.id === 'hr-mon' && t.value) { HR.mon = t.value; hrRefresh(); }
 });
+/* ================= قاعدة بيانات العملاء + الضرائب (شيت منفصل: crm.gs) ================= */
+const CRM_KINDS = ['شخص واحد', 'مسؤولية محدودة', 'مساهمة', 'فردي', 'تضامن', 'توصية'];
+const CRM_INC = ['أشخاص اعتبارية (شركات)', 'أشخاص طبيعيين — نشاط تجاري وصناعي', 'أشخاص طبيعيين — مهن حرة', 'مشروعات صغيرة (نظام مبسط)'];
+const GOVS = ['القاهرة', 'الجيزة', 'القليوبية', 'الإسكندرية', 'البحيرة', 'مطروح', 'دمياط', 'الدقهلية', 'كفر الشيخ', 'الغربية', 'المنوفية', 'الشرقية', 'بورسعيد', 'الإسماعيلية', 'السويس', 'شمال سيناء', 'جنوب سيناء', 'بني سويف', 'الفيوم', 'المنيا', 'أسيوط', 'الوادي الجديد', 'البحر الأحمر', 'سوهاج', 'قنا', 'الأقصر', 'أسوان'];
+const MON_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const TXK = { inc: '🧾 إقرار الدخل', vat: '🧮 قيمة مضافة شهري', vatq: '🧮 قيمة مضافة ربع سنوي', wq: '👥 أجور ومرتبات ربع سنوي', wy: '👥 أجور ومرتبات سنوي', wm: '💳 نموذج سداد أجور شهري' };
+let CRM = LS.get('crm1', null) || { p: {}, c: {}, f: {}, rev: '', q: [] };
+const CRM_ST = { last: 0, busy: false, state: '', msg: '', sec: {}, unlock: 0 };
+const CV = { q: '', f: '', tab: 'due', kind: '', who: '', per: 'm' };
+const crmSave = () => LS.set('crm1', CRM);
+const crmCfg = () => { const l = (D && D.lists && D.lists.crmCfg) || []; return l[0] ? { url: l[0], key: l[1] || '', start: l[2] || '2026-11-01', old: l[3] || '', neu: l[4] || '', einv: l[5] || 'https://invoicing.eta.gov.eg' } : null; };
+const yes = v => v === '1' || v === 1 || v === true || v === 'true';
+const crmP = () => Object.values(CRM.p).filter(x => !yes(x.deleted)).sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
+const crmCos = pid => Object.values(CRM.c).filter(x => !yes(x.deleted) && (!pid || x.pid === pid)).sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
+const crmPByPhone = ph => { const n = normPhone(ph || ''); return n ? crmP().find(p => normPhone(p.phone) === n || normPhone(p.wa) === n) : null; };
+const crmAccOf = p => { const n = normPhone((p || {}).phone || ''); return n ? activeClients().filter(c => normPhone(c.phone) === n) : []; };
+const crmOwner = c => c && c.owner ? userById(c.owner) : null;
+const canSec = () => isFull() || canTab('sec');
+
+/* ---------- المزامنة ---------- */
+async function crmSync(force) {
+  const c = crmCfg(); if (!c || !ME) return;
+  if (CRM_ST.busy) return; CRM_ST.busy = true; CRM_ST.last = Date.now();
+  let dirty = false;
+  try {
+    if (CRM.q.length) {
+      const batch = CRM.q.slice(0, 60), body = { key: c.key, action: 'save', by: bareName(ME.name), p: [], c: [], f: [] };
+      batch.forEach(o => { const arr = body[o.k], ex = arr.find(x => x.id === o.id); if (ex) Object.assign(ex.set, o.set); else arr.push({ id: o.id, set: { ...o.set } }); });
+      const j = await (await fetchT(c.url, { method: 'POST', redirect: 'follow', body: JSON.stringify(body) }, 60000)).json();
+      if (!j.ok) throw new Error(j.error === 'BAD_KEY' ? 'رمز ربط قاعدة البيانات غير صحيح' : (j.error || 'خطأ'));
+      CRM.q.splice(0, batch.length); crmSave();
+    }
+    const u = new URL(c.url); u.searchParams.set('key', c.key); u.searchParams.set('action', 'all'); if (!force && CRM.rev) u.searchParams.set('rev', CRM.rev);
+    const j = await (await fetchT(u.toString(), { method: 'GET', redirect: 'follow', cache: 'no-store' }, 45000)).json();
+    if (!j.ok) throw new Error(j.error === 'BAD_KEY' ? 'رمز ربط قاعدة البيانات غير صحيح' : (j.error || 'خطأ'));
+    if (!j.unchanged) {
+      const map = (arr, k = 'id') => Object.fromEntries((arr || []).map(x => [x[k], x]));
+      CRM.p = map(j.p); CRM.c = map(j.c); CRM.f = map(j.f); CRM.rev = j.rev;
+      CRM.q.forEach(o => { const t = CRM[o.k]; t[o.id] = { ...(t[o.id] || { id: o.id }), ...o.set }; });
+      crmSave(); dirty = true;
+    }
+    CRM_ST.state = 'ok'; CRM_ST.msg = '';
+    if (isFull()) crmAutoPerms();
+  } catch (e) { CRM_ST.state = 'err'; CRM_ST.msg = String(e.message || e); }
+  finally { CRM_ST.busy = false; }
+  if (dirty || CRM_ST.state === 'err') { VER++; if (['crm', 'taxes', 'tasks', 'home'].includes(route().name) && !modalOpen()) render(); }
+}
+function crmPut(k, id, set) {
+  const t = CRM[k]; t[id] = { ...(t[id] || { id }), ...set, updatedAt: nowIso() };
+  CRM.q.push({ k, id, set }); crmSave(); VER++; setTimeout(() => crmSync(), 200);
+}
+async function crmPost(body) {
+  const c = crmCfg(); if (!c) throw new Error('قاعدة البيانات غير مربوطة');
+  const j = await (await fetchT(c.url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ key: c.key, ...body }) }, 60000)).json();
+  if (!j.ok) throw new Error(j.error === 'NO_PERM' ? 'مالكيش صلاحية تشوفي/تعدّلي بيانات الدخول' : j.error === 'BAD_ADMIN' ? 'رمز الإدارة غير صحيح' : (j.error || 'خطأ'));
+  return j;
+}
+const crmPermList = () => liveUsers().filter(u => +u.active !== 0).map(u => ({ uid: u.id, name: bareName(u.name), h: hashCode(String(u.code).trim()), sec: u.role === 'full' || canTab('sec', u) ? 1 : 0 }));
+async function crmPushPerms(ask1) {
+  if (!isFull() || !crmCfg()) return;
+  let a = LS.get('crmAdmin', '');
+  if (!a && ask1) a = await new Promise(res => { const m = modal(`<h3>🔑 رمز الإدارة لقاعدة البيانات</h3><p class="small muted">الرمز اللي كتبتيه في CRM_ADMIN جوه السكربت. بيتحفظ على الجهاز ده بس.</p>${fld('رمز الإدارة', `<input id="ca-p" class="inp ltr" type="password">`)}<div class="acts"><button class="btn pri" id="ca-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`); m.querySelector('#ca-ok').onclick = () => { const v = m.querySelector('#ca-p').value.trim(); closeModal(); res(v); }; });
+  if (!a) return;
+  const perms = crmPermList();
+  try { await crmPost({ action: 'setPerms', admin: a, perms }); LS.set('crmAdmin', a); LS.set('crmPermSig', JSON.stringify(perms)); toast('اتحفظت صلاحيات الباسوردات في قاعدة البيانات'); }
+  catch (e) { if (/الإدارة/.test(e.message)) LS.del('crmAdmin'); toast(e.message, 'err'); }
+}
+function crmAutoPerms() { if (LS.get('crmAdmin', '') && LS.get('crmPermSig', '') !== JSON.stringify(crmPermList())) crmPushPerms(false); }
+async function crmSecrets(cid, force) {
+  if (!force && CRM_ST.sec[cid]) return CRM_ST.sec[cid];
+  const j = await crmPost({ action: 'secrets', uid: ME.id, code: ME.code, ids: [cid] });
+  CRM_ST.sec[cid] = (j.s || [])[0] || { id: cid }; return CRM_ST.sec[cid];
+}
+/* أي تعديل/مسح لغير الصلاحية الكاملة بكود التعديل */
+function crmGate() {
+  if (isFull() || Date.now() - CRM_ST.unlock < 10 * 60000) return Promise.resolve(true);
+  if (!editCodeSet()) { toast('التعديل محتاج كود التعديل — الإدارة لازم تحدده من الإعدادات ← الأمان', 'err'); return Promise.resolve(false); }
+  return new Promise(res => {
+    const m = modal(`<h3>${icon('key', 20)} كود التعديل</h3><p>التعديل أو المسح في قاعدة البيانات محتاج كود التعديل.</p>${fld('كود التعديل', `<input id="cg-c" class="inp ltr" type="password" inputmode="numeric">`, { req: 1 })}<div class="acts"><button class="btn pri" id="cg-ok">متابعة</button><button class="btn" id="cg-no">إلغاء</button></div>`);
+    m.querySelector('#cg-ok').onclick = () => { if (!editCodeOk(m.querySelector('#cg-c').value)) return toast('كود التعديل غير صحيح', 'err'); CRM_ST.unlock = Date.now(); closeModal(); res(true); };
+    m.querySelector('#cg-no').onclick = () => { closeModal(); res(false); };
+  });
+}
+
+/* ---------- قواعد الإقرارات ---------- */
+const pad2 = n => String(n).padStart(2, '0');
+const endOfM = (y, m) => { while (m > 12) { m -= 12; y++; } return `${y}-${pad2(m)}-${pad2(new Date(y, m, 0).getDate())}`; };
+const addMonths = (d, k) => { const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); const day = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() + k); x.setDate(Math.min(day, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return x.toLocaleDateString('en-CA'); };
+const perLabel = p => /^\d{4}-\d{2}$/.test(p) ? `${MON_AR[+p.slice(5) - 1]} ${p.slice(0, 4)}` : /^\d{4}-Q\d$/.test(p) ? `الربع ${p.slice(6)} / ${p.slice(0, 4)}` : `سنة ${p}`;
+const isNatural = c => ['فردي', 'تضامن', 'توصية'].includes(c.kind) || /طبيعي/.test(c.inc || '');
+function crmOblig(c, from, td) {
+  const o = [], y0 = +td.slice(0, 4), m0 = +td.slice(5, 7), simpl = yes(c.simpl), H = { inc: addDays(td, 150), x: addDays(td, 45) };
+  const add = (kind, period, due) => { if (due >= from && due <= (kind === 'inc' ? H.inc : H.x)) o.push({ kind, period, due }); };
+  for (let y = y0 - 2; y <= y0; y++) add('inc', String(y), isNatural(c) ? `${y + 1}-03-31` : `${y + 1}-04-30`);
+  for (let k = -15; k <= 1; k++) {
+    let y = y0, m = m0 + k; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; }
+    const per = `${y}-${pad2(m)}`, q = Math.ceil(m / 3);
+    if (yes(c.vat) && !simpl) add('vat', per, endOfM(y, m + 1));
+    if (yes(c.wages) && simpl) add('wm', per, `${m === 12 ? y + 1 : y}-${pad2(m === 12 ? 1 : m + 1)}-15`);
+    if (m % 3 === 0) { if (yes(c.vat) && simpl) add('vatq', `${y}-Q${q}`, endOfM(y, m + 1)); if (yes(c.wages) && !simpl) add('wq', `${y}-Q${q}`, endOfM(y, m + 1)); }
+    if (m === 12 && yes(c.wages) && simpl) add('wy', String(y), `${y + 1}-01-31`);
+  }
+  return o;
+}
+let _crmF = null, _crmFk = '';
+function crmFilings() {
+  const k = VER + '|' + CRM.rev + '|' + today() + '|' + CRM.q.length; if (_crmF && _crmFk === k) return _crmF;
+  const cfg = crmCfg() || {}, from = cfg.start || '2026-11-01', td = today(), out = [];
+  crmCos().forEach(c => crmOblig(c, from, td).forEach(x => {
+    const id = `${c.tax || c.id}|${x.kind}|${x.period}`, f = CRM.f[id] || {}, ow = f.who ? userById(f.who) : crmOwner(c);
+    out.push({ ...x, id, c, st: f.st === 'done' ? 'done' : 'open', who: ow ? ow.id : '', whoN: ow ? bareName(ow.name) : '', doneAt: f.doneAt || '', doneBy: f.doneBy || '', note: f.note || '' });
+  }));
+  _crmF = out.sort((a, b) => a.due.localeCompare(b.due)); _crmFk = k; return _crmF;
+}
+/* مستخرج السجل من اليومية: ينتهي بعد 3 شهور من تاريخه */
+function crmExtracts() {
+  const res = { by: {}, pend: [] };
+  activeTx().filter(t => t.clientId && /مستخرج/.test((t.category || '') + ' ' + (t.description || '')) && /سجل/.test((t.category || '') + ' ' + (t.description || ''))).forEach(t => {
+    const cl = D.clients[resCid(t.clientId)], p = cl && crmPByPhone(cl.phone); if (!p) return;
+    const cos = crmCos(p.id); if (!cos.length) return;
+    const desc = nkey(t.description || ''), hit = cos.length === 1 ? cos[0] : cos.find(c => nkey(c.name) && desc.includes(nkey(c.name)));
+    if (!hit) { res.pend.push({ t, p, cos }); return; }
+    const exp = addMonths(t.date, 3); if (!res.by[hit.id] || exp > res.by[hit.id]) res.by[hit.id] = exp;
+  });
+  return res;
+}
+const crExpOf = (c, ex) => { const a = c.crExp || '', b = (ex || crmExtracts()).by[c.id] || ''; return a > b ? a : b; };
+function crmRenewals() {
+  const ex = crmExtracts(), lim = addDays(today(), 30), o = [];
+  crmCos().forEach(c => {
+    const cr = crExpOf(c, ex); if (cr && cr <= lim) o.push({ id: 'RN-cr-' + c.id, k: 'cr', c, due: cr, t: '📄 تجديد مستخرج السجل التجاري' });
+    if (c.sealExp && c.sealExp <= lim) o.push({ id: 'RN-seal-' + c.id, k: 'seal', c, due: c.sealExp, t: '🔏 تجديد الختم الإلكتروني' });
+  });
+  return { list: o.sort((a, b) => a.due.localeCompare(b.due)), pend: ex.pend };
+}
+/* تظهر في المهام كـ «مهام ضريبية» */
+let _crmT = null, _crmTk = '';
+function crmTasks() {
+  if (!crmCfg()) return [];
+  const k = VER + '|' + CRM.rev + '|' + today() + '|' + CRM.q.length; if (_crmT && _crmTk === k) return _crmT;
+  const td = today(), soon = addDays(td, 15), old = addDays(td, -60), out = [];
+  const acc = c => { const p = CRM.p[c.pid]; const a = crmAccOf(p)[0]; return a ? a.id : ''; };
+  crmFilings().forEach(f => {
+    if (f.st === 'open' ? f.due > soon : String(f.doneAt).slice(0, 10) < old) return;
+    out.push({ id: 'TF-' + f.id, crm: 'f', cid: acc(f.c), clientName: f.c.name, text: `${TXK[f.kind]} — ${perLabel(f.period)}`, cat: 'ضرائب', note: f.note, who: f.whoN, due: f.due, d: f.due, status: f.st, why: '', doneAt: f.doneAt, doneBy: f.doneBy });
+  });
+  crmRenewals().list.forEach(r => { const ow = crmOwner(r.c); out.push({ id: r.id, crm: 'r', cid: acc(r.c), clientName: r.c.name, text: r.t, cat: 'تجديدات', note: '', who: ow ? bareName(ow.name) : '', due: r.due, d: r.due, status: 'open', why: '' }); });
+  _crmT = out; _crmTk = k; return out;
+}
+function crmTaskSet(id, patch) {
+  if (id.startsWith('RN-')) { if (patch.done) crmRenewForm(id); return; }
+  const fid = id.slice(3), f = crmFilings().find(x => x.id === fid); if (!f) return;
+  const set = { cid: f.c.id, tax: f.c.tax || '', kind: f.kind, period: f.period, due: f.due };
+  if ('done' in patch) Object.assign(set, patch.done ? { st: 'done', doneAt: nowIso(), doneBy: bareName(ME.name) } : { st: 'open', doneAt: '', doneBy: '' });
+  if ('who' in patch) { const u = tkUserOf(patch.who) || userById(patch.who); set.who = u ? u.id : ''; }
+  if ('note' in patch) set.note = patch.note;
+  crmPut('f', fid, set);
+}
+function crmRenewForm(id) {
+  const [, k, cid] = id.match(/^RN-(cr|seal)-(.+)$/) || []; const c = CRM.c[cid]; if (!c) return;
+  const m = modal(`<h3>${k === 'cr' ? '📄 مستخرج سجل جديد' : '🔏 تجديد الختم'} — ${esc(c.name)}</h3>
+    ${fld(k === 'cr' ? 'تاريخ المستخرج الجديد' : 'تاريخ الانتهاء الجديد', `<input id="rn-d" type="date" class="inp" value="${today()}">`, { help: k === 'cr' ? 'الانتهاء بيتحسب لوحده بعد 3 شهور. ولو المستخرج اتصرف من اليومية ببند فيه «مستخرج سجل» بيتحدّث لوحده.' : '' })}
+    <div class="acts"><button class="btn pri" id="rn-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  m.querySelector('#rn-ok').onclick = () => { const d = m.querySelector('#rn-d').value; if (!d) return; crmPut('c', cid, k === 'cr' ? { crExp: addMonths(d, 3) } : { sealExp: d }); closeModal(); toast('تم التحديث'); render(); };
+}
+
+/* ---------- النماذج ---------- */
+function crmPersonForm(id) {
+  const cur = id ? CRM.p[id] || {} : {};
+  const m = modal(`<h3>👤 ${id ? 'تعديل بيانات العميل' : 'عميل جديد'}</h3>
+    ${fld('اسم العميل', `<input id="cp-n" class="inp" value="${esc(cur.name || '')}">`, { req: 1 })}
+    ${fld('التليفون (نفس رقم كشف الحساب)', `<input id="cp-ph" class="inp ltr" inputmode="tel" value="${esc(cur.phone || '')}">`, { req: 1, help: 'ده المفتاح اللي بيربط العميل بكشف حسابه ومشاريع التأسيس.' })}
+    ${fld('رقم الواتساب', `<input id="cp-wa" class="inp ltr" inputmode="tel" value="${esc(cur.wa || '')}" placeholder="لو مختلف عن التليفون">`)}
+    <div class="row wrap" style="gap:14px;margin:6px 0"><label class="ipc"><input type="checkbox" id="cp-poa" ${yes(cur.poa) ? 'checked' : ''}> عنده توكيل عادي</label><label class="ipc"><input type="checkbox" id="cp-poac" ${yes(cur.poaCap) ? 'checked' : ''}> عنده توكيل بالصفة</label></div>
+    ${fld('ملاحظات', `<input id="cp-no" class="inp" value="${esc(cur.note || '')}">`)}
+    <div class="acts"><button class="btn pri" id="cp-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const ph0 = cur.phone || '';
+  if (!id) { const ph = m.querySelector('#cp-ph'); ph.addEventListener('blur', () => { const a = activeClients().find(c => normPhone(c.phone) && normPhone(c.phone) === normPhone(ph.value)); const n = m.querySelector('#cp-n'); if (a && !n.value) n.value = a.name; }); }
+  m.querySelector('#cp-ok').onclick = () => {
+    const name = m.querySelector('#cp-n').value.trim(), phone = m.querySelector('#cp-ph').value.trim();
+    if (!name) return toast('اكتبي اسم العميل', 'err');
+    if (!normPhone(phone)) return toast('رقم التليفون أساسي — هو المفتاح اللي بيربط العميل', 'err');
+    const dup = crmPByPhone(phone); if (dup && dup.id !== id) { closeModal(); toast('الرقم ده متسجل لعميل تاني — فتحتهولك'); return go('crm/p/' + dup.id); }
+    const pid = id || uid('CP');
+    crmPut('p', pid, { name, phone, wa: m.querySelector('#cp-wa').value.trim(), poa: m.querySelector('#cp-poa').checked ? '1' : '', poaCap: m.querySelector('#cp-poac').checked ? '1' : '', note: m.querySelector('#cp-no').value.trim(), deleted: '' });
+    closeModal(); toast('تم الحفظ'); if (!id || ph0 !== phone) go('crm/p/' + pid); else render();
+  };
+}
+async function crmCoForm(pid, id) {
+  const cur = id ? CRM.c[id] || {} : {}, sec = canSec();
+  let S = {};
+  if (id && sec) { try { S = await crmSecrets(id); } catch (e) { toast(e.message, 'err'); } }
+  const sel = (idn, arr, v, blank = 'اختاري') => `<select id="${idn}" class="inp"><option value="">— ${blank} —</option>${arr.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+  const cb = (idn, l, v) => `<label class="ipc"><input type="checkbox" id="${idn}" ${yes(v) ? 'checked' : ''}> ${l}</label>`;
+  const inp = (idn, l, v, o = {}) => fld(l, `<input id="${idn}" class="inp ${o.ltr ? 'ltr' : ''}" ${o.type ? `type="${o.type}"` : ''} value="${esc(v || '')}" ${o.ph ? `placeholder="${o.ph}"` : ''}>`, o);
+  const dist = [...new Set(crmCos().map(c => c.district).filter(Boolean))];
+  const m = modal(`<h3>🏢 ${id ? 'تعديل الشركة' : 'شركة جديدة'} — ${esc((CRM.p[pid] || {}).name || '')}</h3>
+    <h4 class="sec" style="margin:4px 0">بيانات الشركة</h4>
+    ${inp('cc-n', 'اسم الشركة', cur.name, { req: 1 })}
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      ${fld('نوع الشركة', sel('cc-k', CRM_KINDS, cur.kind))}${fld('المحافظة', sel('cc-g', GOVS, cur.gov))}
+      ${fld('الحي', `<input id="cc-d" class="inp" list="cc-dl" value="${esc(cur.district || '')}"><datalist id="cc-dl">${dist.map(x => `<option value="${esc(x)}">`).join('')}</datalist>`)}</div>
+    ${inp('cc-a', 'العنوان (اختياري)', cur.addr)}
+    <h4 class="sec" style="margin:10px 0 4px">ملف الشركة</h4>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      ${inp('cc-st', 'تاريخ بدء النشاط', cur.start, { type: 'date' })}${inp('cc-fd', 'تاريخ التأسيس', cur.founded, { type: 'date' })}
+      ${inp('cc-cr', 'رقم السجل التجاري', cur.cr, { ltr: 1, req: 1 })}${inp('cc-ce', 'انتهاء مستخرج السجل', cur.crExp, { type: 'date' })}
+      ${inp('cc-tx', 'رقم التسجيل الضريبي', cur.tax, { ltr: 1, req: 1 })}${inp('cc-in', 'الرقم التأميني', cur.ins, { ltr: 1 })}
+      ${inp('cc-co', 'قيد اتحاد التشييد والبناء', cur.constr, { ltr: 1 })}${inp('cc-ex', 'البطاقة التصديرية', cur.exportCard, { ltr: 1 })}
+      ${inp('cc-se', 'انتهاء الختم الإلكتروني', cur.sealExp, { type: 'date' })}</div>
+    <h4 class="sec" style="margin:10px 0 4px">بوابات الضرائب</h4>
+    <div class="chips" id="cc-pt">${[['old', 'المنظومة القديمة'], ['new', 'المنظومة الجديدة (SAP)']].map(([k, l]) => `<button class="chip ${cur.portal === k ? 'on' : ''}" data-pt="${k}">${l}</button>`).join('')}</div>
+    <div style="margin:8px 0">${cb('cc-ei', 'مشترك في الفواتير الإلكترونية', cur.einv)}</div>
+    ${sec ? `<div class="card pad" style="background:var(--bg2,#f6f7fb)"><b class="small">🔒 بيانات الدخول (بتظهر لأصحاب الصلاحية بس)</b>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:6px">
+      ${inp('cs-pu', 'يوزر المنظومة', S.pUser, { ltr: 1 })}${inp('cs-pp', 'باسورد المنظومة', S.pPass, { ltr: 1 })}
+      ${inp('cs-ee', 'إيميل الفواتير الإلكترونية', S.eEmail, { ltr: 1 })}${inp('cs-ep', 'باسورد الفواتير', S.ePass, { ltr: 1 })}
+      ${inp('cs-tn', 'رقم التوكن', S.tokNo, { ltr: 1 })}${inp('cs-ts', 'سيريال التوكن (عندنا في المكتب)', S.tokSer, { ltr: 1 })}</div></div>` : '<p class="small muted">🔒 بيانات الدخول مش ظاهرة ليك — محتاجة صلاحية من الإدارة.</p>'}
+    <h4 class="sec" style="margin:10px 0 4px">الالتزامات الضريبية</h4>
+    ${fld('نوع إقرار الدخل', sel('cc-ic', list('crmInc'), cur.inc))}
+    <div class="row wrap" style="gap:14px;margin:4px 0 8px">${cb('cc-v', 'ضريبة القيمة المضافة', cur.vat)}${cb('cc-w', 'ضريبة الأجور والمرتبات', cur.wages)}${cb('cc-s', 'مسجلة تسهيلات', cur.simpl)}</div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      ${fld('حالة الشركة', sel('cc-sx', ['صفري', 'أعمال'], cur.status))}
+      ${fld('المسؤول عن ضرائبها', `<select id="cc-o" class="inp"><option value="">— بدون —</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}" ${cur.owner === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}</div>
+    ${inp('cc-no', 'ملاحظات', cur.note)}
+    <div class="acts"><button class="btn pri" id="cc-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  let portal = cur.portal || '';
+  m.addEventListener('click', e => { const b = e.target.closest('[data-pt]'); if (!b) return; portal = portal === b.dataset.pt ? '' : b.dataset.pt; m.querySelectorAll('[data-pt]').forEach(x => x.classList.toggle('on', x.dataset.pt === portal)); });
+  m.querySelector('#cc-ok').onclick = async () => {
+    const v = k => m.querySelector('#' + k).value.trim(), c = k => m.querySelector('#' + k).checked ? '1' : '';
+    if (!v('cc-n')) return toast('اكتبي اسم الشركة', 'err');
+    if (!v('cc-tx') && !v('cc-cr')) return toast('الأساسي: رقم التسجيل الضريبي ورقم السجل التجاري', 'err');
+    const tx = v('cc-tx'), dupTx = tx && crmCos().find(x => x.tax === tx && x.id !== id); if (dupTx) return toast(`الرقم الضريبي متسجل لشركة «${dupTx.name}»`, 'err');
+    const cid = id || uid('CC');
+    crmPut('c', cid, { pid, name: v('cc-n'), kind: v('cc-k'), gov: v('cc-g'), district: v('cc-d'), addr: v('cc-a'), start: v('cc-st'), founded: v('cc-fd'), cr: v('cc-cr'), crExp: v('cc-ce'), tax: tx, ins: v('cc-in'), constr: v('cc-co'), exportCard: v('cc-ex'), sealExp: v('cc-se'), portal, einv: c('cc-ei'), inc: v('cc-ic'), vat: c('cc-v'), wages: c('cc-w'), simpl: c('cc-s'), status: v('cc-sx'), owner: v('cc-o'), note: v('cc-no'), deleted: '' });
+    if (sec && m.querySelector('#cs-pu')) {
+      const set = { pUser: v('cs-pu'), pPass: v('cs-pp'), eEmail: v('cs-ee'), ePass: v('cs-ep'), tokNo: v('cs-tn'), tokSer: v('cs-ts') };
+      if (Object.keys(set).some(k => (set[k] || '') !== (S[k] || ''))) { try { await crmPost({ action: 'saveSecret', uid: ME.id, code: ME.code, id: cid, set }); CRM_ST.sec[cid] = { id: cid, ...set }; } catch (e) { toast('بيانات الدخول ما اتحفظتش: ' + e.message, 'err'); } }
+    }
+    closeModal(); toast('تم حفظ الشركة'); render();
+  };
+}
+
+/* ---------- الشاشات ---------- */
+function crmSetupCard() {
+  const c = crmCfg() || {};
+  if (!isFull()) return `<div class="card pad empty">قاعدة البيانات لسه ما اتربطتش — الإدارة بتربطها من هنا.</div>`;
+  return `<div class="card pad"><div class="form">
+    <div class="note info">${icon('alert', 18)}<div class="grow">قاعدة البيانات في شيت منفصل بسكربت «crm.gs». انشريه كتطبيق ويب، والصقي الرابط والرمز هنا مرة واحدة، وهيوصل لأجهزة الفريق لوحده.</div></div>
+    ${fld('رابط تطبيق الويب', `<input id="cr-u" class="inp ltr" value="${esc(c.url || '')}" placeholder="https://script.google.com/macros/s/…/exec">`)}
+    ${fld('رمز الربط (CRM_KEY)', `<input id="cr-k" class="inp ltr" value="${esc(c.key || '')}">`)}
+    ${fld('بداية متابعة الإقرارات', `<input id="cr-s" type="date" class="inp" value="${esc(c.start || '2026-11-01')}">`, { help: 'الإقرارات اللي موعدها قبل التاريخ ده مش هتتعرض.' })}
+    ${fld('رابط المنظومة القديمة', `<input id="cr-o" class="inp ltr" value="${esc(c.old || '')}">`)}
+    ${fld('رابط المنظومة الجديدة (SAP)', `<input id="cr-n" class="inp ltr" value="${esc(c.neu || '')}">`)}
+    ${fld('رابط الفواتير الإلكترونية', `<input id="cr-e" class="inp ltr" value="${esc(c.einv || 'https://invoicing.eta.gov.eg')}">`)}
+    <div class="row wrap" style="gap:6px"><button class="btn pri" data-act="crm-cfg">ربط وحفظ</button>${c.url ? `<button class="btn" data-act="crm-perms">🔑 حفظ صلاحيات الباسوردات</button>` : ''}</div></div></div>`;
+}
+function crmCoCard(c, ex) {
+  const cfg = crmCfg() || {}, F = crmFilings().filter(f => f.c.id === c.id), open = F.filter(f => f.st === 'open'), late = open.filter(f => f.due < today()), cr = crExpOf(c, ex), ow = crmOwner(c);
+  const row = (l, v) => v ? `<div><small class="muted">${l}</small><div class="num">${esc(v)}</div></div>` : '';
+  const ob = [yes(c.vat) && (yes(c.simpl) ? 'قيمة مضافة ربع سنوي' : 'قيمة مضافة شهري'), yes(c.wages) && (yes(c.simpl) ? 'أجور سنوي + سداد شهري' : 'أجور ربع سنوي'), 'إقرار دخل', yes(c.simpl) && 'تسهيلات', yes(c.einv) && 'فواتير إلكترونية'].filter(Boolean);
+  const link = c.portal === 'old' ? cfg.old : c.portal === 'new' ? cfg.neu : '';
+  return `<div class="card pad" style="margin-top:10px">
+    <div class="row wrap" style="gap:6px;align-items:center"><b class="grow" style="font-size:17px">🏢 ${esc(c.name)}</b>${c.kind ? `<span class="badge">${esc(c.kind)}</span>` : ''}${c.status ? `<span class="badge ${c.status === 'صفري' ? '' : 'warn'}">${esc(c.status)}</span>` : ''}</div>
+    <div class="small muted" style="margin:2px 0 8px">${[c.gov, c.district, c.addr].filter(Boolean).map(esc).join(' — ')}${ow ? ` · 👤 ${esc(bareName(ow.name))}` : ''}</div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+      ${row('الرقم الضريبي', c.tax)}${row('السجل التجاري', c.cr)}${cr ? `<div><small class="muted">انتهاء مستخرج السجل</small><div class="num ${cr < today() ? 'neg' : cr <= addDays(today(), 30) ? 'warn' : ''}">${esc(cr)}</div></div>` : ''}
+      ${row('الرقم التأميني', c.ins)}${row('اتحاد التشييد', c.constr)}${row('البطاقة التصديرية', c.exportCard)}${row('تاريخ التأسيس', c.founded)}${row('بدء النشاط', c.start)}
+      ${c.sealExp ? `<div><small class="muted">انتهاء الختم</small><div class="num ${c.sealExp < today() ? 'neg' : ''}">${esc(c.sealExp)}</div></div>` : ''}${row('نوع إقرار الدخل', c.inc)}</div>
+    <div class="chips" style="margin-top:8px">${ob.map(x => `<span class="chip on" style="cursor:default">${esc(x)}</span>`).join('')}</div>
+    ${F.length ? `<div class="small" style="margin-top:6px">🏛️ إقرارات: <b>${open.length}</b> مفتوحة${late.length ? ` · <b class="neg">${late.length} متأخرة</b>` : ''} · ${F.length - open.length} خلصت</div>` : ''}
+    ${c.note ? `<div class="small" style="margin-top:4px">📝 ${esc(c.note)}</div>` : ''}
+    <div class="row wrap no-print" style="gap:6px;margin-top:10px">
+      ${link ? `<a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener">🌐 ${c.portal === 'old' ? 'المنظومة القديمة' : 'المنظومة الجديدة'}</a>` : c.portal ? `<span class="small muted">${c.portal === 'old' ? 'المنظومة القديمة' : 'المنظومة الجديدة'} (الرابط من إعدادات القاعدة)</span>` : ''}
+      ${yes(c.einv) && cfg.einv ? `<a class="btn sm" href="${esc(cfg.einv)}" target="_blank" rel="noopener">🧾 بوابة الفواتير</a>` : ''}
+      ${canSec() ? `<button class="btn sm" data-act="crm-sec" data-id="${c.id}">🔒 بيانات الدخول</button>` : ''}
+      <button class="btn sm" data-act="crm-co-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
+      <button class="btn sm danger" data-act="crm-co-del" data-id="${c.id}">${icon('trash', 15)}</button></div>
+    <div id="sec-${c.id}"></div></div>`;
+}
+function vCrm(r, el) {
+  if (!canTab('crm')) { el.innerHTML = '<div class="card pad empty">مالكيش صلاحية على قاعدة البيانات.</div>'; return; }
+  if (Date.now() - CRM_ST.last > 30000) crmSync();
+  const cfg = crmCfg();
+  const head = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">🗂️ قاعدة بيانات العملاء</h1>${cfg ? `<button class="btn pri" data-act="crm-p-add">${icon('plus', 17)} عميل جديد</button>` : ''}</div>`;
+  const err = CRM_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div>تعذّر الاتصال بقاعدة البيانات (${esc(CRM_ST.msg)}). المعروض آخر نسخة على الجهاز${CRM.q.length ? ` و${CRM.q.length} تعديل مستني يترفع` : ''}.</div></div>` : '';
+  if (!cfg || r.arg === 'setup') { el.innerHTML = head + crmSetupCard(); return; }
+  if (r.arg === 'p') {
+    const p = CRM.p[r.arg2]; if (!p || yes(p.deleted)) { el.innerHTML = head + '<div class="card pad empty">العميل غير موجود.</div>'; return; }
+    const acc = crmAccOf(p), ex = crmExtracts(), cos = crmCos(p.id), wa = waNumber(p.wa || p.phone);
+    el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#crm" class="btn ghost sm">${icon('back', 16)} قاعدة البيانات</a></div>${err}
+      <div class="card pad"><div class="row wrap" style="gap:8px;align-items:center"><h2 class="grow" style="margin:0">👤 ${esc(p.name)}</h2>
+        ${yes(p.poa) ? '<span class="badge">توكيل عادي</span>' : ''}${yes(p.poaCap) ? '<span class="badge">توكيل بالصفة</span>' : ''}</div>
+        <div class="small" style="margin-top:6px">📞 <span class="num">${esc(p.phone || '')}</span>${p.wa && p.wa !== p.phone ? ` · واتساب <span class="num">${esc(p.wa)}</span>` : ''}${wa ? ` · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">💬 واتساب</a>` : ''}</div>
+        ${p.note ? `<div class="small" style="margin-top:4px">📝 ${esc(p.note)}</div>` : ''}
+        <div class="small" style="margin-top:6px">${acc.length ? `🔗 كشف الحساب: ${acc.map(a => `<a href="#client/${a.id}">${esc(a.name)}</a>`).join('، ')}` : '<span class="muted">مفيش عميل في الحسابات بنفس الرقم.</span>'}</div>
+        <div class="row wrap no-print" style="gap:6px;margin-top:10px"><button class="btn sm pri" data-act="crm-co-add" data-id="${p.id}">${icon('plus', 15)} شركة</button><button class="btn sm" data-act="crm-p-edit" data-id="${p.id}">${icon('edit', 15)} تعديل</button><button class="btn sm danger" data-act="crm-p-del" data-id="${p.id}">${icon('trash', 15)} حذف</button></div></div>
+      ${cos.length ? cos.map(c => crmCoCard(c, ex)).join('') : '<div class="card pad empty" style="margin-top:10px">لسه مفيش شركات. اضغطي «➕ شركة».</div>'}
+      ${canTab('formation') && fpByPhone(p.phone).length ? `<h2 class="sec" style="margin-top:16px">🏗️ مشاريع التأسيس</h2>${fpByPhone(p.phone).map(fpCard).join('')}` : ''}`;
+    if (canTab('formation') && Date.now() - FP.at > 300000) fpSync();
+    return;
+  }
+  const qn = nkey(CV.q), all = crmP(), F = {
+    '': () => true, vat: p => crmCos(p.id).some(c => yes(c.vat)), simpl: p => crmCos(p.id).some(c => yes(c.simpl)), einv: p => crmCos(p.id).some(c => yes(c.einv)),
+    exp: p => crmCos(p.id).some(c => { const x = crExpOf(c); return x && x <= addDays(today(), 30); }), nolink: p => !crmAccOf(p).length
+  };
+  const L = all.filter(p => (!qn || nkey(p.name).includes(qn) || normPhone(p.phone).includes(normPhone(CV.q)) || crmCos(p.id).some(c => nkey(c.name).includes(qn) || String(c.tax).includes(CV.q))) && (F[CV.f] || F[''])(p));
+  const byPh = {}; activeClients().forEach(c => { const n = normPhone(c.phone); if (n) (byPh[n] = byPh[n] || []).push(c); });
+  const dups = isFull() ? Object.values(byPh).filter(a => a.length > 1) : [];
+  el.innerHTML = head + err + `
+    <div class="card sumrow"><div><small>العملاء</small><b>${all.length}</b></div><div><small>الشركات</small><b>${crmCos().length}</b></div><div><small>عليها قيمة مضافة</small><b>${crmCos().filter(c => yes(c.vat)).length}</b></div></div>
+    <div class="search" style="margin:10px 0">${icon('search', 18)}<input class="inp" style="width:100%" data-crm="q" value="${esc(CV.q)}" placeholder="بحث: اسم العميل، الشركة، التليفون، الرقم الضريبي"></div>
+    <div class="chips scroll" style="margin-bottom:10px">${[['', 'الكل'], ['vat', 'قيمة مضافة'], ['simpl', 'تسهيلات'], ['einv', 'فواتير إلكترونية'], ['exp', 'مستخرج قرب ينتهي'], ['nolink', 'مش مربوط بالحسابات']].map(([k, l]) => `<button class="chip ${CV.f === k ? 'on' : ''}" data-act="crm-f" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="card">${L.length ? L.slice(0, 300).map(p => { const cs = crmCos(p.id); return `<a class="lrow" href="#crm/p/${p.id}"><div class="grow"><b>${esc(p.name)}</b><div class="small muted">${cs.length ? cs.map(c => esc(c.name)).join(' · ') : 'بدون شركات'}</div></div><span class="small muted num">${esc(p.phone || '')}</span>${crmAccOf(p).length ? '<span title="مربوط بكشف الحساب">🔗</span>' : ''}</a>`; }).join('') : `<div class="empty">${all.length ? 'لا نتائج.' : 'لسه مفيش عملاء. اضغطي «عميل جديد».'}</div>`}</div>
+    ${dups.length ? `<h2 class="sec" style="margin-top:16px">🧩 عملاء مكررين في الحسابات بنفس الرقم (${dups.length})</h2><p class="small muted">نفس رقم التليفون متسجل لأكتر من عميل في الحسابات. اختاري الاسم اللي يفضل، والتاني يندمج فيه بكل حركاته.</p>
+      <div class="card">${dups.slice(0, 40).map(a => `<div class="lrow" style="flex-wrap:wrap;gap:6px"><span class="small muted num grow">${esc(a[0].phone)}</span>${a.slice(1).map(b => `<button class="btn sm" data-act="dup-keep" data-k="${a[0].id}" data-d="${b.id}">إبقاء «${esc(a[0].name)}» ودمج «${esc(b.name)}»</button><button class="btn sm" data-act="dup-keep" data-k="${b.id}" data-d="${a[0].id}">إبقاء «${esc(b.name)}»</button>`).join('')}</div>`).join('')}</div>` : ''}
+    ${isFull() ? `<div style="margin-top:14px"><a class="btn sm ghost" href="#crm/setup">⚙️ إعدادات ربط قاعدة البيانات</a></div>` : ''}`;
+}
+function vTaxes(r, el) {
+  if (!canTab('taxes')) { el.innerHTML = '<div class="card pad empty">مالكيش صلاحية على الضرائب.</div>'; return; }
+  if (Date.now() - CRM_ST.last > 30000) crmSync();
+  if (!crmCfg()) { el.innerHTML = `<h1 class="pg">🏛️ الضرائب</h1><div class="card pad empty">الضرائب بتتبني من قاعدة بيانات العملاء — ${isFull() ? '<a href="#crm/setup">اربطيها الأول</a>' : 'الإدارة لازم تربطها الأول'}.</div>`; return; }
+  const td = today(), all = crmFilings(), ms = monthStart(td), me = !isPriv();
+  const scope = all.filter(f => (!me || f.who === ME.id) && (!CV.kind || f.kind === CV.kind) && (!CV.who || f.who === CV.who));
+  const open = scope.filter(f => f.st === 'open'), late = open.filter(f => f.due < td), soon = open.filter(f => f.due >= td && f.due <= addDays(td, 15));
+  const doneM = scope.filter(f => f.st === 'done' && String(f.doneAt).slice(0, 10) >= ms);
+  const tabs = [['due', `المستحقة (${late.length + soon.length})`], ['all', 'كل الإقرارات'], ['dist', 'توزيعة الشركات'], ['ren', 'التجديدات']];
+  const row = f => `<div class="lrow" style="align-items:flex-start;gap:8px"><div class="grow"><b>${esc(f.c.name)}</b> <span class="small muted num">${esc(f.c.tax || '')}</span>
+      <div class="small">${TXK[f.kind]} — ${perLabel(f.period)}</div>
+      <div class="small muted">الموعد: <span class="${f.st === 'open' && f.due < td ? 'neg' : ''}">${dayAr(f.due)}</span>${f.whoN ? ' · 👤 ' + esc(f.whoN) : ''}${f.st === 'done' ? ` · ✅ ${esc(f.doneBy)} ${esc(String(f.doneAt).slice(0, 10))}` : ''}${f.note ? ' · 📝 ' + esc(f.note) : ''}</div></div>
+      ${f.st === 'open' ? `<button class="btn sm pri" data-act="tf-done" data-id="${esc(f.id)}">تم ✓</button>` : isPriv() ? `<button class="btn sm" data-act="tf-undo" data-id="${esc(f.id)}">تراجع</button>` : ''}${isPriv() ? `<button class="btn sm ghost" data-act="tf-more" data-id="${esc(f.id)}">⋯</button>` : ''}</div>`;
+  let body = '';
+  if (CV.tab === 'due') body = (late.length ? `<div class="tk-g late">متأخرة <small>(${late.length})</small></div><div class="card">${late.map(row).join('')}</div>` : '') + (soon.length ? `<div class="tk-g">خلال 15 يوم <small>(${soon.length})</small></div><div class="card">${soon.map(row).join('')}</div>` : '') + (!late.length && !soon.length ? '<div class="card pad empty">مفيش إقرارات مستحقة دلوقتي ✅</div>' : '');
+  else if (CV.tab === 'all') { const g = {}; scope.forEach(f => (g[f.due.slice(0, 7)] = g[f.due.slice(0, 7)] || []).push(f)); body = Object.keys(g).sort().map(k => `<div class="tk-g">موعدها في ${perLabel(k)} <small>(${g[k].filter(f => f.st === 'done').length}/${g[k].length} خلصت)</small></div><div class="card">${g[k].map(row).join('')}</div>`).join('') || '<div class="card pad empty">مفيش إقرارات.</div>'; }
+  else if (CV.tab === 'dist') {
+    const g = {}; scope.forEach(f => (g[f.c.id] = g[f.c.id] || { c: f.c, a: [] }).a.push(f));
+    body = `<div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الشركة</th><th>الالتزامات</th><th class="n">مفتوحة</th><th class="n">متأخرة</th><th class="n">خلصت</th><th>المسؤول</th></tr></thead><tbody>${Object.values(g).sort((a, b) => b.a.filter(f => f.st === 'open').length - a.a.filter(f => f.st === 'open').length).map(x => { const o = x.a.filter(f => f.st === 'open'); const ow = crmOwner(x.c); return `<tr data-act="go" data-h="crm/p/${x.c.pid}" style="cursor:pointer"><td><b>${esc(x.c.name)}</b></td><td class="small">${[...new Set(x.a.map(f => TXK[f.kind].replace(/^\S+\s/, '')))].join('، ')}</td><td class="n">${o.length}</td><td class="n ${o.some(f => f.due < td) ? 'neg' : ''}">${o.filter(f => f.due < td).length}</td><td class="n">${x.a.length - o.length}</td><td class="small">${ow ? esc(bareName(ow.name)) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="6" class="empty">مفيش بيانات</td></tr>'}</tbody></table></div>`;
+  } else {
+    const R = crmRenewals();
+    body = `${R.list.length ? `<div class="card">${R.list.map(x => `<div class="lrow"><div class="grow"><b>${esc(x.c.name)}</b><div class="small">${x.t}</div><div class="small ${x.due < td ? 'neg' : 'muted'}">${x.due < td ? 'انتهى' : 'ينتهي'} ${dayAr(x.due)}</div></div><button class="btn sm pri" data-act="rn-do" data-id="${x.id}">تحديث</button></div>`).join('')}</div>` : '<div class="card pad empty">مفيش مستخرجات أو أختام هتنتهي خلال 30 يوم ✅</div>'}
+      ${R.pend.length ? `<div class="tk-g">📄 مستخرج سجل في اليومية لعميل عنده أكتر من شركة — حدّدي الشركة</div><div class="card">${R.pend.slice(0, 30).map(x => `<div class="lrow" style="flex-wrap:wrap;gap:6px"><div class="grow small"><b>${esc(x.p.name)}</b> — ${esc(x.t.date)} ${esc(x.t.description || x.t.category || '')}</div>${x.cos.map(c => `<button class="btn sm" data-act="rn-pick" data-c="${c.id}" data-d="${esc(x.t.date)}">${esc(c.name)}</button>`).join('')}</div>`).join('')}</div>` : ''}`;
+  }
+  const users = [...new Set(all.map(f => f.who).filter(Boolean))].map(userById).filter(Boolean);
+  el.innerHTML = `<h1 class="pg">🏛️ الضرائب ${me ? '<small>(المسندة ليك)</small>' : ''}</h1>
+    ${CRM_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div>تعذّر الاتصال بقاعدة البيانات (${esc(CRM_ST.msg)}).</div></div>` : ''}
+    <div class="card sumrow"><div><small>⚠️ متأخرة</small><b class="${late.length ? 'neg' : ''}">${late.length}</b></div><div><small>📌 خلال 15 يوم</small><b>${soon.length}</b></div><div><small>✅ خلصت الشهر ده</small><b>${doneM.length}</b></div></div>
+    <div class="chips scroll" style="margin:10px 0">${tabs.map(([k, l]) => `<button class="chip ${CV.tab === k ? 'on' : ''}" data-act="cv-tab" data-v="${k}">${l}</button>`).join('')}</div>
+    ${CV.tab !== 'ren' ? `<div class="chips scroll" style="margin-bottom:10px"><button class="chip ${!CV.kind ? 'on' : ''}" data-act="cv-kind" data-v="">كل الأنواع</button>${Object.entries(TXK).map(([k, l]) => `<button class="chip ${CV.kind === k ? 'on' : ''}" data-act="cv-kind" data-v="${k}">${l}</button>`).join('')}</div>
+    ${isPriv() && users.length ? `<div class="chips scroll" style="margin-bottom:10px"><button class="chip ${!CV.who ? 'on' : ''}" data-act="cv-who" data-v="">كل الفريق</button>${users.map(u => `<button class="chip ${CV.who === u.id ? 'on' : ''}" data-act="cv-who" data-v="${u.id}">${esc(bareName(u.name))}</button>`).join('')}</div>` : ''}` : ''}
+    ${body}
+    <p class="small muted" style="margin-top:14px">الإقرارات بتنزل لوحدها من التزامات كل شركة في قاعدة البيانات. الدخل: آخر مارس للأفراد والتضامن والتوصية، وآخر أبريل للشركات. القيمة المضافة الشهري: آخر الشهر اللي بعده. التسهيلات: قيمة مضافة ربع سنوي، وأجور سنوي (آخر يناير) ونموذج سداد شهري (15 الشهر اللي بعده). الأجور العادي: ربع سنوي.</p>`;
+}
+function crmTfMore(fid) {
+  const f = crmFilings().find(x => x.id === fid); if (!f) return;
+  const m = modal(`<h3>${TXK[f.kind]} — ${perLabel(f.period)}</h3><div class="small muted" style="margin-bottom:8px">${esc(f.c.name)} · الموعد ${dayAr(f.due)}</div>
+    ${fld('المكلَّف بالإقرار ده', `<select id="tf-w" class="inp"><option value="">— المسؤول عن الشركة —</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}" ${(CRM.f[fid] || {}).who === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+    ${fld('ملاحظة', `<input id="tf-nt" class="inp" value="${esc(f.note || '')}">`)}
+    <div class="acts"><button class="btn pri" id="tf-sv">حفظ</button><a class="btn" href="#crm/p/${f.c.pid}">فتح الشركة</a><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  m.querySelector('#tf-sv').onclick = () => { const w = m.querySelector('#tf-w').value; crmPut('f', fid, { cid: f.c.id, tax: f.c.tax || '', kind: f.kind, period: f.period, due: f.due, who: w, note: m.querySelector('#tf-nt').value.trim() }); closeModal(); toast('تم الحفظ'); render(); };
+}
+
+Object.assign(ACT, {
+  'crm-cfg': () => {
+    const v = k => $('#' + k).value.trim(); if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(v('cr-u'))) return toast('الرابط لازم يبدأ بـ https://script.google.com/', 'err');
+    D.lists.crmCfg = [v('cr-u'), v('cr-k'), v('cr-s') || '2026-11-01', v('cr-o'), v('cr-n'), v('cr-e')]; queue('saveLists', { lists: { crmCfg: D.lists.crmCfg } }); changed();
+    CRM.rev = ''; crmSave(); toast('اتحفظ — بجرّب الاتصال…'); crmSync(true).then(() => { toast(CRM_ST.state === 'ok' ? 'تم الربط ✓' : 'الاتصال فشل: ' + CRM_ST.msg, CRM_ST.state === 'ok' ? 'ok' : 'err'); if (CRM_ST.state === 'ok') { crmPushPerms(true); go('crm'); } });
+  },
+  'crm-perms': () => crmPushPerms(true),
+  'crm-f': el => { CV.f = el.dataset.v; render(); },
+  'crm-p-add': () => crmPersonForm(''),
+  'crm-p-edit': async el => { if (await crmGate()) crmPersonForm(el.dataset.id); },
+  'crm-p-del': async el => { if (!(await crmGate())) return; const p = CRM.p[el.dataset.id]; if (!p || !(await ask(`حذف العميل «${esc(p.name)}» وكل شركاته من قاعدة البيانات؟`, 'حذف', true))) return; crmCos(p.id).forEach(c => crmPut('c', c.id, { deleted: '1' })); crmPut('p', p.id, { deleted: '1' }); go('crm'); },
+  'crm-co-add': el => crmCoForm(el.dataset.id, ''),
+  'crm-co-edit': async el => { if (!(await crmGate())) return; const c = CRM.c[el.dataset.id]; if (c) crmCoForm(c.pid, c.id); },
+  'crm-co-del': async el => { if (!(await crmGate())) return; const c = CRM.c[el.dataset.id]; if (!c || !(await ask(`حذف الشركة «${esc(c.name)}»؟`, 'حذف', true))) return; crmPut('c', c.id, { deleted: '1' }); render(); },
+  'crm-sec': async el => {
+    const box = $('#sec-' + el.dataset.id); if (!box) return; if (box.innerHTML) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="small muted" style="margin-top:8px">بيجيب البيانات…</div>';
+    try { const s = await crmSecrets(el.dataset.id, true); const r = (l, v) => `<div><small class="muted">${l}</small><div class="num" style="user-select:all">${esc(v || '—')}</div></div>`;
+      box.innerHTML = `<div class="card pad" style="margin-top:8px;background:var(--bg2,#f6f7fb)"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">${r('يوزر المنظومة', s.pUser)}${r('باسورد المنظومة', s.pPass)}${r('إيميل الفواتير', s.eEmail)}${r('باسورد الفواتير', s.ePass)}${r('رقم التوكن', s.tokNo)}${r('سيريال التوكن', s.tokSer)}</div></div>`;
+    } catch (e) { box.innerHTML = `<div class="note warn" style="margin-top:8px">${esc(e.message)}</div>`; }
+  },
+  'cv-tab': el => { CV.tab = el.dataset.v; render(); },
+  'cv-kind': el => { CV.kind = el.dataset.v; render(); },
+  'cv-who': el => { CV.who = el.dataset.v; render(); },
+  'tf-done': el => { crmTaskSet('TF-' + el.dataset.id, { done: true }); toast('تم ✓'); render(); },
+  'tf-undo': el => { crmTaskSet('TF-' + el.dataset.id, { done: false }); render(); },
+  'tf-more': el => crmTfMore(el.dataset.id),
+  'rn-do': el => crmRenewForm(el.dataset.id),
+  'rn-pick': el => { crmPut('c', el.dataset.c, { crExp: addMonths(el.dataset.d, 3) }); toast('اتحدّث انتهاء المستخرج'); render(); }
+});
+document.addEventListener('input', e => { const t = e.target.closest && e.target.closest('[data-crm="q"]'); if (!t) return; CV.q = t.value; clearTimeout(CRM_ST.qt); CRM_ST.qt = setTimeout(() => { const pos = t.selectionStart; render(); const n = document.querySelector('[data-crm="q"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { } } }, 250); });
+setInterval(() => { if (ME && D && !document.hidden && crmCfg()) crmSync(); }, 90000);
+
+/* ================= مشاريع التأسيس (قراءة من شيت مشروع تأسيس الشركات — الربط برقم التليفون) ================= */
+const FP_GOVS = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'القليوبية', 'كفر الشيخ', 'الغربية', 'المنوفية', 'البحيرة', 'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'الفيوم', 'شمال سيناء', 'جنوب سيناء', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح'];
+const FP_SRV = { vat: 'قيمة مضافة', social: 'تأمينات', construction: 'اتحاد التشييد', exportCard: 'بطاقة تصديرية', importCard: 'بطاقة استيرادية', einvoice: 'فواتير إلكترونية', trademark: 'علامة تجارية', bankAccount: 'حساب بنكي' };
+let FP = LS.get('fp1', null) || { list: [], at: 0 };
+const FP_ST = { busy: false, state: '', msg: '' };
+const FPV = { tab: 'app', q: '' };
+const fpCfg = () => { const l = (D && D.lists && D.lists.fpCfg) || []; return { url: l[0] || 'https://script.google.com/macros/s/AKfycbztPbUrBrIlmK1hrOm_5uPCF_PU-4Wy_5cuoDODELzJDpIU2xy7ZxNTLCkDC6-PeJ1S2Q/exec', token: l[1] || 'mahmoud-salem-9XK4Q7' }; };
+async function fpSync() {
+  if (FP_ST.busy) return; FP_ST.busy = true;
+  try {
+    const c = fpCfg(), u = new URL(c.url); u.searchParams.set('token', c.token); u.searchParams.set('_', Date.now());
+    const d = await (await fetchT(u.toString(), { method: 'GET', redirect: 'follow', cache: 'no-store' }, 60000)).json();
+    if (d && d.error) throw new Error(d.error);
+    const arr = (Array.isArray(d) ? d : (d.companies || [])).filter(r => r && r.id && r.id.indexOf('__') !== 0 && !r.deleted);
+    FP = { at: Date.now(), list: arr.map(r => { const s = r.state || {}, a = r.approved || null, en = (a && a.entries) || [];
+      const add = en.filter(e => e.kind === 'add').reduce((x, e) => x + (+e.amount || 0), 0), paid = en.filter(e => e.kind !== 'add' && e.kind !== 'trust' && e.kind !== 'tout').reduce((x, e) => x + (+e.amount || 0), 0);
+      return { id: r.id, manual: !!r.manual, name: s.nameAr || s.nameEn || 'بدون اسم', nameEn: s.nameEn || '', client: s.clientName || '', phone: s.clientPhone || '', gov: s.govIdx != null ? FP_GOVS[s.govIdx] || '' : '',
+        solo: s.soloMode || (s.partners || []).length === 1, law: s.companyLaw || '', srv: Object.keys(FP_SRV).filter(k => s[k]), stamp: s.stamp || '', quote: +s.quoteTotal || 0,
+        app: a ? { at: a.at || '', total: (+a.amount || 0) + add, paid, note: a.note || '' } : null, at: r.updatedAt || r.createdAt || '' }; }) };
+    LS.set('fp1', FP); FP_ST.state = 'ok'; FP_ST.msg = '';
+  } catch (e) { FP_ST.state = 'err'; FP_ST.msg = String(e.message || e); }
+  finally { FP_ST.busy = false; }
+  VER++; if (['formation', 'crm'].includes(route().name) && !modalOpen()) render();
+}
+const fpByPhone = ph => { const n = normPhone(ph || ''); return n ? FP.list.filter(x => normPhone(x.phone) === n) : []; };
+function fpToCrm(id) {
+  const x = FP.list.find(r => r.id === id); if (!x) return;
+  if (!crmCfg()) return toast('اربطي قاعدة البيانات الأول', 'err');
+  if (!normPhone(x.phone)) return toast('المشروع ده مالوش رقم تليفون — ضيفيه في برنامج التأسيس الأول', 'err');
+  let p = crmPByPhone(x.phone), pid = p ? p.id : uid('CP');
+  if (!p) crmPut('p', pid, { name: x.client || x.name, phone: x.phone, wa: '', poa: '', poaCap: '', note: '', deleted: '' });
+  const ex = crmCos(pid).find(c => nkey(c.name) === nkey(x.name));
+  if (ex) { toast('الشركة موجودة بالفعل في قاعدة البيانات'); return go('crm/p/' + pid); }
+  crmPut('c', uid('CC'), { pid, name: x.name, kind: x.solo ? 'شخص واحد' : 'مسؤولية محدودة', gov: x.gov, vat: x.srv.includes('vat') ? '1' : '', einv: x.srv.includes('einvoice') ? '1' : '', status: 'صفري', note: 'من مشروع التأسيس' + (x.srv.length ? ' — خدمات: ' + x.srv.map(k => FP_SRV[k]).join('، ') : ''), deleted: '' });
+  toast('اتضافت لقاعدة البيانات — كمّلي الرقم الضريبي والسجل لما يطلعوا'); go('crm/p/' + pid);
+}
+function fpCard(x) {
+  const p = crmPByPhone(x.phone), acc = activeClients().filter(c => normPhone(c.phone) && normPhone(c.phone) === normPhone(x.phone)), inDb = p && crmCos(p.id).some(c => nkey(c.name) === nkey(x.name)), a = x.app;
+  return `<div class="card pad" style="margin-top:8px"><div class="row wrap" style="gap:6px;align-items:center"><b class="grow">🏗️ ${esc(x.name)}</b>${x.solo ? '<span class="badge">شخص واحد</span>' : x.manual ? '' : '<span class="badge">مسؤولية محدودة</span>'}${x.law === '72' ? '<span class="badge">استثمار 72</span>' : ''}</div>
+    <div class="small muted" style="margin-top:2px">${[x.client, x.gov].filter(Boolean).map(esc).join(' — ')}${x.phone ? ` · <span class="num">${esc(x.phone)}</span>` : ''}</div>
+    ${x.srv.length ? `<div class="chips" style="margin-top:6px">${x.srv.map(k => `<span class="chip on" style="cursor:default">${FP_SRV[k]}</span>`).join('')}</div>` : ''}
+    ${a ? `<div class="small" style="margin-top:6px">✅ اعتُمد ${esc(a.at)} · الإجمالي <b class="num">${fmt(a.total)}</b> · المدفوع <b class="num">${fmt(a.paid)}</b> · الباقي <b class="num ${a.total - a.paid > 0 ? 'neg' : ''}">${fmt(a.total - a.paid)}</b></div>` : x.quote ? `<div class="small" style="margin-top:6px">عرض سعر: <b class="num">${fmt(x.quote)}</b></div>` : ''}
+    <div class="row wrap no-print" style="gap:6px;margin-top:8px">
+      ${inDb ? `<a class="btn sm" href="#crm/p/${p.id}">🗂️ في قاعدة البيانات</a>` : canTab('crm') && crmCfg() ? `<button class="btn sm pri" data-act="fp-crm" data-id="${esc(x.id)}">➕ إضافة لقاعدة البيانات</button>` : ''}
+      ${acc.map(c => `<a class="btn sm" href="#client/${c.id}">📒 كشف حساب ${esc(c.name)}</a>`).join('')}</div></div>`;
+}
+function vFormation(r, el) {
+  if (!canTab('formation')) { el.innerHTML = '<div class="card pad empty">مالكيش صلاحية على مشاريع التأسيس.</div>'; return; }
+  if (Date.now() - FP.at > 120000 && !FP_ST.busy) fpSync();
+  const qn = nkey(FPV.q), L = FP.list.filter(x => (FPV.tab === 'app' ? x.app : !x.app && !x.manual) && (!qn || nkey(x.name + ' ' + x.client).includes(qn) || normPhone(x.phone).includes(normPhone(FPV.q) || '#'))).sort((a, b) => String((b.app || {}).at || b.at).localeCompare(String((a.app || {}).at || a.at)));
+  const ap = FP.list.filter(x => x.app), rem = ap.reduce((s, x) => s + Math.max(0, x.app.total - x.app.paid), 0);
+  const notDb = ap.filter(x => { const p = crmPByPhone(x.phone); return !(p && crmCos(p.id).some(c => nkey(c.name) === nkey(x.name))); }).length;
+  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">🏗️ مشاريع التأسيس</h1><button class="btn sm" data-act="fp-sync">🔄 تحديث</button></div>
+    ${FP_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div>تعذّر الاتصال بشيت التأسيس (${esc(FP_ST.msg)}).</div></div>` : ''}
+    ${!FP.at ? '<div class="card pad empty">بيجيب المشاريع من شيت التأسيس…</div>' : `
+    <div class="card sumrow"><div><small>مشاريع معتمدة</small><b>${ap.length}</b></div><div><small>باقي التحصيل</small><b class="num">${fmt(rem)}</b></div><div><small>مش في قاعدة البيانات</small><b>${notDb}</b></div></div>
+    <div class="chips" style="margin:10px 0">${[['app', `✅ معتمدة (${ap.length})`], ['q', `📝 عروض أسعار (${FP.list.filter(x => !x.app && !x.manual).length})`]].map(([k, l]) => `<button class="chip ${FPV.tab === k ? 'on' : ''}" data-act="fp-tab" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="search" style="margin-bottom:6px">${icon('search', 18)}<input class="inp" style="width:100%" data-fp="q" value="${esc(FPV.q)}" placeholder="بحث بالاسم أو التليفون"></div>
+    ${L.length ? L.slice(0, 200).map(fpCard).join('') : '<div class="card pad empty">لا توجد مشاريع.</div>'}`}
+    <p class="small muted" style="margin-top:14px">البيانات بتتقري من برنامج «مشروع تأسيس شركات» (قراءة بس). الربط بقاعدة البيانات وكشف الحساب على رقم تليفون العميل. «إضافة لقاعدة البيانات» بتنقل اسم الشركة ونوعها والمحافظة، ولو العرض فيه «قيمة مضافة» بتتعلَّم عليها فتنزل إقراراتها في الضرائب.</p>
+    ${isFull() ? `<details style="margin-top:8px"><summary class="small">⚙️ رابط شيت التأسيس</summary><div class="form" style="margin-top:8px">${fld('الرابط', `<input id="fp-u" class="inp ltr" value="${esc(fpCfg().url)}">`)}${fld('كلمة سر المزامنة', `<input id="fp-t" class="inp ltr" value="${esc(fpCfg().token)}">`)}<button class="btn sm pri" data-act="fp-cfg">حفظ</button></div></details>` : ''}`;
+}
+Object.assign(ACT, {
+  'fp-tab': el => { FPV.tab = el.dataset.v; render(); },
+  'fp-sync': () => { toast('بيحدّث…'); fpSync(); },
+  'fp-crm': el => fpToCrm(el.dataset.id),
+  'fp-cfg': () => { D.lists.fpCfg = [$('#fp-u').value.trim(), $('#fp-t').value.trim()]; queue('saveLists', { lists: { fpCfg: D.lists.fpCfg } }); changed(); FP.at = 0; fpSync(); toast('اتحفظ'); }
+});
+document.addEventListener('input', e => { const t = e.target.closest && e.target.closest('[data-fp="q"]'); if (!t) return; FPV.q = t.value; clearTimeout(FP_ST.qt); FP_ST.qt = setTimeout(() => { const pos = t.selectionStart; render(); const n = document.querySelector('[data-fp="q"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { } } }, 250); });
+
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
