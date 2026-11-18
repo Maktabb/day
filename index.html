@@ -1240,7 +1240,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { work: '📂', formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1652,7 +1652,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261119-033000';
+const BUILD = '20261119-040000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1995,6 +1995,7 @@ function navItems() {
     ...(canTab('crm') ? [['crm', 'قاعدة البيانات', 'users']] : []),
     ...(canTab('taxes') ? [['taxes', 'الضرائب', 'list']] : []),
     ...(canTab('formation') ? [['formation', 'مشاريع التأسيس', 'archive']] : []),
+    ...(canTab('work') ? [['work', 'الملفات الشغالة', 'list']] : []),
     ...(priv ? [] : [['journal', 'حركاتي', 'list'], ['accounts', 'عهدتي', 'wallet']]),
     ['settings', 'الإعدادات', 'sliders']
   ];
@@ -2057,7 +2058,7 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation, work: vWork };
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   if ((r.name === 'collect' || r.name === 'deliver' || r.name === 'tasks') && !canTab(r.name)) return go('home');
@@ -3168,8 +3169,8 @@ function csPeriod(p) {
 }
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
-const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام'], ['crm', 'قاعدة البيانات'], ['taxes', 'الضرائب'], ['formation', 'مشاريع التأسيس']];
-const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'crm', 'taxes', 'formation'].includes(k)); };
+const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام'], ['crm', 'قاعدة البيانات'], ['taxes', 'الضرائب'], ['formation', 'مشاريع التأسيس'], ['work', 'الملفات الشغالة']];
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'crm', 'taxes', 'formation', 'work'].includes(k)); };
 const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
 const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
@@ -6110,6 +6111,7 @@ function vCrm(r, el) {
         <div class="row wrap no-print" style="gap:6px;margin-top:10px"><button class="btn sm pri" data-act="crm-co-add" data-id="${p.id}">${icon('plus', 15)} شركة</button><button class="btn sm" data-act="crm-rep" data-id="${p.id}">🖨️ تقرير العميل PDF</button><button class="btn sm" data-act="crm-p-edit" data-id="${p.id}">${icon('edit', 15)} تعديل</button><button class="btn sm danger" data-act="crm-p-del" data-id="${p.id}">${icon('trash', 15)} حذف</button></div></div>
       ${cos.length ? cos.map(c => crmCoCard(c, ex)).join('') : '<div class="card pad empty" style="margin-top:10px">لسه مفيش شركات. اضغطي «➕ شركة».</div>'}
       ${canTab('formation') && fpByPhone(p.phone).length ? `<h2 class="sec" style="margin-top:16px">🏗️ مشاريع التأسيس</h2>${fpByPhone(p.phone).map(fpCard).join('')}` : ''}
+      ${(() => { const W = wkForClient(p.id, [p.name, ...cos.map(c => c.name)]); return W.length ? `<h2 class="sec" style="margin-top:16px">📂 الملفات الشغالة</h2><div class="card">${W.map(x => `<a class="lrow" href="#work"><b class="grow">${esc(wkSec(x.s).e + ' ' + wkSec(x.s).n)}</b><span class="small muted">${esc([wkLast(x), wkNext(x) ? '← ' + wkNext(x) : ''].filter(Boolean).join(' '))}</span></a>`).join('')}</div>` : ''; })()}
       ${crmLogHtml(p.id)}`;
     if (canTab('formation') && Date.now() - FP.at > 300000) fpSync();
     return;
@@ -6493,6 +6495,98 @@ const crmLogHtml = pid => {
   const cs = new Set(Object.values(CRM.c).filter(c => c.pid === pid).map(c => c.id)), L = crmLogList().filter(x => x.p === pid).reverse().slice(0, 60);
   return `<h2 class="sec" style="margin-top:18px">🕘 سجل تعديلات العميل</h2><div class="card">${L.length ? L.map(x => `<div class="lrow" style="cursor:default;gap:8px;flex-wrap:wrap"><span class="small muted num" style="white-space:nowrap">${esc(new Date(x.t).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' }))}</span><b class="small">${esc(bareName((userById(x.u) || {}).name || x.u || '—'))}</b><span class="small grow">${esc(x.x)}</span></div>`).join('') : '<div class="empty">لسه مفيش تعديلات متسجلة على العميل ده.</div>'}</div>`;
 };
+
+/* ====== الملفات الشغالة (أقسام الشغل الجاري) ====== */
+const WK_SECS = [
+  { k: 'found', n: 'تأسيس', e: '🏗️', steps: ['تجهيز', 'امضاء شهر عقاري', 'استلام', 'طباعة سجل', 'نشر', 'تقديم ضرايب', 'وثيقة', 'بطاقة'] },
+  { k: 'amend', n: 'تعديل', e: '✏️', steps: ['تجهيز', 'قرار إداري', 'اعتماد', 'نقابة', 'شهر عقاري', 'غرفة تجارية', 'تأشير سجل', 'نشر', 'طباعة سجل', 'ضرايب'] },
+  { k: 'liq', n: 'تصفية', e: '🧾', steps: ['اعتماد', 'غرفة تجارية', 'تأشير', 'نشر', 'المرحلة الثانية', 'نشر خارجي', 'إرسال جوابات التصفية', 'دفع للجمارك', 'ميزانية تصفية', 'اعتماد نهائي'] },
+  { k: 'econ', n: 'الأداء الاقتصادي', e: '📈', steps: ['الشهادة البنكية', 'عدم الالتباس', 'اعتماد الجمعية الثانية', 'نقابة', 'شهر عقاري', 'غرفة تجارية', 'طباعة سجل', 'نشر'] },
+  { k: 'sap', n: 'نماذج SAP', e: '🏛️', steps: ['تقديم', 'معاينة', 'اعتماد'] },
+  { k: 'tm', n: 'علامات تجارية', e: '®️', steps: ['فحص', 'نشر', 'انتظار التسجيل', 'تم التسجيل'] },
+  { k: 'ins', n: 'تأمينات', e: '🛡️', steps: ['فتح ملف', 'تقديم', 'استلام'] },
+  { k: 'misc', n: 'متفرقات', e: '📌', steps: [] }
+];
+const WK_SEED = [{"s":"found","n":"يورو ليجل","st":"تاسيس","nx":"وقفت","nt":"","d":""},{"s":"sap","n":"تيراكانت","st":"تسجيل — تم التقديم","nx":"","nt":"","d":"2026-11-16"},{"s":"found","n":"الامير سيتى","st":"ارسال","nx":"مراجعة","nt":"","d":""},{"s":"sap","n":"سلوى السيد","st":"تسجيل ق مضافة — تم التقديم","nx":"","nt":"","d":"2026-11-12"},{"s":"found","n":"مرمة","st":"غرف","nx":"استلام","nt":"","d":""},{"s":"sap","n":"احمد زون","st":"تسجيل — تم التقديم","nx":"","nt":"","d":"2026-11-17"},{"s":"found","n":"عبر المملكه","st":"شهر عقارى","nx":"السجل","nt":"","d":""},{"s":"sap","n":"امبريدج","st":"تسجيل","nx":"","nt":"","d":""},{"s":"found","n":"اكتيف فيرس","st":"","nx":"","nt":"","d":""},{"s":"sap","n":"ناينتين","st":"تسجيل","nx":"","nt":"","d":""},{"s":"found","n":"نوفاساينس","st":"","nx":"","nt":"","d":""},{"s":"sap","n":"بالم ستون","st":"تسجيل","nx":"","nt":"","d":""},{"s":"found","n":"فايتوجين","st":"","nx":"","nt":"","d":""},{"s":"sap","n":"مكس ارت","st":"تسجيل — تم التقديم","nx":"","nt":"","d":"2026-11-11"},{"s":"found","n":"روبن للملابس","st":"","nx":"","nt":"","d":""},{"s":"sap","n":"اقرأ","st":"مساهمه","nx":"","nt":"","d":""},{"s":"liq","n":"الايطالية الاسبانية","st":"طباعة سجل","nx":"دفع الطيران+مرحلة2","nt":"","d":""},{"s":"misc","n":"نقل ذاريالتورز","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"توموداتشي","st":"","nx":"","nt":"تأمينات","d":""},{"s":"tm","n":"ناس مصر","st":"انتظار التسجيل","nx":"","nt":"","d":""},{"s":"sap","n":"الاهرامات","st":"تحديث — زيارة","nx":"","nt":"","d":"2026-09-28"},{"s":"liq","n":"بولونيا","st":"طباعة سجل","nx":"دفع الطيران+مرحلة2","nt":"","d":""},{"s":"misc","n":"قرار لجنة الايطالية 7نوفمبر","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"ا سارة اليابان معاشات وبنك","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"بروميكس","st":"انتظار الفحص","nx":"","nt":"","d":""},{"s":"sap","n":"القائد","st":"فرع — زيارة","nx":"","nt":"","d":"2026-09-06"},{"s":"amend","n":"ميتافلو","st":"سجل","nx":"ضرايب","nt":"","d":""},{"s":"misc","n":"ايفرستون ثروة معدنية","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"بيرل بيكسلز","st":"","nx":"","nt":"تأمينات","d":""},{"s":"tm","n":"موركاديا","st":"انتظار الفحص","nx":"","nt":"","d":""},{"s":"sap","n":"ماكروفر","st":"تحديث — مامورية","nx":"","nt":"رفض","d":""},{"s":"amend","n":"تايتان","st":"تجهيز","nx":"اعتماد","nt":"","d":""},{"s":"misc","n":"انهاء نشاط بناء الشرق","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"ايفليوشن","st":"","nx":"","nt":"تأمينات","d":""},{"s":"tm","n":"جيماريا","st":"انتظار العدد","nx":"","nt":"","d":""},{"s":"sap","n":"وليد عبدالاله","st":"ق مضافة — تم التقديم","nx":"","nt":"","d":"2026-11-09"},{"s":"amend","n":"مضمونة","st":"تجهيز","nx":"اعتماد","nt":"","d":""},{"s":"ins","n":"الشهاب","st":"","nx":"","nt":"تأمينات","d":""},{"s":"tm","n":"الفلك","st":"انتظار العدد","nx":"","nt":"","d":""},{"s":"sap","n":"لاميزون","st":"— ايصال وعقد","nx":"","nt":"رفض","d":""},{"s":"amend","n":"الامانه للحدايد","st":"تجهيز","nx":"اعتماد","nt":"","d":""},{"s":"ins","n":"مكان","st":"","nx":"","nt":"تأمينات","d":""},{"s":"tm","n":"سيرياس","st":"انتظار النشر","nx":"","nt":"","d":""},{"s":"sap","n":"اى تى بارتنر","st":"","nx":"","nt":"","d":"2026-11-16"},{"s":"amend","n":"رويال ايليت","st":"تجهيز","nx":"اعتماد","nt":"","d":""},{"s":"misc","n":"الصادرات والواردات","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"اثبات تاريخ","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"فاكيشن","st":"انتظار ن التسجيل","nx":"","nt":"","d":""},{"s":"amend","n":"فاديكام","st":"تجهيز","nx":"اعتماد","nt":"","d":""},{"s":"misc","n":"سمسرة يونكس","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"ايلاريكس","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"العزب للتدريب","st":"انتظار ن التسجيل","nx":"","nt":"","d":""},{"s":"amend","n":"توموداتشي","st":"تجهيز","nx":"اعتماد","nt":"","d":""},{"s":"misc","n":"سمسرة سوميت","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"مرمة","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"اوركيم","st":"انتظار ن التسجيل","nx":"","nt":"","d":""},{"s":"amend","n":"الامير ستيل","st":"شهر عقارى","nx":"غرف وتأسير","nt":"","d":""},{"s":"misc","n":"سمسرة توموداتشي","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"بالم ستون","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"ايفليوشن","st":"انتظار ن التسجيل","nx":"","nt":"","d":""},{"s":"misc","n":"احتياجات اوركيم","st":"","nx":"","nt":"","d":""},{"s":"ins","n":"اقرأ","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"ريفان","st":"انتظار ن التسجيل","nx":"","nt":"","d":""},{"s":"misc","n":"قيمة مضافة","st":"","nx":"","nt":"","d":""},{"s":"tm","n":"نوفادرين","st":"انتظار ن التسجيل","nx":"","nt":"","d":""},{"s":"misc","n":"نقل ق مضافة اوركيم","st":"","nx":"","nt":"","d":""},{"s":"misc","n":"قيمة مضافة تقن","st":"","nx":"","nt":"","d":""},{"s":"misc","n":"قيمة مضافة ريفان","st":"","nx":"","nt":"","d":""},{"s":"econ","n":"نوفادرين","st":"","nx":"","nt":"","d":""},{"s":"found","n":"اقرأ","st":"","nx":"","nt":"","d":""},{"s":"amend","n":"ماركروفر","st":"","nx":"","nt":"","d":""},{"s":"found","n":"تيراكانت","st":"","nx":"","nt":"","d":""},{"s":"found","n":"فيفا للحماية","st":"","nx":"","nt":"","d":""},{"s":"found","n":"برايت كواليتى","st":"","nx":"","nt":"","d":""},{"s":"found","n":"عامر للمكتبات","st":"","nx":"","nt":"","d":""},{"s":"misc","n":"فحص علامة ناس بلس ا","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"علامة جيماريا السؤال عنها 1/10/2026","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"علامة الفلك تم نشرها والسؤال عنها 1/10/2026","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"تربليكس نقل","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"كالوريا برنت","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"توموداتشي برنت","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"اوركيم نقل ق مضافة","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"قوام استلام بطاقة","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"معا","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"اورتكس","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"ففتين العقارية","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"بولونيا","st":"","nx":"","nt":"من جدول الإجراءات — راجعيه","d":""},{"s":"misc","n":"لينز","st":"","nx":"","nt":"تذكير — تقني","d":""},{"s":"misc","n":"تصدير","st":"","nx":"","nt":"تذكير — طلبات","d":""},{"s":"misc","n":"ايفرستون ثروه معدنية","st":"","nx":"","nt":"تذكير — إجراءات","d":""},{"s":"misc","n":"تعديل رسوم نشر اورتكس","st":"","nx":"","nt":"تذكير — تقني","d":""},{"s":"misc","n":"الشهاب ثروة معدنيه","st":"","nx":"","nt":"تذكير — إجراءات","d":""},{"s":"misc","n":"نموذج ويلث باك","st":"","nx":"","nt":"تذكير — تقني","d":""},{"s":"misc","n":"دفع رسوم نشر توموداتشي","st":"","nx":"","nt":"تذكير — تقني","d":""},{"s":"misc","n":"بناء الشرق","st":"","nx":"","nt":"تذكير — تقني","d":""},{"s":"misc","n":"المكتب","st":"","nx":"","nt":"محتاج ورق","d":""},{"s":"misc","n":"الاهرامات","st":"","nx":"","nt":"كدة موضوعه وقف بسبب المكان","d":""},{"s":"misc","n":"لاميزون","st":"","nx":"","nt":"محتاج عقد ايجار ووصل كهرباء","d":""},{"s":"misc","n":"اكتيف فيرس","st":"","nx":"","nt":"محتاج حل الموضوع — هنعمل اية ونشاط اية","d":""},{"s":"misc","n":"يوروليجل","st":"","nx":"","nt":"محتاج حل الموضوع — الاسم؟","d":""},{"s":"misc","n":"شهاب","st":"","nx":"","nt":"نقفل معاه موضوع المحاسب والمهندس","d":""}];
+const WKV = { sec: 'all', q: '', fin: false };
+const wkSec = k => WK_SECS.find(x => x.k === k) || WK_SECS[WK_SECS.length - 1];
+const wkList = () => ((D.lists && D.lists.work) || []).map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.id);
+const wkSave = arr => { D.lists = D.lists || {}; D.lists.work = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { work: D.lists.work } }); changed(); };
+const wkPut = it => { const a = wkList(), i = a.findIndex(x => x.id === it.id); it.at = nowIso(); i >= 0 ? a[i] = it : a.push(it); wkSave(a); };
+const wkLast = it => { const st = wkSec(it.s).steps, d = it.dn || []; return d.length ? st[Math.max(...d)] : (it.st || ''); };
+const wkNext = it => { if (it.nx) return it.nx; const st = wkSec(it.s).steps, d = it.dn || []; const i = st.findIndex((x, j) => !d.includes(j)); return i >= 0 && d.length ? st[i] : ''; };
+function wkMatch(name) {
+  const k = nkey(name); if (!k) return {};
+  const c = activeClients().find(x => nkey(x.name) === k) || activeClients().find(x => k.length >= 4 && (nkey(x.name).includes(k) || k.includes(nkey(x.name))) && nkey(x.name).length >= 4);
+  let pid = '';
+  if (typeof CRM !== 'undefined') { const p = crmP().find(x => nkey(x.name) === k) || (() => { const co = crmCos().find(x => nkey(x.name) === k); return co && CRM.p[co.pid]; })(); if (p) pid = p.id; }
+  return { cid: c ? c.id : '', pid };
+}
+function wkImport() {
+  const cur = wkList(), have = new Set(cur.map(x => x.s + '|' + nkey(x.n) + '|' + nkey(x.st) + '|' + nkey(x.nt))); let n = 0, linked = 0;
+  WK_SEED.forEach(x => { const k = x.s + '|' + nkey(x.n) + '|' + nkey(x.st) + '|' + nkey(x.nt); if (have.has(k)) return; have.add(k); const m = wkMatch(x.n); if (m.cid || m.pid) linked++; cur.push({ id: uid('WK'), s: x.s, n: x.n, st: x.st || '', nx: x.nx || '', nt: x.nt || '', d: x.d || '', dn: [], fin: 0, by: ME ? ME.id : '', at: nowIso(), ...m }); n++; });
+  wkSave(cur); toast(`اتضاف ${n} ملف (${linked} منهم اتربطوا بعملاء)`); render();
+}
+function wkForm(id, sec) {
+  const it = id ? wkList().find(x => x.id === id) : null, cur = it || { s: sec && sec !== 'all' ? sec : 'found', n: '', dn: [], st: '', nx: '', nt: '', d: '', cid: '', pid: '' };
+  const lk = { cid: cur.cid || '', pid: cur.pid || '' };
+  const m = modal(`<h3>📂 ${it ? 'تعديل الملف' : 'ملف شغال جديد'}</h3>
+    ${fld('القسم', `<select id="wk-s" class="inp">${WK_SECS.map(x => `<option value="${x.k}" ${cur.s === x.k ? 'selected' : ''}>${x.e} ${x.n}</option>`).join('')}</select>`)}
+    ${fld('العميل / الشركة', `<input id="wk-n" class="inp" value="${esc(cur.n)}" placeholder="اكتبي الاسم أو دوّري على عميل" autocomplete="off">`, { req: 1 })}
+    <div id="wk-sg" class="card" style="display:none;max-height:150px;overflow:auto;margin:-4px 0 8px"></div><div id="wk-lk" class="small muted" style="margin-bottom:8px"></div>
+    <div id="wk-steps"></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">${fld('آخر موقف / الحالة', `<input id="wk-st" class="inp" value="${esc(cur.st || '')}">`)}${fld('الخطوة القادمة', `<input id="wk-nx" class="inp" value="${esc(cur.nx || '')}" placeholder="تلقائي من الخطوات لو سبتيها فاضية">`)}${fld('التاريخ', `<input id="wk-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}</div>
+    ${fld('ملاحظات', `<input id="wk-nt" class="inp" value="${esc(cur.nt || '')}">`)}
+    <div class="acts"><button class="btn pri" id="wk-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const done = new Set(cur.dn || []);
+  const paintSteps = () => { const sc = wkSec(m.querySelector('#wk-s').value); m.querySelector('#wk-steps').innerHTML = sc.steps.length ? `<div class="small" style="margin-bottom:4px">الخطوات (علّمي اللي خلصت):</div><div class="row wrap" style="gap:6px;margin-bottom:8px">${sc.steps.map((x, j) => `<label class="ipc"><input type="checkbox" data-wd="${j}" ${done.has(j) ? 'checked' : ''}> ${esc(x)}</label>`).join('')}</div>` : ''; };
+  const paintLk = () => { const c = lk.cid && D.clients[lk.cid], p = lk.pid && CRM.p[lk.pid]; m.querySelector('#wk-lk').innerHTML = c || p ? `🔗 مربوط بـ ${c ? `عميل اليومية «${esc(c.name)}»` : ''}${c && p ? ' و' : ''}${p ? `قاعدة البيانات «${esc(p.name)}»` : ''}` : 'غير مربوط بعميل (اسم حر)'; };
+  paintSteps(); paintLk();
+  m.querySelector('#wk-s').onchange = () => { done.clear(); paintSteps(); };
+  m.addEventListener('change', e => { const c = e.target.closest('[data-wd]'); if (c) { c.checked ? done.add(+c.dataset.wd) : done.delete(+c.dataset.wd); } });
+  m.querySelector('#wk-n').oninput = e => {
+    const q = e.target.value, sg = m.querySelector('#wk-sg'); lk.cid = lk.pid = ''; paintLk();
+    if (nkey(q).length < 2) { sg.style.display = 'none'; return; }
+    const L = clientSearch(q, 6); sg.innerHTML = L.map(c => `<div class="lrow" data-sg="${c.id}"><b class="grow">${esc(c.name)}</b><span class="small muted">${esc(c.phone || '')}</span></div>`).join(''); sg.style.display = L.length ? '' : 'none';
+  };
+  m.addEventListener('click', e => { const g = e.target.closest('[data-sg]'); if (!g) return; const c = D.clients[g.dataset.sg]; m.querySelector('#wk-n').value = c.name; lk.cid = c.id; const mm = wkMatch(c.name); lk.pid = mm.pid || ''; m.querySelector('#wk-sg').style.display = 'none'; paintLk(); });
+  m.querySelector('#wk-ok').onclick = () => {
+    const n = m.querySelector('#wk-n').value.trim(); if (!n) return toast('اكتبي اسم العميل أو الشركة', 'err');
+    if (!lk.cid && !lk.pid) Object.assign(lk, wkMatch(n));
+    const o = { ...(it || { id: uid('WK'), fin: 0, by: ME ? ME.id : '' }), s: m.querySelector('#wk-s').value, n, ...lk, dn: [...done].sort((a, b) => a - b), st: m.querySelector('#wk-st').value.trim(), nx: m.querySelector('#wk-nx').value.trim(), nt: m.querySelector('#wk-nt').value.trim(), d: m.querySelector('#wk-d').value };
+    wkPut(o); closeModal(); toast('تم الحفظ'); render();
+  };
+}
+function wkCard(it) {
+  const sc = wkSec(it.s), tot = sc.steps.length, dn = (it.dn || []).length, last = wkLast(it), nx = wkNext(it), c = it.cid && D.clients[it.cid];
+  const link = c && canTab('crm') !== undefined ? `<a href="#client/${c.id}">${esc(it.n)}</a>` : (it.pid && CRM.p[it.pid] ? `<a href="#crm/p/${it.pid}">${esc(it.n)}</a>` : esc(it.n));
+  return `<div class="card pad" style="margin-top:8px${it.fin ? ';opacity:.7' : ''}"><div class="row wrap" style="gap:6px;align-items:center"><b class="grow" style="font-size:16px">${link}</b><span class="badge">${sc.e} ${esc(sc.n)}</span>${it.d ? `<span class="small muted num">${esc(it.d)}</span>` : ''}</div>
+    ${tot ? `<div style="height:6px;background:var(--line,#e4dfd2);border-radius:3px;margin:8px 0 4px"><div style="height:6px;width:${Math.round(dn / tot * 100)}%;background:var(--gold,#c9a24a);border-radius:3px"></div></div><div class="small muted">${dn}/${tot} خطوة</div>` : ''}
+    <div class="small" style="margin-top:4px">${last ? `📍 آخر موقف: <b>${esc(last)}</b>` : ''}${last && nx ? ' · ' : ''}${nx ? `➡️ الخطوة القادمة: <b>${esc(nx)}</b>` : ''}</div>
+    ${it.nt ? `<div class="small" style="margin-top:4px">📝 ${esc(it.nt)}</div>` : ''}
+    <div class="row wrap no-print" style="gap:6px;margin-top:8px">${!it.fin && tot && dn < tot ? `<button class="btn sm pri" data-act="wk-step" data-id="${it.id}">✔ خلّصت «${esc(sc.steps[(it.dn || []).length ? Math.max(...it.dn) + 1 : 0] || sc.steps.find((x, j) => !(it.dn || []).includes(j)) || '')}»</button>` : ''}
+      <button class="btn sm" data-act="wk-edit" data-id="${it.id}">${icon('edit', 15)} تعديل</button><button class="btn sm" data-act="wk-fin" data-id="${it.id}">${it.fin ? '↩ رجوع للشغال' : '✅ خلص'}</button><button class="btn sm danger" data-act="wk-del" data-id="${it.id}">${icon('trash', 15)}</button></div></div>`;
+}
+function vWork(r, el) {
+  if (!canTab('work')) { el.innerHTML = '<div class="card pad empty">مالكيش صلاحية على الملفات الشغالة.</div>'; return; }
+  const all = wkList(), qn = nkey(WKV.q);
+  const act = all.filter(x => !x.fin), L = (WKV.fin ? all.filter(x => x.fin) : act).filter(x => (WKV.sec === 'all' || x.s === WKV.sec) && (!qn || nkey(x.n + ' ' + (x.st || '') + ' ' + (x.nx || '') + ' ' + (x.nt || '')).includes(qn)));
+  const cnt = k => act.filter(x => k === 'all' || x.s === k).length;
+  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">📂 الملفات الشغالة</h1><button class="btn pri" data-act="wk-add">${icon('plus', 17)} ملف جديد</button></div>
+    ${!all.length ? `<div class="card pad" style="margin-bottom:10px"><p style="margin:0 0 8px">لسه مفيش ملفات. تقدري تضيفي ملف، أو تستوردي شغلك الحالي من الشيت اللي بعتيه (${WK_SEED.length} بند موزعين على الأقسام وبيتربطوا بالعملاء تلقائي).</p><button class="btn pri" data-act="wk-imp">📥 استيراد من شيت الشغل</button></div>` : ''}
+    <div class="chips" style="margin-bottom:8px"><button class="chip ${WKV.sec === 'all' ? 'on' : ''}" data-act="wk-sec" data-v="all">الكل (${cnt('all')})</button>${WK_SECS.map(x => `<button class="chip ${WKV.sec === x.k ? 'on' : ''}" data-act="wk-sec" data-v="${x.k}">${x.e} ${x.n} (${cnt(x.k)})</button>`).join('')}</div>
+    <div class="row wrap" style="gap:8px;margin-bottom:6px"><div class="search grow">${icon('search', 18)}<input class="inp" style="width:100%" data-wk="q" value="${esc(WKV.q)}" placeholder="بحث بالاسم أو الموقف أو الملاحظة"></div><button class="chip ${WKV.fin ? 'on' : ''}" data-act="wk-arch">✅ اللي خلصت (${all.filter(x => x.fin).length})</button></div>
+    ${L.length ? L.sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).map(wkCard).join('') : '<div class="card pad empty">لا توجد ملفات هنا.</div>'}`;
+}
+Object.assign(ACT, {
+  'wk-add': () => wkForm(null, WKV.sec), 'wk-edit': el => wkForm(el.dataset.id), 'wk-imp': () => wkImport(),
+  'wk-sec': el => { WKV.sec = el.dataset.v; render(); }, 'wk-arch': () => { WKV.fin = !WKV.fin; render(); },
+  'wk-step': el => { const it = wkList().find(x => x.id === el.dataset.id); if (!it) return; const st = wkSec(it.s).steps, d = it.dn || [], i = st.findIndex((x, j) => !d.includes(j)); if (i < 0) return; it.dn = [...d, i].sort((a, b) => a - b); it.nx = ''; wkPut(it); toast('✔ ' + st[i]); render(); },
+  'wk-fin': el => { const it = wkList().find(x => x.id === el.dataset.id); if (!it) return; it.fin = it.fin ? 0 : 1; wkPut(it); toast(it.fin ? 'اتنقل لـ «خلصت»' : 'رجع للشغال'); render(); },
+  'wk-del': async el => { const it = wkList().find(x => x.id === el.dataset.id); if (!it || !(await ask(`حذف ملف «${esc(it.n)}»؟`, 'حذف', true))) return; wkSave(wkList().filter(x => x.id !== it.id)); render(); }
+});
+document.addEventListener('input', e => { const t = e.target.closest && e.target.closest('[data-wk="q"]'); if (!t) return; WKV.q = t.value; clearTimeout(WKV.t); WKV.t = setTimeout(() => { const pos = t.selectionStart; render(); const n = document.querySelector('[data-wk="q"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { } } }, 250); });
+const wkForClient = (pid, names) => { const ks = new Set([...(names || []).map(nkey)].filter(Boolean)); return wkList().filter(x => !x.fin && (x.pid === pid || ks.has(nkey(x.n)))); };
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
