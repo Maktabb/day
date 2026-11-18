@@ -1092,6 +1092,12 @@ html{overscroll-behavior-y:none}
   .gk{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
   .epick .pm.p4,.epick .pm.p4:has(.fee){grid-template-columns:repeat(4,minmax(0,1fr));max-width:720px}
 }
+
+.pmb.task{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),linear-gradient(160deg,#6d8cf0,#3b5bc4);--sh:rgba(59,91,196,.9)}
+.epick .pm.p5,.epick .pm.p5:has(.fee){grid-template-columns:repeat(2,minmax(0,1fr));max-width:560px;margin:0 auto}
+.epick .pm.p5 .pmb{height:58px;font-size:17px;gap:8px;padding:0 6px}
+.epick .pm.p5>.pmb:last-child:nth-child(odd){grid-column:1/-1}
+@media (min-width:760px){.epick .pm.p5,.epick .pm.p5:has(.fee){grid-template-columns:repeat(5,minmax(0,1fr));max-width:860px}.epick .pm.p5>.pmb:last-child:nth-child(odd){grid-column:auto}}
 </style>
 </head>
 <body>
@@ -1258,6 +1264,7 @@ const TYPES = {
   OUT_OWNER: { em: '💸', n: 'مسحوبات الإدارة', s: 'مسحوبات', d: -1, c: '#6b3fa0', ic: 'out', hint: 'مبالغ مسحوبة لصالح أ. محمود' },
   CLIENT_REFUND: { em: '↩️', n: 'رد مبلغ لعميل', s: 'رد لعميل', d: -1, c: '#be185d', ic: 'undo', hint: 'إرجاع جزء من مدفوعات العميل', client: 1 },
   FEE: { em: '💼', n: 'أتعاب مستحقة', s: 'أتعاب', d: 0, c: '#0f766e', ic: 'chart', hint: 'أتعاب المكتب المتفق عليها للعميل — تُسجَّل على حسابه ولا تحرّك الخزينة', client: 1 },
+  TAXC: { em: '🏛️', n: 'مطالبة ضرائب', s: 'مطالبة ضرائب', d: 0, c: '#7a3e9d', ic: 'receipt', hint: 'مطالبة ضريبية على العميل (دخل، قيمة مضافة، مساهمة تكافلية…) — تظهر في كشف حسابه وتُتابَع من التحصيل ولا تغيّر رصيده', client: 1, lines: 1, list: 'taxKinds' },
   OPENING: { em: '🚩', n: 'رصيد افتتاحي', s: 'رصيد افتتاحي', d: 1, c: '#57606a', ic: 'flag', hint: 'رصيد مرحّل لحساب أو لعميل' }
 };
 /* الصلاحيات الثلاث: full = الصلاحية الكاملة، sup = أدمن / مشرف، staff = محاسب / محامي */
@@ -1280,14 +1287,14 @@ const IN_ROLES = [['staff', 'محاسب / محامي'], ['sup', 'أدمن / مش
 const inAllowed = (role, k, uid) => { if (role === 'full') return true; const L = (D.lists || {}).inAllow; if (!L || !L.includes('v1')) return true; if (uid === undefined) uid = typeof ME !== 'undefined' && ME ? ME.id : ''; if (uid && L.includes('u:' + uid + ':v1')) return L.includes('u:' + uid + ':' + k); return L.includes(role + ':' + k); };
 /* صلاحية الأتعاب: للصلاحية الكاملة دائمًا، ولغيرها بتعليم من الإعدادات (الافتراضي: غير مسموح) */
 const feeAllowed = (role, uid) => { if (role === 'full') return true; const L = (D.lists || {}).inAllow || []; if (uid === undefined) uid = typeof ME !== 'undefined' && ME ? ME.id : ''; return !!uid && L.includes('u:' + uid + ':v1') && L.includes('u:' + uid + ':FEE'); };
-const roleTypes = role => (ROLE_TYPES[role] || []).filter(k => !['IN_CLIENT', 'IN_OWNER'].includes(k) || inAllowed(role, k)).concat(role !== 'full' && feeAllowed(role) ? ['FEE'] : []);
+const roleTypes = role => (ROLE_TYPES[role] || []).filter(k => !['IN_CLIENT', 'IN_OWNER'].includes(k) || inAllowed(role, k)).concat(role !== 'full' && feeAllowed(role) ? ['FEE', 'TAXC'] : []);
 const canInAny = role => IN_KINDS.some(([k]) => inAllowed(role, k)) && IN_KINDS.some(([k]) => k === 'TRANSFER_in' ? (ROLE_TYPES[role] || []).includes('TRANSFER') && inAllowed(role, k) : roleTypes(role).includes(k));
 const normUser = u => ({ ...u, role: normRole(u.role), code: String(u.code), active: +u.active, deleted: +u.deleted || 0 });
 /* طرق الدفع: ثلاثة فقط. الفيزا والإنستاباي والتحويل البنكي حساب واحد */
 const PAY_BANK = 'فيزا / إنستاباي / تحويل بنكي', PAY_WAL = 'محفظة كاش (فودافون)', PAY_LIST = ['نقدي', PAY_BANK, PAY_WAL];
 const payNorm = m => { m = String(m || '').trim(); if (!m) return ''; if (PAY_LIST.includes(m)) return m; if (/فيزا|visa|انستا|إنستا|insta|تحويل|بنك|شيك/i.test(m)) return PAY_BANK; if (/كاش|فودافون|اتصالات|محفظ/.test(m)) return PAY_WAL; return /نقد/.test(m) ? 'نقدي' : m; };
 const LIST_NAMES = { govFees: 'أنواع الرسوم الحكومية', opExp: 'بنود مصروفات العملية', officeExp: 'بنود المصروفات العمومية',
-  places: 'أماكن الخدمة', services: 'أنواع الخدمات', stages: 'مراحل ملف العميل' };
+  taxKinds: 'أنواع مطالبات الضرائب', taskCats: 'تصنيفات المهام', places: 'أماكن الخدمة', services: 'أنواع الخدمات', stages: 'مراحل ملف العميل' };
 
 /* ====== التخزين المحلي ====== */
 const LS = {
@@ -1445,7 +1452,8 @@ const isFull = () => ME && ME.role === 'full';           // إدارة الفر�
 const liveUsers = () => D.users.filter(u => !+u.deleted);
 const activeFull = () => liveUsers().filter(u => u.role === 'full' && +u.active !== 0);
 const myAcc = () => ME ? ME.account : '';
-const list = n => (D.lists && D.lists[n]) || [];
+const LIST_DEF = { taskCats: ['تأسيس', 'تعديل', 'فواتير إلكترونية', 'ضرائب', 'تأمينات', 'علامات تجارية', 'سجل تجاري', 'بطاقة ضريبية', 'أخرى'], taxKinds: ['ضريبة دخل', 'قيمة مضافة', 'مساهمة تكافلية', 'أخرى'] };
+const list = n => (D.lists && D.lists[n] && D.lists[n].length) ? D.lists[n] : (LIST_DEF[n] || []);
 const activeClients = () => Object.values(D.clients).filter(c => +c.active !== 0);
 
 /* ====== الحسابات ====== */
@@ -1470,6 +1478,7 @@ function calc() {
       case 'OP_EXP': outA(t.fromAcc); if (t.clientId) cx(t.clientId).ops += a; break;
       case 'OFFICE_EXP': case 'OUT_OWNER': case 'PERSONAL': outA(t.fromAcc); break;
       case 'FEE': if (t.clientId) cx(t.clientId).chg += a; break;
+      case 'TAXC': break;   // مطالبة ضرائب: تظهر في كشف الحساب وتُتابَع من التحصيل، ولا تغيّر الرصيد
       case 'CLIENT_REFUND': outA(t.fromAcc); if (t.clientId) cx(t.clientId).refund += a; break;
       case 'OPENING': if (t.toAcc) { const x = A_(t.toAcc); x.bal += a; x.n++; if (t.date > x.last) x.last = t.date; } if (t.clientId) ca(t.clientId).opening += a; break;
     }
@@ -1500,7 +1509,8 @@ const listTx = () => {
   const me = ME ? ME.id : '';
   if (_ltx && _ltxVer === VER && _ltxMe === me && _atxD === D.txs) return _ltx;
   const a = activeTx();
-  _ltx = D.accounts.some(x => !accVisible(x)) ? a.filter(t => !txHidden(t)) : a; _ltxVer = VER; _ltxMe = me; return _ltx;
+  const hidAcc = D.accounts.some(x => !accVisible(x)), noTax = !canTab('tax');
+  _ltx = (hidAcc || noTax) ? a.filter(t => (!hidAcc || !txHidden(t)) && taxSeen(t)) : a; _ltxVer = VER; _ltxMe = me; return _ltx;
 };
 const pendTxs = () => activeTx().filter(isPend);
 const queueTxs = () => activeTx().filter(isQueue);
@@ -1632,7 +1642,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-074500';
+const BUILD = '20261118-120000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2043,7 +2053,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn === vHome) { if (canTab('tasks')) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
+  try { fn(r, vw); if (fn === vHome) { if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2144,7 +2154,7 @@ function txRow(t, acc) {
     <div class="ic em" style="--c:${m.c}">${m.em || ''}</div>
     <div class="grow"><div class="t1 ell">${esc(txTitle(t, acc))}</div><div class="t2 ell">${sub.join(' · ') || tBadge(t.type)}</div></div>
     ${isPend(t) ? (+t.approved === 2 ? '<span class="pendb" title="غير معتمدة">❌</span>' : '<span class="pendb" title="لم تُراجع بعد">⏳</span>') : ''}
-    <div class="a ${s > 0 ? 'pos' : s < 0 ? 'neg' : ''}" ${t.type === 'FEE' ? `style="color:${m.c}"` : ''}>${s > 0 ? '+' : s < 0 ? '−' : t.type === 'FEE' ? '' : '⇄ '}${money(amt)}</div>
+    <div class="a ${s > 0 ? 'pos' : s < 0 ? 'neg' : ''}" ${t.type === 'FEE' || t.type === 'TAXC' ? `style="color:${m.c}"` : ''}>${s > 0 ? '+' : s < 0 ? '−' : t.type === 'FEE' || t.type === 'TAXC' ? '' : '⇄ '}${money(amt)}</div>
   </div>`;
 }
 function txDetails(id) {
@@ -2277,14 +2287,14 @@ function entryPicker() {
   const o = (k, md, n) => (allowed.includes(k) && !(k === 'TRANSFER' && md === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))) ? `<option value="entry/${k}${md ? '?mode=' + md : ''}">${n}</option>` : '';
   const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
   const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
-  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (roleTypes(ME.role).includes('FEE') ? 1 : 0) + (isPriv() ? 1 : 0); return n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
+  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}' data-claim='${esc(o('FEE', '', 'مطالبة أتعاب') + o('TAXC', '', 'مطالبة ضرائب'))}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (roleTypes(ME.role).includes('FEE') ? 1 : 0) + (isPriv() ? 1 : 0) + (canAddTask() ? 1 : 0); return n >= 5 ? 'p5' : n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
       ${IN ? `<button class="pmb in" data-act="pick-open" data-g="in"><span>📥</span>وارد</button>` : ''}
-      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${roleTypes(ME.role).includes('FEE') ? `<button class="pmb fee" data-act="go" data-h="entry/FEE"><span>💼</span>أتعاب</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}</div>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${roleTypes(ME.role).includes('FEE') ? `<button class="pmb fee" data-act="pick-open" data-g="claim"><span>💼</span>مطالبة</button>` : ''}${canAddTask() ? `<button class="pmb task" data-act="tk-add"><span>📋</span>مهمة</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}</div>
     <div class="eplist"></div></div>`;
 }
 function mainPair() {
   const inOk = canInAny(ME.role), feeOk = roleTypes(ME.role).includes('FEE'), n = 1 + (inOk ? 1 : 0) + (feeOk ? 1 : 0);
-  return `<div class="bigpair ${n === 3 ? 'p3' : ''}">${inOk ? bigBtn('📥', 'وارد', 'من الخزنة أو الأستاذ محمود أو عميل', TYPES.IN_CLIENT.c, 'entry/in', 'v') : ''}${bigBtn('📤', 'صرف', 'رسوم، مصروفات، أو تحويل عهدة', TYPES.OFFICE_EXP.c, 'entry/out', 'v')}${feeOk ? bigBtn('💼', 'أتعاب', 'أتعاب مستحقة على عميل', TYPES.FEE.c, 'entry/FEE', 'v') : ''}</div>`;
+  return `<div class="bigpair ${n === 3 ? 'p3' : ''}">${inOk ? bigBtn('📥', 'وارد', 'من الخزنة أو الأستاذ محمود أو عميل', TYPES.IN_CLIENT.c, 'entry/in', 'v') : ''}${bigBtn('📤', 'صرف', 'رسوم، مصروفات، أو تحويل عهدة', TYPES.OFFICE_EXP.c, 'entry/out', 'v')}${feeOk ? bigBtn('💼', 'مطالبة', 'أتعاب أو ضرائب على عميل', TYPES.FEE.c, 'entry/claim', 'v') : ''}</div>`;
 }
 function typeTile(k) {
   const m = TYPES[k];
@@ -2366,7 +2376,7 @@ function newForm(type, keep) {
   const k = keep || {};
   const f = {
     type, mode: k.mode || (type === 'TRANSFER' ? 'out' : ''), editId: null, date: k.date || today(), clientId: k.clientId || '', place: k.place || '', stage: k.stage || '',
-    service: k.service || '', projectRef: k.projectRef || '', description: '', payMethod: k.payMethod || 'نقدي', amount: '',
+    service: k.service || '', projectRef: k.projectRef || '', description: '', stmt: true, payMethod: k.payMethod || 'نقدي', amount: '',
     receiptNo: '', openTarget: 'acc', fromAcc: k.fromAcc || '', toAcc: k.toAcc || '', lines: [blankLine(type)], back: k.back || ''
   };
   if (type === 'TRANSFER' && f.mode === 'in') { f.fromAcc = 'TRS'; if (!priv) f.lines[0].toAcc = myAcc(); }
@@ -2379,10 +2389,10 @@ function formFromTx(t) {
   Object.assign(f, {
     editId: t.id, date: t.date, clientId: t.clientId || '', place: t.place || '', stage: t.stage || '', service: t.service || '',
     projectRef: t.projectRef || '', description: t.description || '', payMethod: payNorm(t.payMethod), fromAcc: t.fromAcc || '', toAcc: t.toAcc || '',
-    amount: String(t.amount), receiptNo: t.receiptNo || '', openTarget: t.clientId && t.type === 'OPENING' ? 'client' : 'acc'
+    stmt: t.stage !== TAX_OFF, amount: String(t.amount), receiptNo: t.receiptNo || '', openTarget: t.clientId && t.type === 'OPENING' ? 'client' : 'acc'
   });
   if (t.type === 'TRANSFER') { f.lines = [{ toAcc: t.toAcc, amount: String(t.amount) }]; f.mode = t.fromAcc === 'TRS' ? 'in' : 'out'; }
-  else if (LINE_TYPES.includes(t.type)) f.lines = [{ cat: t.category || '', amount: String(t.amount), receiptNo: t.receiptNo || '', photo: '', receiptUrl: t.receiptUrl || '' }];
+  else if (LINE_TYPES.includes(t.type) || t.type === 'TAXC') f.lines = [{ cat: t.category || '', amount: String(t.amount), receiptNo: t.receiptNo || '', photo: '', receiptUrl: t.receiptUrl || '' }];
   return f;
 }
 
@@ -2410,6 +2420,13 @@ function vEntry(r, el) {
       el.innerHTML = `<div class="row" style="margin-bottom:8px"><a href="#entry" class="btn ghost sm">${icon('back', 16)} رجوع</a></div>
         <h1 class="pg">${isIn ? 'وارد' : 'صرف'} <small>${isIn ? 'من أين جاء المبلغ؟' : 'اختر نوع الصرف'}</small></h1>
         <div class="biglist">${opts.filter(o => types.includes(o[0]) && !(o[0] === 'TRANSFER' && o[1] === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))).map(([k, md, n, hint, ic, c]) => bigBtn({ TRANSFER_in: '🏦', IN_OWNER: '👤', IN_CLIENT: '🤝', GOV_FEE: '🧾', OP_EXP: '🚗', OFFICE_EXP: '🏢', TRANSFER_out: '🔄' }[k === 'TRANSFER' ? 'TRANSFER_' + md : k], n, hint, c, `entry/${k}${md ? '?mode=' + md : ''}`)).join('')}</div>`;
+      return;
+    }
+    if (r.arg === 'claim') {
+      if (!types.includes('FEE')) return go('entry');
+      el.innerHTML = `<div class="row" style="margin-bottom:8px"><a href="#entry" class="btn ghost sm">${icon('back', 16)} رجوع</a></div>
+        <h1 class="pg">مطالبة <small>أتعاب ولا ضرائب؟</small></h1>
+        <div class="biglist">${bigBtn('💼', 'مطالبة أتعاب', TYPES.FEE.hint, TYPES.FEE.c, 'entry/FEE')}${bigBtn('🏛️', 'مطالبة ضرائب', 'دخل، قيمة مضافة، مساهمة تكافلية، أو أخرى — تُتابَع من التحصيل', TYPES.TAXC.c, 'entry/TAXC')}</div>`;
       return;
     }
     const extra = types.filter(k => ['OUT_OWNER', 'PERSONAL', 'CLIENT_REFUND', 'OPENING'].includes(k));
@@ -2482,6 +2499,7 @@ function formHTML() {
   if (['IN_CLIENT', 'IN_OWNER', 'OUT_OWNER', 'PERSONAL', 'CLIENT_REFUND', 'TRANSFER', 'GOV_FEE', 'OP_EXP', 'OFFICE_EXP'].includes(t)) parts.push(fld('طريقة الدفع', chipsRow('payMethod', PAY_LIST, payNorm(F.payMethod))));
   // المرحلة
   if (t === 'GOV_FEE' || t === 'OP_EXP') parts.push(fld('مرحلة ملف العميل <span class="muted small">(اختياري)</span>', chipsRow('stage', list('stages'), F.stage, { scroll: 1 })));
+  if (t === 'TAXC') parts.push(fld('كشف حساب العميل', `<label class="row" style="gap:10px;cursor:pointer;font-weight:600"><input type="checkbox" style="width:22px;height:22px" data-act="f-tog" data-k="stmt" ${F.stmt ? 'checked' : ''}> تظهر هذه المطالبة في كشف حساب العميل</label><small class="help">لو ماعلّمتيش عليها تفضل في اليومية وفي متابعة التحصيل بس، من غير ما تظهر في كشف العميل.</small>`));
   // البيان
   const sugg = { FEE: ['أتعاب تأسيس شركة', 'أتعاب استشارة', 'أتعاب مراجعة', 'أتعاب شهرية'], IN_CLIENT: ['دفعة تحت الحساب', 'أتعاب', 'رسوم حكومية', 'سداد نهائي'], TRANSFER: ['عهدة يومية', 'رد عهدة', 'استكمال عهدة'] }[t];
   const expT = ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'PERSONAL'].includes(t);
@@ -2518,10 +2536,10 @@ function linesField() {
   const top = ranked(ln, t).slice(0, 8);
   const all = list(ln);
   const fee = t === 'GOV_FEE';
-  return fld(fee ? 'الرسوم (بند لكل إيصال)' : 'البنود', `
+  return fld(fee ? 'الرسوم (بند لكل إيصال)' : t === 'TAXC' ? 'المطالبات (النوع والمبلغ — سطر لكل مطالبة)' : 'البنود', `
     ${F.editId ? '' : `<div class="chips scroll" style="margin-bottom:8px">${top.map(c => `<button class="chip" data-act="f-cat" data-v="${esc(c)}">${icon('plus', 14)} ${esc(c)}</button>`).join('')}</div>`}
     <div class="lines">${F.lines.map((l, i) => `<div class="line ${fee ? 'fee' : ''}">
-      <select class="inp lc" data-lf="cat" data-i="${i}"><option value="">اختر البند…</option>${all.map(c => `<option ${l.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}${l.cat && !all.includes(l.cat) ? `<option selected>${esc(l.cat)}</option>` : ''}</select>
+      <select class="inp lc" data-lf="cat" data-i="${i}"><option value="">${t === 'TAXC' ? 'اختر نوع المطالبة…' : 'اختر البند…'}</option>${all.map(c => `<option ${l.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}${l.cat && !all.includes(l.cat) ? `<option selected>${esc(l.cat)}</option>` : ''}</select>
       <span class="amtw"><input class="inp ltr" inputmode="decimal" placeholder="المبلغ" data-lf="amount" data-i="${i}" value="${esc(l.amount)}" autocomplete="off"><button type="button" class="calcb" data-act="calc" tabindex="-1" title="آلة حاسبة" aria-label="آلة حاسبة">${icon('calc', 18)}</button></span>
       ${fee ? `<input class="inp lr ltr" placeholder="رقم الإيصال" data-lf="receiptNo" data-i="${i}" value="${esc(l.receiptNo)}" autocomplete="off">` : ''}
       <button class="x" data-act="f-rmline" data-i="${i}" title="حذف">${icon('x', 16)}</button>
@@ -2699,13 +2717,13 @@ async function saveEntry(again) {
   if (needClient && !F.clientId) { const q = $('#cp-q'); q && q.focus(); return bad('#cp-q', 'اختر العميل أو أضفه'); }
   if (['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'PERSONAL'].includes(t) && !F.description.trim()) return bad('[data-f="description"]', 'اكتب البيان: صُرف في إيه وتوضيحه');
   const base = {
-    date: F.date, type: t, clientId: needClient ? F.clientId : '', place: F.place || '', stage: F.stage || '', service: F.service || '',
+    date: F.date, type: t, clientId: needClient ? F.clientId : '', place: F.place || '', stage: t === 'TAXC' ? (F.stmt ? '' : TAX_OFF) : (F.stage || ''), service: F.service || '',
     projectRef: F.projectRef || '', description: F.description.trim(), payMethod: '', receiptNo: '', category: '', fromAcc: '', toAcc: '', batchId: ''
   };
   let rows = [];
   const photos = []; let noPhoto = 0;
   if (m.lines) {
-    if (!F.fromAcc) return bad('[data-f="fromAcc"]', 'حدد الحساب');
+    if (!F.fromAcc && t !== 'TAXC') return bad('[data-f="fromAcc"]', 'حدد الحساب');
     const used = F.lines.map((l, i) => ({ ...l, i })).filter(l => (l.amount && l.amount.trim()) || l.cat || l.toAcc);
     if (!used.length) return bad('[data-lf="amount"]', 'أدخل بندًا واحدًا على الأقل');
     for (const l of used) {
@@ -2718,7 +2736,7 @@ async function saveEntry(again) {
         rows.push({ ...base, amount: a, fromAcc: F.fromAcc, toAcc: l.toAcc, payMethod: F.payMethod });
       } else {
         if (!l.cat) return bad(`[data-lf="cat"][data-i="${l.i}"]`, 'اختر البند');
-        rows.push({ ...base, amount: a, fromAcc: F.fromAcc, category: l.cat, receiptNo: (l.receiptNo || '').trim() });
+        rows.push({ ...base, amount: a, fromAcc: t === 'TAXC' ? '' : F.fromAcc, category: l.cat, receiptNo: (l.receiptNo || '').trim() });
         photos.push(t === 'GOV_FEE' ? (l.photo || '') : '');
         if (t === 'GOV_FEE' && !l.photo && !l.receiptUrl) noPhoto++;
       }
@@ -2767,7 +2785,7 @@ async function saveEntry(again) {
   const tkClosed = opsAfterSave(saved);
   saved.forEach((x, i) => { if (photos[i]) queueReceipt(x, photos[i]); });
   changed();
-  const acc = F.fromAcc || F.toAcc;
+  const acc = t === 'TAXC' ? '' : (F.fromAcc || F.toAcc);
   const balMsg = acc && t !== 'OPENING' ? ` — رصيد ${accName(acc)}: ${fmt(accBal(acc))}` : '';
   toast((F.editId ? 'تم حفظ التعديل' : (saved.length > 1 ? `تم حفظ ${saved.length} بنود` : 'تم الحفظ')) + balMsg + (noPhoto ? ' — بدون صورة إيصال (يمكن إرفاقها من تفاصيل الحركة)' : '') + (tkClosed ? ` — وأُغلقت ${tkClosed === 1 ? 'مهمة' : tkClosed + ' مهام'}` : ''));
   const back = F.back;
@@ -3112,20 +3130,20 @@ function vClients(r, el) {
 }
 
 function clientStatement(id) {
-  const txs = activeTx().filter(t => t.clientId === id).sort(byOld);
+  const txs = activeTx().filter(t => t.clientId === id && !(t.type === 'TAXC' && (t.stage === TAX_OFF || !taxSeen(t)))).sort(byOld);
   let bal = 0;
   return txs.map(t => {
     const a = +t.amount || 0;
     let cr = 0, dr = 0;
-    if (t.type === 'IN_CLIENT' || t.type === 'OPENING') cr = a; else dr = a;
+    if (t.type === 'IN_CLIENT' || t.type === 'OPENING') cr = a; else if (t.type !== 'TAXC') dr = a;
     if (t.type === 'OPENING' && a < 0) { cr = 0; dr = -a; }
     if (!isXL(t) || xlInBal(t)) bal = r2(bal + cr - dr);
     return { t, cr, dr, bal };
   });
 }
 const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all' };
-const ST_KINDS = [['all', 'الكل'], ['pay', 'المدفوعات'], ['fee', 'الأتعاب'], ['gov', 'الرسوم'], ['exp', 'المصروفات']];
-const stKind = t => t.type === 'IN_CLIENT' ? 'pay' : t.type === 'OPENING' ? 'open' : t.type === 'FEE' ? 'fee' : t.type === 'GOV_FEE' ? 'gov' : 'exp';
+const ST_KINDS = [['all', 'الكل'], ['pay', 'المدفوعات'], ['fee', 'الأتعاب'], ['tax', 'مطالبات الضرائب'], ['gov', 'الرسوم'], ['exp', 'المصروفات']];
+const stKind = t => t.type === 'IN_CLIENT' ? 'pay' : t.type === 'OPENING' ? 'open' : t.type === 'FEE' ? 'fee' : t.type === 'TAXC' ? 'tax' : t.type === 'GOV_FEE' ? 'gov' : 'exp';
 function csPeriod(p) {
   const d = today(), y = d.slice(0, 4), m = d.slice(0, 7);
   const prev = (() => { const x = new Date(+y, +d.slice(5, 7) - 2, 1); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); })();
@@ -3135,7 +3153,9 @@ function csPeriod(p) {
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
 const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم']];
-const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || u.role === 'sup'; };
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && k !== 'tax' && k !== 'addtask'); };
+const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
+const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
 const LOGV = { rows: [], total: 0, q: '', limit: 300, busy: false, err: '' };
 const LOG_ACT = { create: 'إضافة', update: 'تعديل', delete: 'حذف', save: 'حفظ', restore: 'استرجاع', approve: 'اعتماد', merge: 'دمج' };
@@ -3182,7 +3202,7 @@ function vCollect(r, el) {
   const rows = collRows(), td = today();
   const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
   const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
-  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">💰 التحصيل</h1>
+  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">💰 التحصيل <small>تحصيل العملاء + متابعة مطالبات الضرائب</small></h1>
       <button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل للتحصيل</button>
       ${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
     <div class="card sumrow">
@@ -3202,6 +3222,7 @@ function vCollect(r, el) {
           <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 16)} ملاحظة / موعد</button>
           <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 16)} إزالة من التحصيل</button></div></div>`; }).join('')
     : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل للتحصيل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
+    ${canTab('tax') ? taxSection() : ''}
     <p class="small muted" style="margin-top:12px">المبلغ المعروض هو رصيد العميل الحالي (المستحق عليه) ويتحدّث تلقائيًا مع كل دفعة تسجّلينها. العميل اللي رصيده مسدَّد يفضل في القائمة لحد ما تشيليه.</p>`;
 }
 /* ====== التسليم: مستندات لازم تتسلّم للعملاء ====== */
@@ -3264,9 +3285,10 @@ function dlForm(id, clientId) {
 function collHomeCard(view) {
   const rows = collRows(), td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
   const d = document.createElement('div'); d.className = 'card';
+  const tx0 = taxRows().filter(x => !x.done);
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>💰 التحصيل</b><span class="sp"></span><a href="#collect" class="small">كل التحصيل ←</a></div>
     ${rows.length ? `<div class="tks"><div class="tks-i"><b>${rows.length}</b><small>عملاء</small></div><div class="tks-i ${tot ? 'late' : ''}"><b>${fmt(tot)}</b><small>المتوقع تحصيله</small></div><div class="tks-i ${late ? 'late' : ''}"><b>${late}</b><small>متأخر</small></div></div>
-    ${open.slice(0, 4).map(q => `<a class="lrow" href="#client/${q.x.c}"><b class="grow">${esc(clientName(q.x.c))}</b><span class="num neg">${fmt(q.owe)}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">لا يوجد عملاء في قائمة التحصيل.</div>`}`;
+    ${open.slice(0, 4).map(q => `<a class="lrow" href="#client/${q.x.c}"><b class="grow">${esc(clientName(q.x.c))}</b><span class="num neg">${fmt(q.owe)}</span></a>`).join('')}${tx0.length ? `<a class="lrow" href="#collect"><b class="grow">🏛️ مطالبات ضرائب مفتوحة (${tx0.length})</b><span class="num neg">${fmt(r2(tx0.reduce((n, x) => n + (+x.t.amount || 0), 0)))}</span></a>` : ''}` : `<div class="small muted" style="padding:6px 14px 12px">لا يوجد عملاء في قائمة التحصيل.</div>`}`;
   (view.querySelector('.hops') || view).appendChild(d);
 }
 function dlHomeCard(view) {
@@ -3286,6 +3308,36 @@ function printCollect() {
     rows: rows.map((q, i) => [i + 1, esc(D.clients[q.x.c].name), `<span class="num">${esc(D.clients[q.x.c].phone || '')}</span>`, esc(q.s.last || ''), esc(q.x.d || ''), esc(q.x.n || ''), `<b>${fmt(q.owe)}</b>`]),
     foot: [['الإجمالي (' + rows.length + ' عميل)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
 }
+/* ====== متابعة مطالبات الضرائب (داخل التحصيل) ====== */
+const taxDoneSet = () => new Set(list('taxDone'));
+const taxRows = () => { if (!canTab('tax')) return []; const dn = taxDoneSet(); return activeTx().filter(t => t.type === 'TAXC' && t.clientId && D.clients[resCid(t.clientId)]).map(t => ({ t, c: D.clients[resCid(t.clientId)], done: dn.has(t.id) })).sort((a, b) => (a.done - b.done) || String(b.t.date).localeCompare(String(a.t.date))); };
+function taxSection() {
+  const L = taxRows(), open = L.filter(x => !x.done), tot = r2(open.reduce((n, x) => n + (+x.t.amount || 0), 0));
+  const bk = {}; open.forEach(x => { const k = x.t.category || 'أخرى'; bk[k] = r2((bk[k] || 0) + (+x.t.amount || 0)); });
+  return `<div class="row wrap" style="align-items:center;margin:26px 0 10px"><h2 class="sec grow" style="margin:0">🏛️ متابعة مطالبات الضرائب</h2>
+      ${L.length ? `<button class="btn" data-act="pd-taxc">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
+    <div class="card sumrow">
+      <div><small>مطالبات مفتوحة</small><b>${open.length}</b></div>
+      <div><small>تمت متابعتها</small><b class="pos">${L.length - open.length}</b></div>
+      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>إجمالي المطالبات المفتوحة</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
+    </div>
+    ${Object.keys(bk).length ? `<div class="chips" style="margin-top:8px">${Object.entries(bk).map(([k, v]) => `<span class="chip">${esc(k)}: <b>${fmt(v)}</b></span>`).join('')}</div>` : ''}
+    ${L.length ? `<div class="card tblwrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>العميل</th><th>الموبايل</th><th class="n">المطالبة</th><th>النوع</th><th>التاريخ</th><th class="no-print"></th></tr></thead><tbody>
+      ${L.map(({ t, c, done }) => `<tr style="${done ? 'opacity:.55' : ''}"><td><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>${t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
+        <td class="num">${c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '—'}</td>
+        <td class="n"><b>${fmt(+t.amount || 0)}</b></td><td><span class="stk">${esc(t.category || 'أخرى')}</span></td><td class="num">${esc(t.date)}</td>
+        <td class="no-print" style="white-space:nowrap"><button class="btn sm ${done ? '' : 'pri'}" data-act="tax-done" data-id="${t.id}">${done ? 'إعادة فتح' : '✔ تمت المتابعة'}</button></td></tr>`).join('')}</tbody></table></div>`
+    : `<div class="card pad empty" style="margin-top:10px">لا توجد مطالبات ضرائب. سجّلي مطالبة من «حركة جديدة ← مطالبة ← مطالبة ضرائب».</div>`}`;
+}
+function printTaxc() {
+  const L = taxRows().filter(x => !x.done), tot = r2(L.reduce((n, x) => n + (+x.t.amount || 0), 0));
+  printDoc({ title: 'متابعة مطالبات الضرائب', file: 'مطالبات_الضرائب_' + today(), land: true,
+    info: [['عدد المطالبات المفتوحة', String(L.length)], ['إجمالي المطالبات', fmt(tot)]],
+    kpis: [['مطالبات مفتوحة', L.length], ['الإجمالي', fmt(tot), 'neg']],
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'النوع' }, { h: 'التاريخ', c: 1 }, { h: 'ملاحظة' }, { h: 'المطالبة', n: 1 }],
+    rows: L.map(({ t, c }, i) => [i + 1, esc(c.name), `<span class="num">${esc(c.phone || '')}</span>`, esc(t.category || 'أخرى'), esc(t.date), esc(t.description || ''), `<b>${fmt(+t.amount || 0)}</b>`]),
+    foot: [['الإجمالي (' + L.length + ' مطالبة)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
+}
 function collForm(id) {
   const cur = collList().find(q => q.c === id) || {}; let pick = id || '';
   const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'ملاحظة وموعد التحصيل' : 'إضافة عميل للتحصيل'}</h3>
@@ -3303,6 +3355,17 @@ function collForm(id) {
     arr.push({ c: pick, n: $('#cl-n').value.trim(), d: $('#cl-d').value, by: ME.id, at: cur.at || today() });
     collSave(arr); closeModal(); toast('تم الحفظ في التحصيل'); render();
   };
+}
+function clientTasksBlock(c) {
+  const all = tkAll().filter(t => (t.local ? t.cid === c.id : tkSameName(t.clientName, c.name)));
+  const mineOnly = !isPriv(), vis = mineOnly ? all.filter(tkMine) : all;
+  const open = vis.filter(tkOpen).sort(tkSort), fin = vis.filter(t => !tkOpen(t)).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
+  if (!canTab('tasks') && !canAddTask()) return '';
+  return `<div class="row wrap no-print" style="align-items:center;margin:18px 0 8px"><h2 class="sec grow" style="margin:0">📋 مهام العميل <span class="cnt">${open.length}</span></h2>
+      ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 16)} إضافة مهمة</button>` : ''}
+      ${fin.length ? `<button class="btn sm" data-act="tk-cdone">${TK.cdone ? 'إخفاء' : 'عرض'} المهام المنتهية (${fin.length})</button>` : ''}</div>
+    <div class="card no-print">${open.length ? open.map(t => tkRow(t, { who: true })).join('') : `<div class="empty">لا توجد مهام مفتوحة لهذا العميل.</div>`}</div>
+    ${TK.cdone && fin.length ? `<div class="small muted no-print" style="margin:10px 0 4px">المهام المنتهية</div><div class="card no-print">${fin.map(t => tkRow(t, { who: true })).join('')}</div>` : ''}`;
 }
 function vClient(r, el) {
   const c = D.clients[r.arg];
@@ -3378,12 +3441,13 @@ function vClient(r, el) {
         <label class="row small" style="gap:6px;cursor:pointer"><input type="checkbox" id="psrc"> عمود «المصدر»</label>
         <button class="btn sm pri" data-act="print">${icon('print', 16)} طباعة PDF${filtered ? ' (حسب الفلتر)' : ''}</button></div>
     </div>
+    ${clientTasksBlock(c)}
     <h2 class="sec">كشف الحساب ${filtered ? `<span class="small muted">— ${esc(fDesc)}</span>` : ''}</h2>
     ${mineOnly ? `<div class="note info" style="margin-bottom:10px">${icon('info', 18)}<div>يعرض كشف الحساب حركاتك أنت فقط على هذا العميل.</div></div>` : ''}
     <div class="card tblwrap">${rows.length || openRow ? `<table class="tbl stmt"><thead><tr><th class="c">م</th><th>التاريخ</th><th>البيان</th><th class="src">المصدر</th><th class="n">عليه (مدين)</th><th class="n">له (دائن)</th>${showBal ? '<th class="n">الرصيد</th>' : ''}${isPriv() ? '<th class="no-print"></th>' : ''}</tr></thead>
       <tbody>${openRow ? `<tr class="st-open"><td class="c">—</td><td class="num">${esc(CST.from)}</td><td><b>رصيد ما قبل الفترة</b></td><td class="src"></td><td class="n">${openBal < 0 ? fmt(-openBal) : '<span class="z">—</span>'}</td><td class="n">${openBal > 0 ? fmt(openBal) : '<span class="z">—</span>'}</td><td class="n"><b class="${openBal < 0 ? 'neg' : ''}">${fmt(openBal)}</b></td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr>` : ''}
       ${rows.map(({ t, cr, dr, bal }, i) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="c">${i + 1}</td><td class="num">${t.date}</td>
-        <td><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${(d => d && d !== t.category ? `<div class="small muted">${esc(d)}</div>` : '')(t.category ? stDesc(t, c) : '')}</td>
+        <td><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}${t.type === 'TAXC' ? ` — <b class="num">${fmt(+t.amount || 0)}</b> <span class="small muted">(مطالبة للمتابعة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${(d => d && d !== t.category ? `<div class="small muted">${esc(d)}</div>` : '')(t.category ? stDesc(t, c) : '')}</td>
         <td class="small src">${esc(accName(t.fromAcc || t.toAcc).replace('عهدة ', ''))}</td>
         <td class="n neg">${dr ? fmt(dr) : '<span class="z">—</span>'}</td><td class="n pos">${cr ? fmt(cr) : '<span class="z">—</span>'}</td>${showBal ? `<td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td>` : ''}${isPriv() ? `<td class="no-print" style="white-space:nowrap">${t.type !== 'OPENING' ? `<button class="btn sm" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف">${icon('edit', 15)}</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="3">الإجمالي (${rows.length} حركة)</td><td class="src"></td><td class="n">${fmt(P.dr)}</td><td class="n">${fmt(P.cr)}</td>${showBal ? `<td class="n"><b>${fmt(endBal)}</b></td>` : ''}${isPriv() ? '<td class="no-print"></td>' : ''}</tr></tfoot></table>`
@@ -3415,7 +3479,7 @@ function clientWhatsApp(id) {
       b < 0 ? `المستحق على حضراتكم: ${fmt(-b)} ج.م` : `الرصيد تحت حسابكم: ${fmt(b)} ج.م`, '', 'مع خالص الشكر.'].join('\n');
     window.open(`https://wa.me/${waNumber(c.phone)}?text=${encodeURIComponent(m2)}`, '_blank'); return;
   }
-  const lines = st.slice(-15).map(({ t, cr, dr }) => `• ${t.date} — ${t.category || (TYPES[t.type] || {}).s}${t.description && !t.category ? ' (' + t.description + ')' : ''}: ${cr ? '+' + fmt(cr) : '−' + fmt(dr)}`);
+  const lines = st.slice(-15).map(({ t, cr, dr }) => `• ${t.date} — ${t.category || (TYPES[t.type] || {}).s}${t.description && !t.category ? ' (' + t.description + ')' : ''}: ${t.type === 'TAXC' ? 'مطالبة ضرائب ' + fmt(+t.amount || 0) : cr ? '+' + fmt(cr) : '−' + fmt(dr)}`);
   const msg = [`السادة / ${c.name}`, 'تحية طيبة، نرسل لكم ملخص حسابكم لدى مكتب محمود سالم للمحاسبة والمراجعة:', '',
     `إجمالي المدفوع: ${fmt(s.paid + Math.max(s.opening, 0))} ج.م`, `الرسوم الحكومية: ${fmt(s.fees)} ج.م`, `مصروفات العملية: ${fmt(s.ops)} ج.م`,
     s.bal < 0 ? `المستحق على حضراتكم: ${fmt(-s.bal)} ج.م` : `الرصيد تحت حسابكم: ${fmt(s.bal)} ج.م`, '', ...(lines.length ? ['آخر الحركات:', ...lines, ''] : []), 'مع خالص الشكر.'].join('\n');
@@ -4023,11 +4087,11 @@ function vSettings(r, el) {
     <div class="row wrap" style="gap:10px;margin-bottom:10px"><div>التذكير الأول<br><input class="inp ltr" type="time" id="rm-t1" value="${rc.times[0] || '15:00'}"></div><div>التذكير الثاني<br><input class="inp ltr" type="time" id="rm-t2" value="${rc.times[1] || '16:00'}"></div></div>
     
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
-  if (isFull()) push('team', `<h2 class="sec">من يشوف تابَي التحصيل والتسليم</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه. الصلاحية الكاملة بتشوف الاتنين دايمًا.</p>
-    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}</div>`).join('')}</div>
+  if (isFull()) push('team', `<h2 class="sec">صلاحيات التاب والمهام لكل شخص</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه، وعلى «➕ يضيف مهام» لو عايزاه يقدر يضيف مهمة من اليومية، وعلى «مطالبات الضرائب» لو عايزة المطالبات تظهر عنده (جدول المتابعة في التحصيل + المطالبات في اليومية وكشف العميل). اللي بيسجّل مطالبة بنفسه بيشوفها هو دايمًا. الصلاحية الكاملة بتشوف كل ده.</p>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label></div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="tabacc-save">حفظ</button></div></div>`);
-  if (isFull()) push('team', `<h2 class="sec">صلاحية الوارد والأتعاب</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد لكل شخص (محاسب أو محامي أو مشرف، واحد واحد) أنواع الوارد اللي يسجّلها، وهل يسجّل «أتعاب» ولا لأ. النوع غير المحدَّد لا يظهر له في البرنامج، وإن لم يُحدَّد أي وارد يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل شيء دائمًا. الأتعاب افتراضيًا للصلاحية الكاملة فقط.</p>
-    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-inp="u:${u.id}:FEE" ${feeAllowed(u.role, u.id) ? 'checked' : ''}> 💼 أتعاب</label></div>`).join('')}</div>
+  if (isFull()) push('team', `<h2 class="sec">صلاحية الوارد والأتعاب</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد لكل شخص (محاسب أو محامي أو مشرف، واحد واحد) أنواع الوارد اللي يسجّلها، وهل يسجّل «مطالبات» (أتعاب أو ضرائب) ولا لأ. النوع غير المحدَّد لا يظهر له في البرنامج، وإن لم يُحدَّد أي وارد يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل شيء دائمًا. المطالبات افتراضيًا للصلاحية الكاملة فقط.</p>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-inp="u:${u.id}:FEE" ${feeAllowed(u.role, u.id) ? 'checked' : ''}> 💼 مطالبات (أتعاب / ضرائب)</label></div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="inperm-save">حفظ</button></div></div>`);
   if (isFull()) push('sec', `<h2 class="sec">تسجيل الخروج التلقائي</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">يخرج البرنامج تلقائيًا من حساب أي مستخدم ترك الجهاز دون استخدام لهذه المدة، ولا يدخل بعدها إلا برمز الدخول. قبل انتهاء المدة يبقى مفتوحًا كما هو. يسري على كل أجهزة الفريق.</p>
     <div class="row wrap"><select class="inp" id="al-min" style="max-width:260px">${AUTO_LOGOUT_OPTS.map(([m, l]) => `<option value="${m}" ${autoLogoutMin() === m ? 'selected' : ''}>${l}</option>`).join('')}</select><button class="btn pri" data-act="autologout-save">حفظ</button></div></div>`);
@@ -4201,9 +4265,10 @@ const ACT = {
   },
   logout: a => { if (a !== 'force' && unsent()) { syncNow(); toast('لسه البيانات لم يتم حفظها على الشيت. انتظر حتى تظهر الإشارة الخضراء «متزامن» ثم اخرج.', 'err'); return; } ME = null; F = null; LS.del('session'); history.replaceState(null, '', location.pathname); $('#app').innerHTML = ''; renderLogin(); },
   'new-type': el => { F = null; go('entry/' + el.dataset.t); },
-  'entry-change': () => { const g = F && (['IN_CLIENT', 'IN_OWNER'].includes(F.type) || (F.type === 'TRANSFER' && F.mode === 'in')) ? 'in' : (F && ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'TRANSFER'].includes(F.type) ? 'out' : ''); F = null; go('entry' + (g ? '/' + g : '')); },
+  'entry-change': () => { const g = F && (['IN_CLIENT', 'IN_OWNER'].includes(F.type) || (F.type === 'TRANSFER' && F.mode === 'in')) ? 'in' : (F && ['GOV_FEE', 'OP_EXP', 'OFFICE_EXP', 'TRANSFER'].includes(F.type) ? 'out' : (F && ['FEE', 'TAXC'].includes(F.type) ? 'claim' : '')); F = null; go('entry' + (g ? '/' + g : '')); },
   'entry-cancel': () => { F = null; history.length > 1 ? history.back() : go('journal'); },
   'entry-save': el => saveEntry(!!el.dataset.again),
+  'f-tog': el => { F[el.dataset.k] = !!el.checked; },
   'f-set': el => {
     const k = el.dataset.k, v = el.dataset.v;
     if (k === 'description') { F.description = v; const i = $('[data-f="description"]'); if (i) i.value = v; return; }
@@ -4318,6 +4383,8 @@ const ACT = {
   'coll-del': async el => { if (!(await ask(`إزالة <b>${esc(clientName(el.dataset.id))}</b> من قائمة التحصيل؟ (حسابه ما بيتأثرش)`, 'إزالة'))) return; collSave(collList().filter(q => q.c !== el.dataset.id)); toast('تمت الإزالة'); render(); },
   'coll-toggle': el => { const id = el.dataset.id; if (collHas(id)) { collSave(collList().filter(q => q.c !== resCid(id))); toast('اتشالت من التحصيل'); render(); } else collForm(id); },
   'pd-collect': () => printCollect(),
+  'pd-taxc': () => printTaxc(),
+  'tax-done': el => { const id = el.dataset.id, st = taxDoneSet(); st.has(id) ? st.delete(id) : st.add(id); D.lists = D.lists || {}; D.lists.taxDone = [...st]; queue('saveLists', { lists: { taxDone: D.lists.taxDone } }); changed(); render(); },
   'tx-to-client': async el => {
     const t = D.txs[el.dataset.id]; if (!t || (t.type !== 'OFFICE_EXP' && !el.dataset.ty)) return; if (!(await editGate(t))) return;
     let pick = '';
@@ -4913,7 +4980,7 @@ async function boot() {
 /* ====== المهام — تُقرأ مباشرة من شيت «إدارة المكتب» وتُغلق فيه (لا شيت إضافي) ====== */
 let OPS = LS.get('ops2', null) || { tasks: {}, v: -1, q: [] };
 const OPS_ST = { busy: false, again: false, state: '', msg: '', last: 0, full: 0 };
-const TK = { who: 'me', done: false, setup: false, pre: '' };
+const TK = { who: 'me', done: false, setup: false, pre: '', cat: '', cdone: false };
 const opsCfg = () => {
   const l = (D && D.lists && D.lists.opsCfg) || [];
   if (l[0]) return { url: l[0], key: l[1] || '' };
@@ -4921,7 +4988,22 @@ const opsCfg = () => {
   return c && c.url ? c : null;
 };
 const opsSave = () => LS.set('ops2', OPS);
-const tkAll = () => Object.values(OPS.tasks);
+const TKL = 'tk_';
+let _tkl = null, _tklV = -1;
+const tkFromRec = r => { const c = r.c ? D.clients[resCid(r.c)] : null; return { id: r.id, local: true, cid: c ? c.id : '', clientName: c ? c.name : '', text: r.cat || r.text || 'مهمة', cat: r.cat || '', note: r.note || '', who: r.who || '', due: r.due || '', d: r.at || '', status: r.st || 'open', why: r.why || '', doneAt: r.doneAt || '', txId: r.tx || '', by: r.by || '' }; };
+const tkRecs = () => { const o = {}; Object.entries((D && D.lists) || {}).forEach(([k, v]) => { if (k.startsWith(TKL) && v && v[0]) { try { const r = JSON.parse(v[0]); if (r && r.id && r.st !== 'del') o[r.id] = r; } catch (e) { } } }); return o; };
+const tkLocal = () => { if (_tkl && _tklV === VER) return _tkl; _tkl = Object.values(tkRecs()).map(tkFromRec); _tklV = VER; return _tkl; };
+const tkAll = () => Object.values(OPS.tasks).concat(tkLocal());
+const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id);
+function tkRecSave(r) { D.lists = D.lists || {}; D.lists[TKL + r.id] = [JSON.stringify(r)]; queue('saveLists', { lists: { [TKL + r.id]: D.lists[TKL + r.id] } }); changed(); }
+function tkLocalSet(id, p) {
+  const r = tkRecs()[id]; if (!r) return;
+  if ('done' in p || 'nx' in p) r.st = p.nx ? 'nx' : p.done ? 'done' : 'open';
+  if ('why' in p) r.why = p.why; if ('doneAt' in p) r.doneAt = p.doneAt; if ('doneBy' in p) r.doneBy = p.doneBy; if ('tx' in p) r.tx = p.tx;
+  if ('who' in p) r.who = p.who; if (p.del) r.st = 'del';
+  r.upd = nowIso(); tkRecSave(r);
+}
+const canAddTask = () => !!ME && canTab('addtask');
 const tkOpen = t => t.status === 'open';
 const tkUserOf = name => { const k = nkey(bareName(name)); return k ? liveUsers().find(u => nkey(bareName(u.name)) === k) : null; };
 const tkMine = t => !!ME && !!t.who && nkey(bareName(t.who)) === nkey(bareName(ME.name));
@@ -4949,7 +5031,7 @@ function tkClientId(t) {
   const c = cs.find(x => nkey(x.name) === k) || cs.find(x => tkSameName(x.name, t.clientName));
   return c ? c.id : '';
 }
-function opsRefresh() { const r = route().name; if (r === 'tasks' || r === 'home') softRefresh(); else if (ME && $('#side')) paintNav(); }
+function opsRefresh() { const r = route().name; if (r === 'home') setTimeout(tkMorningPop, 400); if (r === 'tasks' || r === 'home') softRefresh(); else if (ME && $('#side')) paintNav(); }
 function opsBuild(projects) {
   const pend = new Set(OPS.q.map(o => o.id)), out = {};
   (projects || []).forEach(p => {
@@ -4967,10 +5049,11 @@ function opsBuild(projects) {
 }
 // تعديل حالة مهمة: يُحدَّث محليًا فورًا ويُرفع إلى إدارة المكتب دمجًا على مستوى المهمة (taskops) فلا يطغى على تعديل آخر في الملف
 function opsSet(id, patch, touch) {
+  if (!OPS.tasks[id] && tkLocal().some(x => x.id === id)) return tkLocalSet(id, patch);
   const t = OPS.tasks[id]; if (!t) return;
   const raw = { ...t.raw, ...patch };
   const closed = !!raw.done || !!raw.nx;
-  OPS.tasks[id] = { ...t, raw, status: raw.nx ? 'nx' : raw.done ? 'done' : 'open', why: String(raw.why || ''), doneAt: closed ? String(raw.doneAt || nowIso()) : '', txId: String(raw.tx || '') };
+  OPS.tasks[id] = { ...t, raw, who: String(raw.who || ''), status: raw.nx ? 'nx' : raw.done ? 'done' : 'open', why: String(raw.why || ''), doneAt: closed ? String(raw.doneAt || nowIso()) : '', txId: String(raw.tx || '') };
   const op = { op: 'update', c: 'projects', id: t.pid, taskops: { set: [raw] } };
   if (touch) op.data = { updatedAt: today() };
   OPS.q.push({ id, op });
@@ -5019,7 +5102,7 @@ async function opsSync(force) {
 function tkRow(t, o = {}) {
   const late = tkLate(t);
   const due = t.due ? `<span class="${late ? 'tk-late' : ''}">${t.due === today() ? 'اليوم' : (late ? 'متأخرة منذ ' : '') + dShort(t.due)}</span>` : '';
-  const meta = [t.clientName ? `<b>${esc(t.clientName)}</b>` : '', t.place ? esc(t.place) : '', due, o.who ? esc(tkWhoName(t)) : ''].filter(Boolean).join(' · ');
+  const meta = [t.clientName ? `<b>${esc(t.clientName)}</b>` : '', t.place ? esc(t.place) : '', due, o.who ? esc(tkWhoName(t)) : '', t.note ? `📝 ${esc(t.note)}` : ''].filter(Boolean).join(' · ');
   if (!tkOpen(t)) {
     return `<div class="tk done"><span class="tk-c ${t.status === 'nx' ? 'nx' : 'on'}">${t.status === 'nx' ? '✕' : icon('check', 16, 2.6)}</span>
       <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}${t.status === 'nx' ? ` · <span class="tk-late">لم تُنفَّذ${t.why ? ': ' + esc(t.why) : ''}</span>` : ''}${t.txId ? ' · مع حركة مالية' : ''}</div></div>
@@ -5039,15 +5122,13 @@ function opsSetupCard() {
 }
 function vTasks(r, el) {
   const cfg = opsCfg();
-  const head = `<h1 class="pg" style="margin-bottom:10px">المهام</h1>`;
-  if (!cfg || (TK.setup && isFull())) {
-    el.innerHTML = head + (isFull() ? opsSetupCard() : `<div class="card"><div class="empty">لم يُفعَّل ربط المهام بعد. يفعّله مدير النظام من هذه الصفحة.</div></div>`);
-    return;
-  }
+  const head = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">المهام</h1>${canAddTask() ? `<button class="btn pri" data-act="tk-add">${icon('plus', 17)} إضافة مهمة</button>` : ''}</div>`;
+  if (TK.setup && isFull()) { el.innerHTML = head + opsSetupCard(); return; }
   if (Date.now() - OPS_ST.last > 8000) opsSync();
   const all = tkAll();
   const who = isPriv() ? TK.who : 'me';
-  const inScope = t => who === 'all' ? true : who === 'me' ? tkMine(t) : (tkUserOf(t.who) || {}).id === who;
+  const inScope0 = t => who === 'all' ? true : who === 'me' ? tkMine(t) : (tkUserOf(t.who) || {}).id === who;
+  const inScope = t => inScope0(t) && (!TK.cat || t.cat === TK.cat);
   const open = all.filter(t => tkOpen(t) && inScope(t)).sort(tkSort);
   const td = today();
   const late = open.filter(tkLate), now = open.filter(t => t.due === td), later = open.filter(t => !t.due || t.due > td);
@@ -5059,6 +5140,8 @@ function vTasks(r, el) {
     const chip = (k, l, c) => `<button class="chip ${who === k ? 'on' : ''}" data-act="tk-who" data-k="${k}">${esc(l)}${c ? ` <small>${c}</small>` : ''}</button>`;
     chips = `<div class="tk-who">${chip('me', 'مهامي', n(tkMine))}${chip('all', 'الكل', n(() => true))}${users.filter(u => u.id !== ME.id).map(u => chip(u.id, bareName(u.name), n(t => (tkUserOf(t.who) || {}).id === u.id))).join('')}</div>`;
   }
+  const catN = {}; all.filter(t => tkOpen(t) && t.cat && inScope0(t)).forEach(t => catN[t.cat] = (catN[t.cat] || 0) + 1);
+  if (Object.keys(catN).length) chips += `<div class="tk-who"><button class="chip ${!TK.cat ? 'on' : ''}" data-act="tk-cat" data-k="">كل التصنيفات</button>${Object.entries(catN).map(([k, n]) => `<button class="chip ${TK.cat === k ? 'on' : ''}" data-act="tk-cat" data-k="${esc(k)}">${esc(k)} <small>${n}</small></button>`).join('')}</div>`;
   const grp = (title, arr, cls) => arr.length ? `<div class="tk-g ${cls || ''}">${title} <small>(${arr.length})</small></div><div class="card">${arr.map(t => tkRow(t, { who: showWho })).join('')}</div>` : '';
   const wk = addDays(td, -6);
   const closed = all.filter(t => !tkOpen(t) && inScope(t) && String(t.doneAt).slice(0, 10) >= wk).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
@@ -5076,11 +5159,11 @@ function vTasks(r, el) {
       : `<div class="card"><div class="empty">${who === 'me' ? 'لا توجد مهام مفتوحة عليك.' : 'لا توجد مهام مفتوحة.'}</div></div>`)
     + (closed.length ? `<button class="btn sm ghost" data-act="tk-toggle-done" style="margin-top:14px">${TK.done ? 'إخفاء' : 'عرض'} ما أُغلق خلال 7 أيام (${closed.length})</button>${TK.done ? `<div class="card" style="margin-top:8px">${closed.map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
     + prod
-    + `<div class="small muted" style="margin-top:16px">تُضاف المهام وتُعدَّل من برنامج «إدارة المكتب»، وتظهر هنا خلال دقيقة.</div>`
+    + `<div class="small muted" style="margin-top:16px">تُضاف المهام من هنا (➕ إضافة مهمة) أو من برنامج «إدارة المكتب» وتظهر هنا خلال دقيقة. إغلاق المهمة أو إعادة توزيعها من علامة ⋯.</div>`
     + (isFull() ? `<div style="margin-top:10px"><button class="btn sm ghost" data-act="ops-setup">إعدادات ربط المهام</button></div>` : '');
 }
 function opsHomeCard(view) {
-  if (!opsCfg() || !view) return;
+  if ((!opsCfg() && !tkAll().length && !canAddTask()) || !view) return;
   if (Date.now() - OPS_ST.last > 30000) opsSync();
   const mine = tkMyOpen();
   const team = isPriv() ? tkAll().filter(tkOpen).sort(tkSort) : [];
@@ -5102,7 +5185,7 @@ function opsHomeCard(view) {
 /* ---- داخل نموذج الحركة: مهام العميل المختار (ثم باقي مهام الموظف) تُغلق مع الحفظ ---- */
 function opsMountForm() {
   const host = $('#f-client');
-  if (!host || !F || F.editId || !opsCfg()) return;
+  if (!host || !F || F.editId || (!opsCfg() && !tkAll().length)) return;
   let forClient = F.clientId ? tkForClient(F.clientId) : [];
   if (!isPriv()) forClient = forClient.filter(tkMine);
   forClient.sort((a, b) => (tkMine(b) - tkMine(a)) || tkSort(a, b));
@@ -5121,18 +5204,65 @@ function opsAfterSave(saved) {
   const ids = (F && F.opsDone) || [];
   if (!ids.length || !saved || !saved.length) return 0;
   const now = nowIso(); let n = 0;
-  ids.forEach(id => { const t = OPS.tasks[id]; if (t && tkOpen(t)) { opsSet(id, { done: true, nx: false, doneAt: now, doneBy: bareName(ME.name), tx: saved[0].id }, true); n++; } });
+  ids.forEach(id => { const t = tkGet(id); if (t && tkOpen(t)) { opsSet(id, { done: true, nx: false, doneAt: now, doneBy: bareName(ME.name), tx: saved[0].id }, true); n++; } });
   F.opsDone = [];
   return n;
 }
+/* ====== إضافة مهمة من اليومية ====== */
+function tkForm(clientId) {
+  let pick = clientId || '', cat = '';
+  const users = liveUsers().filter(u => +u.active !== 0);
+  const m = modal(`<h3>${icon('plus', 20)} إضافة مهمة</h3>
+    ${fld('العميل <span class="muted small">(اختياري)</span>', `<div id="tf-cl">${pick ? `<div class="row"><b class="grow">${esc(clientName(pick))}</b><button class="btn sm ghost" id="tf-chg">تغيير</button></div>` : `<div class="search">${icon('search', 18)}<input id="tf-q" class="inp" placeholder="ابحث عن العميل"></div><div id="tf-l" class="card" style="margin-top:8px;max-height:180px;overflow:auto"></div>`}</div><div id="tf-p" class="small" style="margin-top:6px"></div>`)}
+    ${fld('المهمة (التصنيف)', `<div class="chips" id="tf-cats">${list('taskCats').map(c => `<button class="chip" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>`, { req: 1 })}
+    ${fld('المكلَّف بها', `<select id="tf-w" class="inp">${users.map(u => `<option value="${esc(u.name)}" ${u.id === ME.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`, { req: 1 })}
+    ${fld('التاريخ', `<input id="tf-d" type="date" class="inp" value="${today()}">`, { req: 1 })}
+    ${fld('ملاحظات <span class="muted small">(اختياري)</span>', `<input id="tf-n" class="inp" placeholder="أي تفاصيل للمهمة">`)}
+    <div class="acts"><button class="btn pri" id="tf-ok">حفظ المهمة</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const paint = () => { const l = $('#tf-l'); if (l) l.innerHTML = clientSearch($('#tf-q').value, 8).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
+  if (!pick) paint();
+  m.addEventListener('input', e => { if (e.target.id === 'tf-q') paint(); });
+  m.addEventListener('click', e => {
+    const r = e.target.closest('[data-pick]'); if (r) { pick = r.dataset.pick; $('#tf-p').innerHTML = 'العميل: <b>' + esc(clientName(pick)) + '</b>'; return; }
+    const c = e.target.closest('[data-cat]'); if (c) { cat = c.dataset.cat; m.querySelectorAll('#tf-cats .chip').forEach(b => b.classList.toggle('on', b === c)); return; }
+    if (e.target.closest('#tf-chg')) { pick = ''; $('#tf-cl').innerHTML = `<div class="search">${icon('search', 18)}<input id="tf-q" class="inp" placeholder="ابحث عن العميل"></div><div id="tf-l" class="card" style="margin-top:8px;max-height:180px;overflow:auto"></div>`; $('#tf-p').innerHTML = ''; paint(); }
+  });
+  m.querySelector('#tf-ok').onclick = () => {
+    if (!cat) return toast('اختر المهمة (التصنيف)', 'err');
+    const due = $('#tf-d').value; if (!due) return toast('حدّد التاريخ', 'err');
+    const w = $('#tf-w').value; if (!w) return toast('اختر المكلَّف', 'err');
+    tkRecSave({ id: uid('L'), c: pick, cat, note: $('#tf-n').value.trim(), who: w, due, st: 'open', by: ME.id, at: today(), cr: nowIso() });
+    closeModal(); toast('تمت إضافة المهمة'); render();
+  };
+}
+/* رسالة أول اليوم: مهامك المفتوحة */
+function tkMorningPop() {
+  if (!ME || !canTab('tasks') || modalOpen()) return;
+  const key = 'tkpop:' + ME.id; if (LS.get(key, '') === today()) return;
+  const L = tkMyOpen(); if (!L.length) return;
+  LS.set(key, today());
+  const late = L.filter(tkLate).length, now = L.filter(t => t.due === today()).length;
+  const m = modal(`<h3>📋 راجع المهام اللي عندك</h3>
+    <p style="margin:0 0 10px">عندك <b>${L.length}</b> مهمة مفتوحة${late ? ` — منها <b class="neg">${late}</b> متأخرة` : ''}${now ? ` و<b>${now}</b> مطلوبة اليوم` : ''}.</p>
+    <div class="card">${L.slice(0, 6).map(t => tkRow(t, {})).join('')}</div>${L.length > 6 ? `<div class="small muted" style="margin-top:6px">و${L.length - 6} مهام أخرى…</div>` : ''}
+    <div class="acts"><button class="btn pri" data-act="mclose">تمام، راجعتها</button><button class="btn" data-act="mgo" data-h="tasks">فتح المهام</button></div>`);
+}
 function openTaskMore(id) {
-  const t = OPS.tasks[id]; if (!t) return;
-  const cid = tkClientId(t);
+  const t = tkGet(id); if (!t) return;
+  const cid = t.local ? t.cid : tkClientId(t);
   const types = cid ? ['GOV_FEE', 'OP_EXP', 'IN_CLIENT'].filter(k => TYPES[k] && roleTypes(ME.role).includes(k)) : [];
   const m = modal(`<h3>${esc(t.text)}</h3><div class="small muted" style="margin-bottom:10px">${esc(t.clientName)}${t.who ? ' · ' + esc(tkWhoName(t)) : ''}</div>
     ${types.length ? `<div class="small muted">تسجيل حركة مالية لهذا العميل وإغلاق المهمة معها</div><div class="row wrap" style="margin:6px 0 14px">${types.map(k => `<button class="btn sm" data-go="${k}">${esc(TYPES[k].n)}</button>`).join('')}</div>` : ''}
-    <div class="form">${fld('لم تُنفَّذ؟ اكتب السبب', `<input id="tx-why" class="inp" placeholder="مثال: الموظف المختص غير موجود">`)}</div>
-    <div class="acts"><button class="btn" id="tx-nx">تسجيل «لم تُنفَّذ»</button><button class="btn" data-act="mclose">إغلاق</button></div>`);
+    <div class="form">${t.note ? `<div class="note info" style="margin-bottom:8px"><div>📝 ${esc(t.note)}</div></div>` : ''}
+      ${fld('إعادة توزيع لزميل آخر', `<div class="row wrap"><select id="tx-re" class="inp" style="flex:1 1 160px"><option value="">اختر الزميل…</option>${liveUsers().filter(u => +u.active !== 0 && nkey(bareName(u.name)) !== nkey(bareName(t.who))).map(u => `<option value="${esc(u.name)}">${esc(bareName(u.name))}</option>`).join('')}</select><button class="btn" id="tx-reb">إعادة التوزيع</button></div>`)}
+      ${fld('لم تُنفَّذ؟ اكتب السبب', `<input id="tx-why" class="inp" placeholder="مثال: الموظف المختص غير موجود">`)}</div>
+    <div class="acts"><button class="btn" id="tx-nx">تسجيل «لم تُنفَّذ»</button>${t.local && (isPriv() || t.by === ME.id) ? `<button class="btn danger" id="tx-del">حذف المهمة</button>` : ''}<button class="btn" data-act="mclose">إغلاق</button></div>`);
+  m.querySelector('#tx-reb').addEventListener('click', () => {
+    const w = m.querySelector('#tx-re').value; if (!w) return toast('اختر الزميل أولًا', 'err');
+    opsSet(t.id, { who: w }, true); closeModal(); toast('أُعيد توزيع المهمة على ' + bareName(w)); opsRefresh(); if (route().name === 'client') render();
+  });
+  const dl = m.querySelector('#tx-del');
+  if (dl) dl.addEventListener('click', async () => { if (!(await ask('حذف هذه المهمة نهائيًا؟', 'حذف'))) return; tkLocalSet(t.id, { del: true }); closeModal(); toast('تم حذف المهمة'); render(); });
   m.addEventListener('click', e => {
     const g = e.target.closest('[data-go]');
     if (g) { TK.pre = t.id; closeModal(); go(`entry/${g.dataset.go}?client=${cid}&back=tasks`); }
@@ -5141,16 +5271,20 @@ function openTaskMore(id) {
     const why = m.querySelector('#tx-why').value.trim();
     if (!why) { m.querySelector('#tx-why').classList.add('bad'); return toast('اكتب سبب عدم التنفيذ', 'err'); }
     opsSet(t.id, { nx: true, done: false, why, doneAt: nowIso(), doneBy: bareName(ME.name) }, false);
-    closeModal(); toast('سُجِّلت المهمة «لم تُنفَّذ»'); opsRefresh();
+    closeModal(); toast('سُجِّلت المهمة «لم تُنفَّذ»'); opsRefresh(); if (route().name === 'client') render();
   });
 }
 Object.assign(ACT, {
+  'tk-add': el => { if (canAddTask()) tkForm(el.dataset.c || ''); },
+  'tk-cdone': () => { TK.cdone = !TK.cdone; const y = window.scrollY; render(); window.scrollTo(0, y); },
+  'tk-cat': el => { TK.cat = el.dataset.k || ''; render(); },
+  'mgo': el => { closeModal(); go(el.dataset.h); },
   'tk-done': el => {
-    const t = OPS.tasks[el.dataset.id]; if (!t || !tkOpen(t)) return;
+    const t = tkGet(el.dataset.id); if (!t || !tkOpen(t)) return;
     opsSet(t.id, { done: true, nx: false, doneAt: nowIso(), doneBy: bareName(ME.name) }, true);
-    toast('أُغلقت المهمة'); opsRefresh();
+    toast('أُغلقت المهمة'); opsRefresh(); if (route().name === 'client') render();
   },
-  'tk-reopen': el => { const t = OPS.tasks[el.dataset.id]; if (!t) return; opsSet(t.id, { done: false, nx: false, why: '', doneAt: '', doneBy: '', tx: '' }, false); toast('أُعيد فتح المهمة'); opsRefresh(); },
+  'tk-reopen': el => { const t = tkGet(el.dataset.id); if (!t) return; opsSet(t.id, { done: false, nx: false, why: '', doneAt: '', doneBy: '', tx: '' }, false); toast('أُعيد فتح المهمة'); opsRefresh(); },
   'tk-more': el => openTaskMore(el.dataset.id),
   'tk-who': el => { TK.who = el.dataset.k; if (route().name === 'tasks') render(); },
   'tk-toggle-done': () => { TK.done = !TK.done; const y = window.scrollY; render(); window.scrollTo(0, y); },
