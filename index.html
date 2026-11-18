@@ -1647,7 +1647,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-203000';
+const BUILD = '20261118-213000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3237,6 +3237,9 @@ function dlSave(arr) { D.lists = D.lists || {}; D.lists.deliver = arr.map(x => J
 const dlPend = x => x.docs.filter(d => !d.x).length;
 const DLK = { out: ['تسليم للعميل', 'سُلِّم', 'لم تُسلَّم', '📤'], in: ['استلام من العميل', 'استُلِم', 'لم تُستلَم', '📥'] };
 const dlKind = x => x.k === 'in' ? 'in' : 'out';
+/* وسيلة التسليم / الاستلام */
+const DLM = [['uber', 'أوبر'], ['aramex', 'أرامكس'], ['office', 'بالمكتب'], ['colleague', 'مع زميل'], ['station', 'مع موقف'], ['other', 'أخرى']];
+const dlVia = x => { if (!x.m) return ''; if (x.m === 'other') return x.mo || 'أخرى'; const f = DLM.find(q => q[0] === x.m); return f ? f[1] : ''; };
 let DLF = 'all';
 function vDeliver(r, el) {
   const td = today(), L0 = dlList(), L = L0.filter(x => DLF === 'all' || dlKind(x) === DLF).sort((a, b) => (!!dlPend(b) - !!dlPend(a)) || String(a.d || '9999').localeCompare(String(b.d || '9999')));
@@ -3258,7 +3261,7 @@ function vDeliver(r, el) {
         <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
           <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
           ${dlWho(x) ? `<div class="small" style="margin-top:4px">👤 القائم بالمهمة: <b>${esc(bareName(dlWho(x).name))}</b></div>` : ''}${x.cn || x.cp ? `<div class="small" style="margin-top:2px">☎️ جهة التواصل: ${esc(x.cn || '')} <span class="num">${esc(x.cp || '')}</span></div>` : ''}
-          ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
+          ${dlVia(x) ? `<div class="small" style="margin-top:4px">🚚 وسيلة ${dlKind(x) === 'in' ? 'الاستلام' : 'التسليم'}: <b>${esc(dlVia(x))}</b></div>` : ''}${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
         <span class="badge">${DLK[dlKind(x)][3]} ${DLK[dlKind(x)][0]}</span><span class="badge ${p ? 'warn' : ''}">${p ? p + ' ' + DLK[dlKind(x)][2] : (dlKind(x) === 'in' ? 'تم الاستلام كله ✓' : 'تم التسليم كله ✓')}</span></div>
         <div style="margin-top:8px">${x.docs.map((d, i) => `<label class="row" style="gap:8px;align-items:center;cursor:pointer;padding:5px 0"><input type="checkbox" data-act="dl-doc" data-id="${x.id}" data-i="${i}" ${d.x ? 'checked' : ''} style="width:20px;height:20px"><span style="${d.x ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(d.t)}</span>${d.x ? `<small class="muted num">${esc(d.x)}</small>` : ''}</label>`).join('')}</div>
         <div class="row wrap no-print" style="margin-top:8px;gap:6px">
@@ -3273,8 +3276,8 @@ function printDeliver() {
   printDoc({ title: 'كشف التسليم والاستلام — مستندات مطلوبة', file: 'كشف_التسليم_' + today(), land: true,
     info: [['عدد الملفات', String(L.length)], ['مستندات لم تُسلَّم', String(L.reduce((n, x) => n + dlPend(x), 0))]],
     kpis: [['ملفات لسه فيها تسليم', L.length], ['مستندات لم تُسلَّم', L.reduce((n, x) => n + dlPend(x), 0)]],
-    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'العملية', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'المستندات المطلوبة' }, { h: 'ملاحظة' }],
-    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, DLK[dlKind(x)][0], esc(x.d || ''), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'العملية', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'الوسيلة', c: 1 }, { h: 'المستندات المطلوبة' }, { h: 'ملاحظة' }],
+    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, DLK[dlKind(x)][0], esc(x.d || ''), esc(dlVia(x)), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
 }
 /* ملخص اليوم: كل موظف يدوّن اللي عمله وملاحظاته، والإدارة تشوف الفريق */
 function dsumOpen(d) {
@@ -3344,7 +3347,7 @@ const dlCont = x => { const c = D.clients[x.c] || {}; return { n: x.cn || c.name
 const dlDocs = x => { const a = x.docs.filter(d => !d.x); return (a.length ? a : x.docs).map(d => '• ' + d.t).join('\n'); };
 function dlMsg(x, to) {
   const u = dlWho(x), ct = dlCont(x), c = D.clients[x.c] || {}, me = u ? bareName(u.name) : 'مندوب المكتب', mp = dlWhoPh(u), docs = dlDocs(x), out = dlKind(x) === 'out';
-  const tail = `${x.d ? '\nالموعد: ' + x.d : ''}${x.n ? '\nملاحظة: ' + x.n : ''}`;
+  const tail = `${x.d ? '\nالموعد: ' + x.d : ''}${dlVia(x) ? '\nوسيلة ' + (out ? 'التسليم' : 'الاستلام') + ': ' + dlVia(x) : ''}${x.n ? '\nملاحظة: ' + x.n : ''}`;
   if (to === 'client') return `السادة / ${ct.n || c.name}\nتحية طيبة من مكتب محمود سالم للمحاسبة والمراجعة\n\nسيقوم الأستاذ *${me}*${mp ? ' (رقم التواصل: ' + mp + ')' : ''} بالتواصل مع حضرتكم ${out ? 'لتسليمكم' : 'لاستلام'} المستندات التالية${out ? '' : ' منكم'}:\n${docs}${tail}\n\nشكرًا لتعاونكم.`;
   const who = `*${c.name}*${ct.n && ct.n !== c.name ? ' — ' + (/^(أ|الأستاذ|السيد|م|د)[\/.]/.test(ct.n) ? '' : 'الأستاذ/ ') + ct.n : ''}`;
   return `أ/ ${me}\n${out ? `برجاء التواصل مع ${who}${ct.p ? ' (رقم التواصل: ' + ct.p + ')' : ''} لتسليم المستندات التالية:` : `سيقوم ${who} بتسليمك أو إرسال المستندات التالية إليك${ct.p ? '، ورقم التواصل والتنسيق: ' + ct.p : ''}:`}\n${docs}${tail}`;
@@ -3381,6 +3384,7 @@ function dlForm(id, clientId) {
     ${pick ? `<p><b>${esc(clientName(pick))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="dl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="dl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="dl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
     ${fld('المستندات (كل مستند في سطر)', `<textarea id="dl-t" class="inp" rows="5" placeholder="السجل التجاري&#10;البطاقة الضريبية&#10;عقد التأسيس">${esc((cur.docs || []).map(d => d.t).join('\\n'))}</textarea>`, { req: 1 })}
     ${fld('الموعد (اختياري)', `<input id="dl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
+    ${fld('وسيلة التسليم / الاستلام', `<select id="dl-m" class="inp"><option value="">— غير محددة —</option>${DLM.map(([k, l]) => `<option value="${k}" ${cur.m === k ? 'selected' : ''}>${l}</option>`).join('')}</select><input id="dl-mo" class="inp" style="margin-top:6px;${cur.m === 'other' ? '' : 'display:none'}" placeholder="اكتب طريقة التسليم / الاستلام" value="${esc(cur.mo || '')}">`)}
     ${fld('القائم بالمهمة (من الفريق)', `<select id="dl-w" class="inp"><option value="">— بدون —</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}" ${cur.who === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
     ${fld('جهة التواصل (فاضية = بيانات العميل)', `<div class="row" style="gap:6px"><input id="dl-cn" class="inp grow" placeholder="الاسم" value="${esc(cur.cn || '')}"><input id="dl-cp" class="inp grow ltr" inputmode="tel" placeholder="الموبايل" value="${esc(cur.cp || '')}"></div>`)}
     ${fld('ملاحظة (اختياري)', `<input id="dl-n" class="inp" value="${esc(cur.n || '')}">`)}
@@ -3389,13 +3393,16 @@ function dlForm(id, clientId) {
   const paint = () => { const l = $('#dl-l'); if (l) l.innerHTML = clientSearch($('#dl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
   if (!pick) paint();
   m.addEventListener('input', e => { if (e.target.id === 'dl-q') paint(); });
+  m.querySelector('#dl-m').onchange = e => { const o = m.querySelector('#dl-mo'); o.style.display = e.target.value === 'other' ? '' : 'none'; if (e.target.value === 'other') o.focus(); };
   m.addEventListener('click', e => { const dk = e.target.closest('[data-dk]'); if (dk) { kind = dk.dataset.dk; m.querySelectorAll('[data-dk]').forEach(b => b.classList.toggle('on', b === dk)); return; } const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#dl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
   m.querySelector('#dl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
     const names = $('#dl-t').value.split('\n').map(x => x.trim()).filter(Boolean);
     if (!names.length) return toast('اكتبي مستند واحد على الأقل', 'err');
+    const via = $('#dl-m').value, viaO = via === 'other' ? $('#dl-mo').value.trim() : '';
+    if (via === 'other' && !viaO) return toast('اكتبي وسيلة التسليم في خانة «أخرى»', 'err');
     const old = Object.fromEntries((cur.docs || []).map(d => [d.t, d.x]));
-    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), who: $('#dl-w').value, cn: $('#dl-cn').value.trim(), cp: $('#dl-cp').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
+    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), who: $('#dl-w').value, cn: $('#dl-cn').value.trim(), cp: $('#dl-cp').value.trim(), m: via, mo: viaO, by: cur.by || ME.id, at: cur.at || today() };
     dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
   };
 }
