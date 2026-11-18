@@ -1651,7 +1651,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261119-015000';
+const BUILD = '20261119-021500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3172,7 +3172,7 @@ const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'fu
 const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
 const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
-const LOGV = { rows: [], total: 0, q: '', limit: 300, busy: false, err: '' };
+const LOGV = { rows: [], total: 0, q: '', limit: 300, busy: false, err: '', grp: false };
 const LOG_ACT = { create: 'إضافة', update: 'تعديل', delete: 'حذف', save: 'حفظ', restore: 'استرجاع', approve: 'اعتماد', merge: 'دمج' };
 const LOG_ENT = { transactions: 'حركة', clients: 'عميل', accounts: 'حساب', users: 'مستخدم', lists: 'قوائم', meta: 'إعدادات', archive: 'أرشيف' };
 function logVal(k, v) { if (v == null || v === '') return '—'; if (k === 'type') return (TYPES[v] || {}).n || v; if (k === 'clientId') return clientName(v) || v; if (k === 'fromAcc' || k === 'toAcc') return accName(v); if (k === 'amount') return fmt(v); if (k === 'deleted') return +v ? 'نعم' : 'لا'; return String(v).slice(0, 60); }
@@ -3191,6 +3191,15 @@ function logPaint() {
   const q = nkey(LOGV.q), uname = id => (userById(id) || {}).name || id || '—';
   const rows = LOGV.rows.filter(r => !q || nkey([uname(r.userId), LOG_ACT[r.action] || r.action, LOG_ENT[r.entity] || r.entity, r.id, logDesc(r)].join(' ')).includes(q));
   const tb = $('#log-tb'); if (!tb) return;
+  const tm = r => new Date(r.ts).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' });
+  if (LOGV.grp) {
+    const G = {}; rows.forEach(r => { const k = (r.entity || '') + '|' + (r.id || ''); (G[k] = G[k] || []).push(r); });
+    const gl = Object.values(G).map(a => a.sort((x, y) => String(x.ts).localeCompare(String(y.ts)))).sort((a, b) => String(b[b.length - 1].ts).localeCompare(String(a[a.length - 1].ts)));
+    tb.innerHTML = gl.map(a => { const f = a[0], l = a[a.length - 1], us = [...new Set(a.map(r => uname(r.userId)))], ac = {}; a.forEach(r => { const n = LOG_ACT[r.action] || r.action || ''; ac[n] = (ac[n] || 0) + 1; });
+      return `<tr><td class="small num" style="white-space:nowrap">${esc(tm(l))}${a.length > 1 ? `<div class="muted">من ${esc(tm(f))}</div>` : ''}</td><td>${esc(us.join('، '))}</td><td><span class="badge">${a.length} ${a.length > 1 ? 'عمليات' : 'عملية'}</span> ${esc(LOG_ENT[f.entity] || f.entity || '')}<div class="small muted">${Object.entries(ac).map(([k, v]) => k + (v > 1 ? ' ×' + v : '')).join('، ')}</div></td>
+        <td class="small"><details><summary>${esc(logDesc(l))}</summary>${a.slice().reverse().map(r => `<div style="margin-top:4px"><span class="muted num">${esc(tm(r))}</span> · ${esc(uname(r.userId))} · <b>${esc(LOG_ACT[r.action] || r.action || '')}</b> — ${esc(logDesc(r))}</div>`).join('')}</details></td><td class="small muted num" style="direction:ltr">${esc(String(f.id || '').slice(0, 18))}</td></tr>`; }).join('') || '<tr><td colspan="5" class="empty">لا نتائج</td></tr>';
+    $('#log-cnt').textContent = `${gl.length} عنصر (من ${rows.length} عملية) — إجمالي السجل ${LOGV.total}`; return;
+  }
   tb.innerHTML = rows.map(r => `<tr><td class="small num" style="white-space:nowrap">${esc(new Date(r.ts).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' }))}</td><td>${esc(uname(r.userId))}</td><td><span class="badge">${esc(LOG_ACT[r.action] || r.action || '')}</span> ${esc(LOG_ENT[r.entity] || r.entity || '')}</td><td class="small">${esc(logDesc(r))}</td><td class="small muted num" style="direction:ltr">${esc(String(r.id || '').slice(0, 18))}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">لا نتائج</td></tr>';
   $('#log-cnt').textContent = `${rows.length} من ${LOGV.rows.length} (إجمالي السجل ${LOGV.total})`;
 }
@@ -3202,7 +3211,7 @@ async function logLoad() {
   LOGV.busy = false;
   const box = $('#log-box'); if (box && !$('#log-tb')) box.innerHTML = logShell(); logPaint();
 }
-const logShell = () => `<div class="row wrap" style="gap:8px;margin-bottom:8px"><input class="inp grow" id="log-q" placeholder="ابحث: اسم أو عميل أو نوع أو رقم" value="${esc(LOGV.q)}"><button class="btn" data-act="log-reload">${icon('sync', 16)} تحديث</button><button class="btn" data-act="log-more">أقدم (+300)</button></div>
+const logShell = () => `<div class="row wrap" style="gap:8px;margin-bottom:8px"><input class="inp grow" id="log-q" placeholder="ابحث: اسم أو عميل أو نوع أو رقم" value="${esc(LOGV.q)}"><button class="btn ${LOGV.grp ? 'pri' : ''}" data-act="log-grp" id="log-grp">🗂️ ${LOGV.grp ? 'عرض كل العمليات' : 'لمّ وضمّ التعديلات'}</button><button class="btn" data-act="log-reload">${icon('sync', 16)} تحديث</button><button class="btn" data-act="log-more">أقدم (+300)</button></div>
   <div class="small muted" id="log-cnt" style="margin-bottom:6px"></div><div class="card tblwrap"><table class="tbl"><thead><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>التفاصيل (قبل ← بعد)</th><th>المعرّف</th></tr></thead><tbody id="log-tb"></tbody></table></div>`;
 document.addEventListener('input', e => { if (e.target && e.target.id === 'log-q') { LOGV.q = e.target.value; logPaint(); } });
 /* ====== التحصيل: عملاء نحتاج نحصّل منهم ====== */
@@ -4865,6 +4874,7 @@ const ACT = {
   dsum: () => dsumOpen(),
   'nt-manage': () => ntManage(),
   'nt-log': () => ntLog(),
+  'log-grp': () => { LOGV.grp = !LOGV.grp; const b = $('#log-box'); if (b) b.innerHTML = logShell(); logPaint(); },
   'ac-add': () => acForm(),
   'ac-del': el => { const r = hrGet(el.dataset.k); if (r && r.u === ME.id) { r.del = 1; hrPut({ [el.dataset.k]: r }); render(); } },
   'dsum-ok': el => { const r = hrGet(el.dataset.k); if (r) { r.ok = 1; hrPut({ [el.dataset.k]: r }); render(); } },
