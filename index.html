@@ -1647,7 +1647,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-150000';
+const BUILD = '20261118-190000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2058,7 +2058,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn === vHome) { if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
+  try { fn(r, vw); if (fn === vHome) { if (isFull()) dsumHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2891,6 +2891,7 @@ function vJournal(r, el) {
         ${isPriv() ? `<select class="inp" data-j="acc"><option value="">كل الحسابات</option>${visAccounts().filter(a => !accGone(a)).map(a => `<option value="${a.id}" ${J.acc === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>` : ''}
         <div class="search grow" style="min-width:200px">${icon('search', 18)}<input class="inp" style="width:100%" data-j="q" value="${esc(J.q)}" placeholder="بحث: عميل، بند، إيصال، مكان…"></div>
         <button class="btn sm" data-act="day-review">${icon('list', 16)} مراجعة يوم</button>
+        <button class="btn sm" data-act="dsum">📝 ملخص اليوم</button>
         <button class="btn sm pri" data-act="pd-journal">${icon('print', 16)} طباعة PDF</button>
         ${isPriv() ? `<button class="btn sm" data-act="j-export">${icon('download', 16)} تصدير Excel</button>` : ''}
       </div>
@@ -3159,7 +3160,7 @@ function csPeriod(p) {
 }
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
-const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم']];
+const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام']];
 const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && k !== 'tax' && k !== 'addtask'); };
 const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
 const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
@@ -3236,15 +3237,21 @@ function vCollect(r, el) {
 const dlList = () => list('deliver').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.id && x.c && Array.isArray(x.docs)).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c]);
 function dlSave(arr) { D.lists = D.lists || {}; D.lists.deliver = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { deliver: D.lists.deliver } }); changed(); }
 const dlPend = x => x.docs.filter(d => !d.x).length;
+const DLK = { out: ['تسليم للعميل', 'سُلِّم', 'لم تُسلَّم', '📤'], in: ['استلام من العميل', 'استُلِم', 'لم تُستلَم', '📥'] };
+const dlKind = x => x.k === 'in' ? 'in' : 'out';
+let DLF = 'all';
 function vDeliver(r, el) {
-  const td = today(), L = dlList().sort((a, b) => (!!dlPend(b) - !!dlPend(a)) || String(a.d || '9999').localeCompare(String(b.d || '9999')));
+  const td = today(), L0 = dlList(), L = L0.filter(x => DLF === 'all' || dlKind(x) === DLF).sort((a, b) => (!!dlPend(b) - !!dlPend(a)) || String(a.d || '9999').localeCompare(String(b.d || '9999')));
   const open = L.filter(dlPend), docsLeft = open.reduce((n, x) => n + dlPend(x), 0), late = open.filter(x => x.d && x.d < td).length;
-  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">📦 التسليم</h1>
-      <button class="btn pri" data-act="dl-add">${icon('plus', 17)} إضافة مستندات للتسليم</button>
+  const nOut = open.filter(x => dlKind(x) === 'out').reduce((n, x) => n + dlPend(x), 0), nIn = open.filter(x => dlKind(x) === 'in').reduce((n, x) => n + dlPend(x), 0);
+  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">📦 التسليم والاستلام</h1>
+      <button class="btn pri" data-act="dl-add">${icon('plus', 17)} إضافة تسليم / استلام</button>
       ${L.length ? `<button class="btn" data-act="pd-deliver">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
+    <div class="chips" style="margin-bottom:10px">${[['all', 'الكل'], ['out', '📤 تسليم للعميل'], ['in', '📥 استلام من العميل']].map(([k, l]) => `<button class="chip ${DLF === k ? 'on' : ''}" data-act="dl-filt" data-k="${k}">${l}</button>`).join('')}</div>
     <div class="card sumrow">
-      <div><small>ملفات لسه فيها تسليم</small><b>${open.length}</b></div>
-      <div><small>مستندات لم تُسلَّم</small><b>${docsLeft}</b></div>
+      <div><small>ملفات مفتوحة</small><b>${open.length}</b></div>
+      <div><small>📤 لم تُسلَّم للعميل</small><b>${nOut}</b></div>
+      <div><small>📥 لم تُستلَم منه</small><b>${nIn}</b></div>
       <div><small>تأخر موعدها</small><b class="${late ? 'neg' : ''}">${late}</b></div>
       <div><small>تم تسليمها بالكامل</small><b class="pos">${L.length - open.length}</b></div>
     </div>
@@ -3253,39 +3260,66 @@ function vDeliver(r, el) {
         <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
           <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
           ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
-        <span class="badge ${p ? 'warn' : ''}">${p ? p + ' لم تُسلَّم' : 'تم التسليم كله ✓'}</span></div>
+        <span class="badge">${DLK[dlKind(x)][3]} ${DLK[dlKind(x)][0]}</span><span class="badge ${p ? 'warn' : ''}">${p ? p + ' ' + DLK[dlKind(x)][2] : (dlKind(x) === 'in' ? 'تم الاستلام كله ✓' : 'تم التسليم كله ✓')}</span></div>
         <div style="margin-top:8px">${x.docs.map((d, i) => `<label class="row" style="gap:8px;align-items:center;cursor:pointer;padding:5px 0"><input type="checkbox" data-act="dl-doc" data-id="${x.id}" data-i="${i}" ${d.x ? 'checked' : ''} style="width:20px;height:20px"><span style="${d.x ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(d.t)}</span>${d.x ? `<small class="muted num">${esc(d.x)}</small>` : ''}</label>`).join('')}</div>
         <div class="row wrap no-print" style="margin-top:8px;gap:6px">
           <button class="btn sm" data-act="dl-edit" data-id="${x.id}">${icon('edit', 16)} تعديل</button>
           <button class="btn sm" data-act="dl-del" data-id="${x.id}">${icon('trash', 16)} حذف</button></div></div>`; }).join('')
-    : `<div class="card pad empty" style="margin-top:12px">لسه ماسجّلتيش مستندات للتسليم. اضغطي «إضافة مستندات للتسليم»، واختاري العميل واكتبي المستندات (كل مستند في سطر).</div>`}`;
+    : `<div class="card pad empty" style="margin-top:12px">لا توجد سجلات. اضغطي «إضافة تسليم / استلام»، واختاري العميل ونوع العملية (تسليم له أو استلام منه) واكتبي المستندات (كل مستند في سطر).</div>`}`;
 }
 function printDeliver() {
   const L = dlList().filter(dlPend).sort((a, b) => String(a.d || '9999').localeCompare(String(b.d || '9999')));
-  printDoc({ title: 'كشف التسليم — مستندات مطلوب تسليمها', file: 'كشف_التسليم_' + today(), land: true,
+  printDoc({ title: 'كشف التسليم والاستلام — مستندات مطلوبة', file: 'كشف_التسليم_' + today(), land: true,
     info: [['عدد الملفات', String(L.length)], ['مستندات لم تُسلَّم', String(L.reduce((n, x) => n + dlPend(x), 0))]],
     kpis: [['ملفات لسه فيها تسليم', L.length], ['مستندات لم تُسلَّم', L.reduce((n, x) => n + dlPend(x), 0)]],
-    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'المستندات المطلوب تسليمها' }, { h: 'ملاحظة' }],
-    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, esc(x.d || ''), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'العملية', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'المستندات المطلوبة' }, { h: 'ملاحظة' }],
+    rows: L.map((x, i) => [i + 1, esc(D.clients[x.c].name), `<span class="num">${esc(D.clients[x.c].phone || '')}</span>`, DLK[dlKind(x)][0], esc(x.d || ''), x.docs.filter(d => !d.x).map(d => esc(d.t)).join('، '), esc(x.n || '')]) });
+}
+/* ملخص اليوم: كل موظف يدوّن اللي عمله وملاحظاته، والإدارة تشوف الفريق */
+function dsumOpen(d) {
+  d = d || today(); const k = u => `dy_${u}_${d}`, mine = hrGet(k(ME.id)) || {};
+  const others = isPriv() ? liveUsers().filter(u => u.id !== ME.id).map(u => ({ u, r: hrGet(k(u.id)) })).filter(x => x.r && (x.r.w || x.r.n)) : [];
+  const m = modal(`<h3>📝 ملخص اليوم</h3>
+    ${fld('التاريخ', `<input id="ds-d" type="date" class="inp" value="${d}">`)}
+    ${fld('اللي عملته النهارده', `<textarea id="ds-w" class="inp" rows="5" placeholder="مثال: قدمت إقرار شركة كذا، راجعت فواتير عميل كذا…">${esc(mine.w || '')}</textarea>`)}
+    ${fld('ملاحظات / مشاكل / متطلبات', `<textarea id="ds-n" class="inp" rows="3">${esc(mine.n || '')}</textarea><label class="small" style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="ds-i" ${mine.i ? 'checked' : ''}> ⭐ مهم — يظهر للإدارة في الصفحة الرئيسية</label>`)}
+    <div class="acts"><button class="btn pri" id="ds-ok">حفظ</button><button class="btn" data-act="mclose">إغلاق</button></div>
+    ${isPriv() ? `<h4 style="margin:16px 0 6px">ملخصات الفريق — ${d}</h4>${others.length ? others.map(x => `<div class="card pad" style="margin-top:6px"><b>${esc(bareName(x.u.name))}</b>${x.r.w ? `<div style="white-space:pre-wrap;margin-top:4px">${esc(x.r.w)}</div>` : ''}${x.r.n ? `<div class="small muted" style="white-space:pre-wrap;margin-top:4px">${x.r.i ? '⭐ ' : ''}ملاحظات: ${esc(x.r.n)}</div>` : ''}</div>`).join('') : '<p class="small muted">لا توجد ملخصات من الفريق لهذا اليوم.</p>'}` : ''}`);
+  m.querySelector('#ds-d').onchange = e => { const v = e.target.value; if (v) { ACT.mclose && ACT.mclose(); dsumOpen(v); } };
+  m.querySelector('#ds-ok').onclick = () => {
+    const w = m.querySelector('#ds-w').value.trim(), n = m.querySelector('#ds-n').value.trim();
+    if (!w && !n) return toast('اكتب ملخصك أولًا', 'err');
+    hrPut({ [k(ME.id)]: { u: ME.id, d, w, n, i: n && m.querySelector('#ds-i').checked ? 1 : 0, at: nowIso() } }); toast('تم حفظ ملخص اليوم'); ACT.mclose && ACT.mclose();
+  };
+}
+function dsumHomeCard(view) {
+  const imp = Object.entries(D.lists || {}).filter(([k]) => k.startsWith('dy_')).map(([k, v]) => { try { const r = JSON.parse(v[0]); return r && !r.del && r.i && r.n && !r.ok ? { ...r, _k: k } : null; } catch (e) { return null; } }).filter(Boolean).sort((a, b) => String(b.d).localeCompare(String(a.d)));
+  if (!imp.length) return;
+  const d = document.createElement('div'); d.className = 'card';
+  d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>⭐ ملاحظات مهمة من الفريق</b><span class="sp"></span><span class="small muted">${imp.length}</span></div>
+    ${imp.slice(0, 6).map(r => `<div class="lrow" style="align-items:flex-start"><div class="grow"><b>${esc(hrName(r.u))}</b> <span class="small muted">${esc(r.d)}</span><div style="white-space:pre-wrap">${esc(r.n)}</div></div><button class="btn sm" data-act="dsum-ok" data-k="${esc(r._k)}">تمت ✓</button></div>`).join('')}`;
+  (view.querySelector('.hops') || view).prepend(d);
 }
 function dlForm(id, clientId) {
   const cur = id ? (dlList().find(q => q.id === id) || {}) : {}; let pick = cur.c || clientId || '';
-  const m = modal(`<h3>${icon('archive', 20)} ${id ? 'تعديل مستندات التسليم' : 'مستندات للتسليم'}</h3>
+  const m = modal(`<h3>${icon('archive', 20)} ${id ? 'تعديل التسليم / الاستلام' : 'تسليم / استلام مستندات'}</h3>
+    ${fld('العملية', `<div class="chips" id="dl-k">${['out', 'in'].map(k => `<button class="chip ${(cur.k === 'in' ? 'in' : 'out') === k ? 'on' : ''}" data-dk="${k}">${DLK[k][3]} ${DLK[k][0]}</button>`).join('')}</div>`, { req: 1 })}
     ${pick ? `<p><b>${esc(clientName(pick))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="dl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="dl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="dl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
     ${fld('المستندات (كل مستند في سطر)', `<textarea id="dl-t" class="inp" rows="5" placeholder="السجل التجاري&#10;البطاقة الضريبية&#10;عقد التأسيس">${esc((cur.docs || []).map(d => d.t).join('\\n'))}</textarea>`, { req: 1 })}
     ${fld('الموعد (اختياري)', `<input id="dl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
     ${fld('ملاحظة (اختياري)', `<input id="dl-n" class="inp" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="dl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  let kind = cur.k === 'in' ? 'in' : 'out';
   const paint = () => { const l = $('#dl-l'); if (l) l.innerHTML = clientSearch($('#dl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
   if (!pick) paint();
   m.addEventListener('input', e => { if (e.target.id === 'dl-q') paint(); });
-  m.addEventListener('click', e => { const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#dl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
+  m.addEventListener('click', e => { const dk = e.target.closest('[data-dk]'); if (dk) { kind = dk.dataset.dk; m.querySelectorAll('[data-dk]').forEach(b => b.classList.toggle('on', b === dk)); return; } const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#dl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
   m.querySelector('#dl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
     const names = $('#dl-t').value.split('\n').map(x => x.trim()).filter(Boolean);
     if (!names.length) return toast('اكتبي مستند واحد على الأقل', 'err');
     const old = Object.fromEntries((cur.docs || []).map(d => [d.t, d.x]));
-    const rec = { id: cur.id || uid('D-'), c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
+    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
     dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
   };
 }
@@ -3723,7 +3757,10 @@ function vDups(r, el) {
 }
 
 /* ====== المراجعة والاعتماد ====== */
-const RV = { tab: 'q', who: '' };
+const RV = { tab: 'q', who: '', per: 'week' };
+const PER5 = [['today', 'اليوم'], ['yday', 'أمس'], ['week', 'الأسبوع'], ['month', 'الشهر'], ['all', 'الكل']];
+const perRange = k => { const td = today(); return k === 'today' ? [td, td] : k === 'yday' ? [addDays(td, -1), addDays(td, -1)] : k === 'week' ? [addDays(td, -6), td] : k === 'month' ? [monthStart(td), td] : ['0000-01-01', '9999-12-31']; };
+const inPer = (k, d) => { const [a, b] = perRange(k), x = String(d || '').slice(0, 10); return x >= a && x <= b; };
 /* صاحب الحركة في مراجعة الاعتماد: من سجّلها، وإن لم يُعرف فصاحب العهدة */
 const rvWho = t => {
   const u = userById(t.userId); if (u) return { k: u.id, n: u.name };
@@ -3735,11 +3772,11 @@ const rvByWho = arr => RV.who ? arr.filter(t => rvWho(t).k === RV.who) : arr;
 let _pdReview = null;
 function vReview(r, el) {
   const srt = a => a.sort(byNew);
-  const q = srt(queueTxs()), rej = srt(listTx().filter(t => +t.approved === 2)), okk = srt(listTx().filter(t => !isPend(t) && t.type !== 'OPENING' && t.approvedBy)).slice(0, 100);
+  const q = srt(queueTxs()), rej = srt(listTx().filter(t => +t.approved === 2)), okAll = srt(listTx().filter(t => !isPend(t) && t.type !== 'OPENING' && t.approvedBy)), okk = okAll.filter(t => inPer(RV.per, t.approvedAt || t.date)).slice(0, 300);
   const mem = D.accounts.filter(a => a.type === 'custody' && +a.active !== 0);
   const miss = listTx().filter(t => isXL(t) && (TYPES[t.type] || {}).client && !t.clientId).sort(byNew);
   const base = RV.tab === 'ok' ? okk : RV.tab === 'rej' ? rej : RV.tab === 'miss' ? miss : q;
-  const ppl = (RV.tab === 'q' || RV.tab === 'rej') ? rvPeople(base) : [];
+  const ppl = (RV.tab === 'q' || RV.tab === 'rej' || RV.tab === 'ok') ? rvPeople(base) : [];
   if (RV.who && !ppl.some(p => p.k === RV.who)) RV.who = '';
   const list = ppl.length ? rvByWho(base) : base;
   const qW = rvByWho(q), whoN = RV.who ? (ppl.find(p => p.k === RV.who) || {}).n : '';
@@ -3751,11 +3788,13 @@ function vReview(r, el) {
   el.innerHTML = `<h1 class="pg">مراجعة الاعتماد <span class="sp"></span><button class="btn sm no-print" data-act="pd-review">${icon('print', 16)} طباعة PDF</button> ${qW.length ? `<button class="btn sm pri" data-act="approve-all">${icon('check', 16)} ${RV.who && RV.tab === 'q' ? `اعتماد حركات ${esc(whoN)}` : 'اعتماد الكل'} (${RV.who && RV.tab === 'q' ? qW.length : q.length})</button>` : ''}</h1>
     <div class="card tblwrap"><table class="tbl"><thead><tr><th>العضو</th><th class="n">عهدته الآن</th><th class="n">بعد المراجعة</th><th class="n">غير معتمد</th></tr></thead><tbody>
     ${mem.map(a => { const n = pendOf(a.id).length; return `<tr data-act="go" data-h="account/${a.id}" style="cursor:pointer"><td>${esc(a.name.replace('عهدة ', ''))}</td><td class="n">${fmt(accBal(a.id))}</td><td class="n"><b>${fmt(accBalR(a.id))}</b></td><td class="n">${n ? `<b style="color:#b45309">${n}</b>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>
-    <div class="chips" style="margin:12px 0"><button class="chip ${RV.tab === 'q' ? 'on' : ''}" data-act="rv-tab" data-v="q">بانتظار الاعتماد (${q.length})</button><button class="chip ${RV.tab === 'rej' ? 'on' : ''}" data-act="rv-tab" data-v="rej">غير معتمدة (${rej.length})</button><button class="chip ${RV.tab === 'ok' ? 'on' : ''}" data-act="rv-tab" data-v="ok">معتمدة (آخر 100)</button>${miss.length ? `<button class="chip ${RV.tab === 'miss' ? 'on' : ''}" data-act="rv-tab" data-v="miss">📝 بيانات ناقصة (${miss.length})</button>` : ''}</div>
+    <div class="card sumrow" style="margin-top:12px"><div><small>⏳ لسه ما اعتمدتش</small><b>${q.length}</b></div><div><small>✅ اعتمدتها اليوم</small><b>${okAll.filter(t => inPer('today', t.approvedAt || t.date)).length}</b></div><div><small>✅ اعتمدتها الأسبوع</small><b>${okAll.filter(t => inPer('week', t.approvedAt || t.date)).length}</b></div></div>
+    <div class="chips" style="margin:12px 0"><button class="chip ${RV.tab === 'q' ? 'on' : ''}" data-act="rv-tab" data-v="q">بانتظار الاعتماد (${q.length})</button><button class="chip ${RV.tab === 'rej' ? 'on' : ''}" data-act="rv-tab" data-v="rej">غير معتمدة (${rej.length})</button><button class="chip ${RV.tab === 'ok' ? 'on' : ''}" data-act="rv-tab" data-v="ok">✅ تم اعتمادها (${okAll.length})</button>${miss.length ? `<button class="chip ${RV.tab === 'miss' ? 'on' : ''}" data-act="rv-tab" data-v="miss">📝 بيانات ناقصة (${miss.length})</button>` : ''}</div>
+    ${RV.tab === 'ok' ? `<div class="chips" style="margin:0 0 8px">${PER5.map(([k, l]) => `<button class="chip ${RV.per === k ? 'on' : ''}" data-act="rv-per" data-v="${k}">${l}</button>`).join('')}<small class="muted" style="align-self:center">${okk.length} حركة معتمدة</small></div>` : ''}
     ${ppl.length ? `<div class="rvwho"><button class="chip ${RV.who ? '' : 'on'}" data-act="rv-who" data-v="">الكل <small>${base.length}</small></button>${ppl.map(p => `<button class="chip ${RV.who === p.k ? 'on' : ''}" data-act="rv-who" data-v="${esc(p.k)}">${esc(p.n)} <small>${p.c}</small></button>`).join('')}</div>
       ${RV.who ? `<p class="small muted" style="margin:-4px 2px 8px">${esc(whoN)}: ${list.length} حركة بإجمالي ${money(r2(list.reduce((a, t) => a + Math.abs(+t.amount || 0), 0)))} ج.م</p>` : ''}` : ''}
     ${RV.tab === 'miss' ? '<p class="small muted" style="margin:0 0 8px">حركات مرحّلة من الإكسيل بدون عميل. اضغط «إكمال» واختر العميل ثم احفظ.</p>' : ''}
-    <div class="card">${list.length ? list.slice(0, 300).map(t => `<div class="rvrow">${txRow(t, '')}${RV.tab === 'q' ? owingWarn([t]).map(o => `<div class="note warn" style="margin:4px 12px">${icon('alert', 16)}<div>انتبه: رصيد العميل <b>${esc(clientName(o.id))}</b> مستحق عليه <b>${fmt(-o.b)}</b> ج.م</div></div>`).join('') : ''}<div class="rvb">${btns(t)}</div></div>`).join('') : '<div class="empty">لا توجد حركات هنا.</div>'}</div>`;
+    <div class="card">${list.length ? list.slice(0, 300).map(t => `<div class="rvrow">${txRow(t, '')}${RV.tab === 'q' ? owingWarn([t]).map(o => `<div class="note warn" style="margin:4px 12px">${icon('alert', 16)}<div>انتبه: رصيد العميل <b>${esc(clientName(o.id))}</b> مستحق عليه <b>${fmt(-o.b)}</b> ج.م</div></div>`).join('') : ''}<div class="rvb">${RV.tab === 'ok' && t.approvedBy ? `<span class="small muted">اعتمدها ${esc(bareName((userById(t.approvedBy) || {}).name || ''))}${t.approvedAt ? ' · ' + esc(String(t.approvedAt).slice(0, 10)) : ''}</span> ` : ''}${btns(t)}</div></div>`).join('') : '<div class="empty">لا توجد حركات هنا.</div>'}</div>`;
 }
 const alertOwing = w => modal(`<h3>${icon('alert', 20)} تنبيه: رصيد عميل أصبح مستحقًا</h3><div class="note warn" style="white-space:pre-line">${esc(owingMsg(w))}</div><div class="acts"><button class="btn pri" data-act="mclose">فهمت</button></div>`);
 const queueApprove = arr => queue('saveTx', { txs: arr.map(t => ({ ...t, __approveOnly: 1 })) });
@@ -4080,10 +4119,12 @@ function hrView() {
   const f = { att: hrAtt, leave: hrLeave, adv: hrAdv, eval: hrEval, emp: hrEmp, draw: hrDraw }[HR.tab] || hrAtt;
   return `<p class="small muted" style="margin:0 0 10px">القسم ده بيظهر للصلاحية الكاملة بس.</p>${tabs}<div id="hr-body">${f()}</div>`;
 }
+const hrFri = d => new Date(d + 'T12:00:00').getDay() === 5;
+const hrExpN = (u, d) => listTx().filter(t => t.userId === u && String(t.date).slice(0, 10) === d && t.type !== 'OPENING' && t.type !== 'TRANSFER').length;
 function hrAtt() {
   const d = HR.day, E = hrEmps();
   const rows = E.map(u => { const r = hrGet(`hr_a_${u.id}_${d}`) || {}; return `<div class="card pad hra" data-u="${u.id}" style="margin-top:8px"><div class="row wrap" style="gap:8px;align-items:center">
-      <b class="grow" style="min-width:110px">${esc(bareName(u.name))}</b>
+      <b class="grow" style="min-width:110px">${esc(bareName(u.name))}${(n => hrFri(d) ? ' <span class="badge">جمعة — إجازة</span>' : n ? ` <span class="badge" style="background:#e6f6ec;color:#1f8a4c">🧾 ${n} مصروف — حضور</span>` : ' <span class="badge warn">⚠️ لا مصروفات — غياب؟</span>')(hrExpN(u.id, d))}</b>
       <select class="inp" data-h="st" style="width:auto"><option value="">— لم يُسجَّل —</option>${HR_ST.map(([k, l]) => `<option value="${k}" ${r.st === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <label class="small">حضور <input type="time" class="inp" data-h="in" value="${esc(r.in || '')}" style="width:auto"></label>
       <label class="small">انصراف <input type="time" class="inp" data-h="out" value="${esc(r.out || '')}" style="width:auto"></label>
@@ -4091,7 +4132,7 @@ function hrAtt() {
   // ملخص الشهر
   const m = d.slice(0, 7), A = hrAll('a_').filter(r => String(r.d).startsWith(m));
   const sum = E.map(u => { const L = A.filter(r => r.u === u.id); const c = k => L.filter(r => r.st === k).length; const mins = L.reduce((s, r) => s + hrMins(r.in, r.out), 0); return [u, c('p'), c('l'), c('a'), c('v'), mins]; });
-  return `<div class="row wrap" style="gap:8px;align-items:center"><input type="date" class="inp" id="hr-day" value="${d}" style="width:auto"><button class="chip ${d === today() ? 'on' : ''}" data-act="hr-day" data-v="${today()}">اليوم</button><button class="chip" data-act="hr-day" data-v="${addDays(d, -1)}">اليوم السابق</button><span class="sp"></span><button class="btn sm" data-act="hr-allp">الكل حاضر</button></div>
+  return `<div class="row wrap" style="gap:8px;align-items:center"><input type="date" class="inp" id="hr-day" value="${d}" style="width:auto"><button class="chip ${d === today() ? 'on' : ''}" data-act="hr-day" data-v="${today()}">اليوم</button><button class="chip" data-act="hr-day" data-v="${addDays(d, -1)}">اليوم السابق</button><span class="sp"></span><button class="btn sm" data-act="hr-fromexp">🧾 حضور من المصروفات</button><button class="btn sm" data-act="hr-allp">الكل حاضر</button></div>
     ${rows}
     <div class="row" style="margin-top:10px"><button class="btn pri" data-act="hr-att-save">${icon('check', 17)} حفظ حضور ${esc(dLong(d))}</button></div>
     <h2 class="sec">ملخص ${esc(monthName(m))}</h2>
@@ -4504,6 +4545,7 @@ const ACT = {
       })();
     };
   },
+  'dl-filt': el => { DLF = el.dataset.k; render(); },
   'dl-add': el => dlForm('', el.dataset.id || ''),
   'dl-edit': el => dlForm(el.dataset.id),
   'dl-del': async el => { if (!(await ask('حذف هذا البند من قائمة التسليم؟', 'حذف', true))) return; dlSave(dlList().filter(q => q.id !== el.dataset.id)); toast('تم الحذف'); render(); },
@@ -4733,6 +4775,8 @@ const ACT = {
     const d = m.querySelector('#na-del'); if (d) d.onclick = () => { save({ active: 0 }); toast('تم إيقاف الخزينة'); go('accounts'); };
   },
   'day-review': () => dayReview(),
+  dsum: () => dsumOpen(),
+  'dsum-ok': el => { const r = hrGet(el.dataset.k); if (r) { r.ok = 1; hrPut({ [el.dataset.k]: r }); render(); } },
   'xl-update': async () => {
     if (!isFull() || !xlDone()) return;
     const { txs, missing, dups } = xlPending();
@@ -5121,7 +5165,7 @@ async function boot() {
 /* ====== المهام — تُقرأ مباشرة من شيت «إدارة المكتب» وتُغلق فيه (لا شيت إضافي) ====== */
 let OPS = LS.get('ops2', null) || { tasks: {}, v: -1, q: [] };
 const OPS_ST = { busy: false, again: false, state: '', msg: '', last: 0, full: 0 };
-const TK = { who: 'me', done: false, setup: false, pre: '', cat: '', cdone: false };
+const TK = { by: 'who', per: 'today', who: 'me', done: false, setup: false, pre: '', cat: '', cdone: false };
 const opsCfg = () => {
   const l = (D && D.lists && D.lists.opsCfg) || [];
   if (l[0]) return { url: l[0], key: l[1] || '' };
@@ -5245,6 +5289,38 @@ async function opsSync(force) {
 }
 
 /* ---- عرض المهمة ---- */
+/* إشعار المهام عبر واتساب (عادي / بيزنس) — مهام غير منجزة مجمّعة */
+const WAK = { reg: ['واتساب العادي', 'com.whatsapp'], biz: ['واتساب بيزنس', 'com.whatsapp.w4b'] };
+const waApp = () => { try { return localStorage.getItem('waApp') || 'auto'; } catch (e) { return 'auto'; } };
+function waUrl(phone, text, app) {
+  const n = waNumber(phone || ''), q = encodeURIComponent(text);
+  if (/Android/i.test(navigator.userAgent) && WAK[app]) return `intent://send?${n ? 'phone=' + n + '&' : ''}text=${q}#Intent;scheme=whatsapp;package=${WAK[app][1]};end`;
+  return `https://wa.me/${n}?text=${q}`;
+}
+function tkWaText(name, arr) {
+  const td = today(), g = (title, a) => a.length ? `\n*${title} (${a.length})*\n` + a.map(t => `• ${t.clientName ? t.clientName + ' — ' : ''}${t.text}${t.due ? ' (' + t.due + ')' : ''}`).join('\n') : '';
+  const late = arr.filter(tkLate), now = arr.filter(t => t.due === td), rest = arr.filter(t => !tkLate(t) && t.due !== td);
+  return `مكتب محمود سالم — مهام غير منجزة${name ? ' لـ ' + name : ''}\n${td}${g('⚠️ متأخرة', late)}${g('📌 اليوم', now)}${g('🗓️ باقي المهام', rest)}\n\nمن فضلك أنجز أو حدّث حالة المهام في البرنامج.`;
+}
+function tkWaModal() {
+  const all = tkAll().filter(tkOpen).sort(tkSort), by = {};
+  all.forEach(t => (by[tkWhoName(t)] = by[tkWhoName(t)] || []).push(t));
+  const rows = Object.entries(by).map(([k, arr]) => { const u = tkUserOf(k), ph = u ? (hrGet('hr_p_' + u.id) || {}).ph : ''; return { k, arr, ph: ph || '', late: arr.filter(tkLate).length }; }).sort((a, b) => b.arr.length - a.arr.length);
+  const ap = waApp();
+  const m = modal(`<h3>📲 إشعار المهام على واتساب</h3>
+    <div class="chips" style="margin-bottom:10px">${[['auto', 'اختيار تلقائي'], ['reg', WAK.reg[0]], ['biz', WAK.biz[0]]].map(([k, l]) => `<button class="chip ${ap === k ? 'on' : ''}" data-wk="${k}">${l}</button>`).join('')}</div>
+    <p class="small muted" style="margin:0 0 8px">بيفتح واتساب بالرسالة جاهزة (المهام الغير منجزة مجمّعة: متأخرة / اليوم / باقي)، وانتي بتضغطي إرسال. اختيار «عادي/بيزنس» شغّال على أندرويد.</p>
+    ${rows.length ? rows.map((x, i) => `<div class="card pad" style="margin-top:6px"><div class="row wrap"><b class="grow">${esc(x.k)}</b><span class="badge ${x.late ? 'warn' : ''}">${x.arr.length} مهمة${x.late ? ' · ' + x.late + ' متأخرة' : ''}</span></div>
+      <div class="row wrap" style="margin-top:6px;gap:6px"><button class="btn sm pri" data-wi="${i}">📲 إرسال</button><button class="btn sm" data-wc="${i}">نسخ</button>${x.ph ? `<span class="small muted num">${esc(x.ph)}</span>` : '<span class="small muted">مفيش رقم (HR ← بيانات الموظفين) — هتختاري الشخص من واتساب</span>'}</div></div>`).join('') : '<div class="empty">لا توجد مهام غير منجزة 🎉</div>'}
+    ${rows.length ? `<div class="row wrap" style="margin-top:10px;gap:6px"><button class="btn gold" data-wi="all">📲 ملخص الفريق كله</button><button class="btn" data-wc="all">نسخ الملخص</button></div>` : ''}
+    <div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  const txt = i => i === 'all' ? rows.map(x => tkWaText(x.k, x.arr)).join('\n\n━━━━━━\n\n') : tkWaText(rows[i].k, rows[i].arr);
+  m.addEventListener('click', e => {
+    const wk = e.target.closest('[data-wk]'); if (wk) { try { localStorage.setItem('waApp', wk.dataset.wk); } catch (x) { } m.querySelectorAll('[data-wk]').forEach(b => b.classList.toggle('on', b === wk)); return; }
+    const wi = e.target.closest('[data-wi]'); if (wi) { const i = wi.dataset.wi, u = waUrl(i === 'all' ? '' : rows[i].ph, txt(i), waApp()); if (u.startsWith('intent:')) location.href = u; else window.open(u, '_blank'); return; }
+    const wc = e.target.closest('[data-wc]'); if (wc) { const t = txt(wc.dataset.wc); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('تم النسخ'), () => toast('تعذّر النسخ', 'err')); }
+  });
+}
 function tkRow(t, o = {}) {
   const late = tkLate(t);
   const due = t.due ? `<span class="${late ? 'tk-late' : ''}">${t.due === today() ? 'اليوم' : (late ? 'متأخرة منذ ' : '') + dShort(t.due)}</span>` : '';
@@ -5268,7 +5344,7 @@ function opsSetupCard() {
 }
 function vTasks(r, el) {
   const cfg = opsCfg();
-  const head = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">المهام</h1>${canAddTask() ? `<button class="btn pri" data-act="tk-add">${icon('plus', 17)} إضافة مهمة</button>` : ''}</div>`;
+  const head = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">المهام</h1>${isPriv() ? `<button class="btn" data-act="tk-wa">📲 واتساب</button>` : ''}${canAddTask() ? `<button class="btn pri" data-act="tk-add">${icon('plus', 17)} إضافة مهمة</button>` : ''}</div>`;
   if (TK.setup && isFull()) { el.innerHTML = head + opsSetupCard(); return; }
   if (Date.now() - OPS_ST.last > 8000) opsSync();
   const all = tkAll();
@@ -5284,7 +5360,7 @@ function vTasks(r, el) {
     const users = liveUsers().filter(u => +u.active !== 0);
     const n = f => all.filter(t => tkOpen(t) && f(t)).length;
     const chip = (k, l, c) => `<button class="chip ${who === k ? 'on' : ''}" data-act="tk-who" data-k="${k}">${esc(l)}${c ? ` <small>${c}</small>` : ''}</button>`;
-    chips = `<div class="tk-who">${chip('me', 'مهامي', n(tkMine))}${chip('all', 'الكل', n(() => true))}${users.filter(u => u.id !== ME.id).map(u => chip(u.id, bareName(u.name), n(t => (tkUserOf(t.who) || {}).id === u.id))).join('')}</div>`;
+    chips = `<div class="tk-who">${chip('all', 'الكل', n(() => true))}${users.filter(u => u.id !== ME.id).map(u => chip(u.id, bareName(u.name), n(t => (tkUserOf(t.who) || {}).id === u.id))).join('')}${chip('me', 'مهامي', n(tkMine))}</div>`;
   }
   const catN = {}; all.filter(t => tkOpen(t) && t.cat && inScope0(t)).forEach(t => catN[t.cat] = (catN[t.cat] || 0) + 1);
   if (Object.keys(catN).length) chips += `<div class="tk-who"><button class="chip ${!TK.cat ? 'on' : ''}" data-act="tk-cat" data-k="">كل التصنيفات</button>${Object.entries(catN).map(([k, n]) => `<button class="chip ${TK.cat === k ? 'on' : ''}" data-act="tk-cat" data-k="${esc(k)}">${esc(k)} <small>${n}</small></button>`).join('')}</div>`;
@@ -5293,10 +5369,15 @@ function vTasks(r, el) {
   const closed = all.filter(t => !tkOpen(t) && inScope(t) && String(t.doneAt).slice(0, 10) >= wk).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
   let prod = '';
   if (isPriv() && who === 'all') {
+    const dn = all.filter(t => t.status === 'done' && t.doneAt && inPer(TK.per, t.doneAt)).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt))), byw = {};
+    const gk = t => TK.by === 'cl' ? (t.clientName || 'بدون عميل') : tkWhoName(t);
+    dn.forEach(t => (byw[gk(t)] = byw[gk(t)] || []).push(t));
+    prod += `<div class="tk-g">✅ إنجاز الفريق <small>(${dn.length})</small></div><div class="chips" style="margin-bottom:8px">${[['who', '👥 حسب الفريق'], ['cl', '🏢 حسب العميل']].map(([k, l]) => `<button class="chip ${TK.by === k ? 'on' : ''}" data-act="tk-by" data-v="${k}">${l}</button>`).join('')}</div><div class="chips" style="margin-bottom:8px">${PER5.filter(x => x[0] !== 'all').map(([k, l]) => `<button class="chip ${TK.per === k ? 'on' : ''}" data-act="tk-per" data-v="${k}">${l}</button>`).join('')}</div>
+      <div class="card">${Object.keys(byw).length ? Object.entries(byw).sort((a, b) => b[1].length - a[1].length).map(([k, arr]) => `<div class="lrow" style="flex-direction:column;align-items:stretch"><div class="row"><b class="grow">${esc(k)}</b><span class="badge">${arr.length} ${TK.by === 'cl' ? 'مهمة منجزة' : 'مهمة'}</span></div>${arr.slice(0, 8).map(t => `<div class="small muted">• ${esc(t.text)}${TK.by === 'cl' ? ' — ' + esc(tkWhoName(t)) : t.clientName ? ' — ' + esc(t.clientName) : ''}${t.auto ? ' 💸' : ''}</div>`).join('')}${arr.length > 8 ? `<div class="small muted">و${arr.length - 8} أخرى…</div>` : ''}</div>`).join('') : '<div class="empty">لا توجد مهام منجزة في هذه الفترة.</div>'}</div>`;
     const ms = monthStart(td), by = {};
     all.forEach(t => { const k = tkWhoName(t); (by[k] || (by[k] = [])).push(t); });
     const rows = Object.keys(by).map(k => { const mine = by[k]; return { k, open: mine.filter(tkOpen).length, late: mine.filter(tkLate).length, wk: mine.filter(t => t.status === 'done' && String(t.doneAt).slice(0, 10) >= wk).length, mo: mine.filter(t => t.status === 'done' && String(t.doneAt).slice(0, 10) >= ms).length, nx: mine.filter(t => t.status === 'nx').length }; });
-    if (rows.length) prod = `<div class="tk-g">إنتاجية الفريق</div><div class="card" style="overflow:auto"><table class="tbl sm" style="width:100%"><thead><tr><th>العضو</th><th class="n">مفتوحة</th><th class="n">متأخرة</th><th class="n">أُنجزت (7 أيام)</th><th class="n">أُنجزت (الشهر)</th><th class="n">لم تُنفَّذ</th></tr></thead>
+    if (rows.length) prod += `<div class="tk-g">إنتاجية الفريق</div><div class="card" style="overflow:auto"><table class="tbl sm" style="width:100%"><thead><tr><th>العضو</th><th class="n">مفتوحة</th><th class="n">متأخرة</th><th class="n">أُنجزت (7 أيام)</th><th class="n">أُنجزت (الشهر)</th><th class="n">لم تُنفَّذ</th></tr></thead>
       <tbody>${rows.map(x => `<tr><td><b>${esc(x.k)}</b></td><td class="n">${x.open}</td><td class="n ${x.late ? 'neg' : ''}">${x.late}</td><td class="n">${x.wk}</td><td class="n">${x.mo}</td><td class="n">${x.nx}</td></tr>`).join('')}</tbody></table></div>`;
   }
   el.innerHTML = head + chips
@@ -5359,7 +5440,7 @@ function tkForm(clientId) {
   let pick = clientId || '', cat = '';
   const users = liveUsers().filter(u => +u.active !== 0);
   const m = modal(`<h3>${icon('plus', 20)} إضافة مهمة</h3>
-    ${fld('العميل <span class="muted small">(اختياري)</span>', `<div id="tf-cl">${pick ? `<div class="row"><b class="grow">${esc(clientName(pick))}</b><button class="btn sm ghost" id="tf-chg">تغيير</button></div>` : `<div class="search">${icon('search', 18)}<input id="tf-q" class="inp" placeholder="ابحث عن العميل"></div><div id="tf-l" class="card" style="margin-top:8px;max-height:180px;overflow:auto"></div>`}</div><div id="tf-p" class="small" style="margin-top:6px"></div>`)}
+    ${fld('العميل', `<div id="tf-cl">${pick ? `<div class="row"><b class="grow">${esc(clientName(pick))}</b><button class="btn sm ghost" id="tf-chg">تغيير</button></div>` : `<div class="search">${icon('search', 18)}<input id="tf-q" class="inp" placeholder="ابحث عن العميل"></div><div id="tf-l" class="card" style="margin-top:8px;max-height:180px;overflow:auto"></div>`}</div><div id="tf-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
     ${fld('المهمة (التصنيف)', `<div class="chips" id="tf-cats">${list('taskCats').map(c => `<button class="chip" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>`, { req: 1 })}
     ${fld('المكلَّف بها', `<select id="tf-w" class="inp">${users.map(u => `<option value="${esc(u.name)}" ${u.id === ME.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`, { req: 1 })}
     ${fld('التاريخ', `<input id="tf-d" type="date" class="inp" value="${today()}">`, { req: 1 })}
@@ -5374,6 +5455,7 @@ function tkForm(clientId) {
     if (e.target.closest('#tf-chg')) { pick = ''; $('#tf-cl').innerHTML = `<div class="search">${icon('search', 18)}<input id="tf-q" class="inp" placeholder="ابحث عن العميل"></div><div id="tf-l" class="card" style="margin-top:8px;max-height:180px;overflow:auto"></div>`; $('#tf-p').innerHTML = ''; paint(); }
   });
   m.querySelector('#tf-ok').onclick = () => {
+    if (!pick) return toast('اختر العميل أولًا — العميل أساسي في المهمة', 'err');
     if (!cat) return toast('اختر المهمة (التصنيف)', 'err');
     const due = $('#tf-d').value; if (!due) return toast('حدّد التاريخ', 'err');
     const w = $('#tf-w').value; if (!w) return toast('اختر المكلَّف', 'err');
@@ -5453,6 +5535,10 @@ Object.assign(ACT, {
   },
   'tk-reopen': el => { const t = tkGet(el.dataset.id); if (!t) return; opsSet(t.id, { done: false, nx: false, why: '', doneAt: '', doneBy: '', tx: '' }, false); toast('أُعيد فتح المهمة'); opsRefresh(); },
   'tk-more': el => openTaskMore(el.dataset.id),
+  'rv-per': el => { RV.per = el.dataset.v; render(); },
+  'tk-by': el => { TK.by = el.dataset.v; render(); },
+  'tk-wa': () => tkWaModal(),
+  'tk-per': el => { TK.per = el.dataset.v; render(); },
   'tk-who': el => { TK.who = el.dataset.k; if (route().name === 'tasks') render(); },
   'tk-toggle-done': () => { TK.done = !TK.done; const y = window.scrollY; render(); window.scrollTo(0, y); },
   'tk-pick': el => {
@@ -5482,6 +5568,7 @@ Object.assign(ACT, {
   'hr-day': el => { HR.day = el.dataset.v; hrRefresh(); },
   'hr-per': el => { HR.per = el.dataset.k; hrRefresh(); },
   'hr-allp': () => $$('.hra [data-h="st"]').forEach(s => { if (!s.value) s.value = 'p'; }),
+  'hr-fromexp': () => { if (hrFri(HR.day)) return toast('الجمعة إجازة'); $$('.hra').forEach(c => { const s = c.querySelector('[data-h="st"]'); if (!s.value && hrExpN(c.dataset.u, HR.day)) s.value = 'p'; }); toast('اتعلّم حاضر لمن سجّل مصروفات. غير كده سيبه لتقرري'); },
   'hr-att-save': () => {
     const d = HR.day, map = {}; let n = 0;
     $$('.hra').forEach(c => { const g = k => c.querySelector(`[data-h="${k}"]`).value.trim(); const o = { u: c.dataset.u, d, st: g('st'), in: g('in'), out: g('out'), n: g('n') }; const k = `hr_a_${o.u}_${d}`;
