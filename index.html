@@ -753,6 +753,7 @@ html{overflow-x:hidden}
   .pd-org b{display:block;font-size:17px;color:#0f2747}.pd-org span{display:block;font-size:11px;color:#444}
   .pd-title{text-align:center}.pd-title b{display:block;font-size:17px;color:#0f2747;border:1.5px solid #0f2747;border-radius:6px;padding:3px 14px}
   .pd-title span{display:block;font-size:10.5px;color:#444;margin-top:3px}
+  .crm-part{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line,#d5d9e2)}.crm-pt{font-weight:700;font-size:13px;color:var(--navy,#0f2747);margin-bottom:6px}
   .pd-info{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:11.5px}
   .pd-info th,.pd-info td{border:1px solid #9aa3b2;padding:4px 8px;text-align:right}
   .pd-info th{background:#eef1f6;color:#0f2747;width:16%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1651,7 +1652,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261119-021500';
+const BUILD = '20261119-033000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -5986,7 +5987,9 @@ function crmPersonForm(id) {
     if (!normPhone(phone) && !String(id).startsWith('A-')) return toast('رقم التليفون أساسي — هو المفتاح اللي بيربط العميل', 'err');
     const dup = crmPByPhone(phone); if (dup && dup.id !== id) { closeModal(); toast('الرقم ده متسجل لعميل تاني — فتحتهولك'); return go('crm/p/' + dup.id); }
     const pid = id || uid('CP');
-    crmPut('p', pid, { name, phone, wa: m.querySelector('#cp-wa').value.trim(), poa: m.querySelector('#cp-poa').checked ? '1' : '', poaCap: m.querySelector('#cp-poac').checked ? '1' : '', note: m.querySelector('#cp-no').value.trim(), deleted: '' });
+    const pset = { name, phone, wa: m.querySelector('#cp-wa').value.trim(), poa: m.querySelector('#cp-poa').checked ? '1' : '', poaCap: m.querySelector('#cp-poac').checked ? '1' : '', note: m.querySelector('#cp-no').value.trim(), deleted: '' };
+    const pch = id ? crmDiff(CRM.p[id] || {}, pset) : [];
+    crmPut('p', pid, pset); crmLogAdd(pid, id ? (pch.length ? 'تعديل بيانات العميل: ' + pch.join('، ') : 'حفظ بدون تغيير') : 'إضافة العميل');
     crmNameToAcc(CRM.p[pid]);
     closeModal(); toast('تم الحفظ'); if (!id || ph0 !== phone) go('crm/p/' + pid); else render();
   };
@@ -6037,7 +6040,9 @@ async function crmCoForm(pid, id) {
     if (!v('cc-tx') && !v('cc-cr')) return toast('الأساسي: رقم التسجيل الضريبي ورقم السجل التجاري', 'err');
     const tx = v('cc-tx'), dupTx = tx && crmCos().find(x => x.tax === tx && x.id !== id); if (dupTx) return toast(`الرقم الضريبي متسجل لشركة «${dupTx.name}»`, 'err');
     const cid = id || uid('CC');
+    const cBefore = id ? { ...(CRM.c[id] || {}) } : {};
     crmPut('c', cid, { pid, name: v('cc-n'), kind: v('cc-k'), gov: v('cc-g'), district: v('cc-d'), addr: v('cc-a'), start: v('cc-st'), founded: v('cc-fd'), cr: v('cc-cr'), crExp: v('cc-ce'), tax: tx, ins: v('cc-in'), constr: v('cc-co'), exportCard: v('cc-ex'), sealExp: v('cc-se'), portal, einv: c('cc-ei'), inc: v('cc-ic'), vat: c('cc-v'), wages: c('cc-w'), simpl: c('cc-s'), status: v('cc-sx'), owner: v('cc-o'), note: v('cc-no'), deleted: '' });
+    { const cA = CRM.c[cid] || {}, cch = id ? crmDiff(cBefore, cA) : []; crmLogAdd(pid, id ? (cch.length ? `تعديل شركة «${cA.name}»: ` + cch.join('، ') : `حفظ شركة «${cA.name}» بدون تغيير`) : `إضافة شركة «${cA.name}»`); }
     if (sec && m.querySelector('#cs-pu')) {
       const set = { pUser: v('cs-pu'), pPass: v('cs-pp'), eEmail: v('cs-ee'), ePass: v('cs-ep'), tokNo: v('cs-tn'), tokSer: v('cs-ts') };
       if (Object.keys(set).some(k => (set[k] || '') !== (S[k] || ''))) { try { await crmPost({ action: 'saveSecret', uid: ME.id, code: ME.code, id: cid, set }); CRM_ST.sec[cid] = { id: cid, ...set }; } catch (e) { toast('بيانات الدخول ما اتحفظتش: ' + e.message, 'err'); } }
@@ -6068,14 +6073,17 @@ function crmCoCard(c, ex) {
   return `<div class="card pad" style="margin-top:10px">
     <div class="row wrap" style="gap:6px;align-items:center"><b class="grow" style="font-size:17px">🏢 ${esc(c.name)}</b>${c.kind ? `<span class="badge">${esc(c.kind)}</span>` : ''}${c.status ? `<span class="badge ${c.status === 'صفري' ? '' : 'warn'}">${esc(c.status)}</span>` : ''}</div>
     <div class="small muted" style="margin:2px 0 8px">${[c.gov, c.district, c.addr].filter(Boolean).map(esc).join(' — ')}${ow ? ` · 👤 ${esc(bareName(ow.name))}` : ''}</div>
+    <div class="crm-part"><div class="crm-pt">📑 التسجيل والتراخيص</div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
       ${row('الرقم الضريبي', c.tax)}${row('السجل التجاري', c.cr)}${cr ? `<div><small class="muted">انتهاء مستخرج السجل</small><div class="num ${cr < today() ? 'neg' : cr <= addDays(today(), 30) ? 'warn' : ''}">${esc(cr)}</div></div>` : ''}
       ${row('الرقم التأميني', c.ins)}${row('اتحاد التشييد', c.constr)}${row('البطاقة التصديرية', c.exportCard)}${row('تاريخ التأسيس', c.founded)}${row('بدء النشاط', c.start)}
-      ${c.sealExp ? `<div><small class="muted">انتهاء الختم</small><div class="num ${c.sealExp < today() ? 'neg' : ''}">${esc(c.sealExp)}</div></div>` : ''}${row('نوع إقرار الدخل', c.inc)}</div>
-    <div class="chips" style="margin-top:8px">${ob.map(x => `<span class="chip on" style="cursor:default">${esc(x)}</span>`).join('')}</div>
+      ${c.sealExp ? `<div><small class="muted">انتهاء الختم</small><div class="num ${c.sealExp < today() ? 'neg' : ''}">${esc(c.sealExp)}</div></div>` : ''}${row('نوع إقرار الدخل', c.inc)}</div></div>
+    <div class="crm-part"><div class="crm-pt">🧮 الالتزامات الضريبية</div>
+    <div class="chips">${ob.map(x => `<span class="chip on" style="cursor:default">${esc(x)}</span>`).join('')}</div></div>
     ${F.length ? `<div class="small" style="margin-top:6px">🏛️ إقرارات: <b>${open.length}</b> مفتوحة${late.length ? ` · <b class="neg">${late.length} متأخرة</b>` : ''} · ${F.length - open.length} خلصت</div>` : ''}
     ${c.note ? `<div class="small" style="margin-top:4px">📝 ${esc(c.note)}</div>` : ''}
     <div class="row wrap no-print" style="gap:6px;margin-top:10px">
+      <button class="btn sm" data-act="crm-rep-co" data-id="${c.id}">🖨️ تقرير PDF</button>
       ${link ? `<a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener">🌐 ${c.portal === 'old' ? 'المنظومة القديمة' : 'المنظومة الجديدة'}</a>` : c.portal ? `<span class="small muted">${c.portal === 'old' ? 'المنظومة القديمة' : 'المنظومة الجديدة'} (الرابط من إعدادات القاعدة)</span>` : ''}
       ${yes(c.einv) && cfg.einv ? `<a class="btn sm" href="${esc(cfg.einv)}" target="_blank" rel="noopener">🧾 بوابة الفواتير</a>` : ''}
       ${canSec() ? `<button class="btn sm" data-act="crm-sec" data-id="${c.id}">🔒 بيانات الدخول</button>` : ''}
@@ -6099,9 +6107,10 @@ function vCrm(r, el) {
         <div class="small" style="margin-top:6px">📞 <span class="num">${esc(p.phone || '')}</span>${p.wa && p.wa !== p.phone ? ` · واتساب <span class="num">${esc(p.wa)}</span>` : ''}${wa ? ` · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">💬 واتساب</a>` : ''}</div>
         ${p.note ? `<div class="small" style="margin-top:4px">📝 ${esc(p.note)}</div>` : ''}
         <div class="small" style="margin-top:6px">${acc.length ? `🔗 كشف الحساب: ${acc.map(a => `<a href="#client/${a.id}">${esc(a.name)}</a>`).join('، ')}` : '<span class="muted">مفيش عميل في الحسابات بنفس الرقم.</span>'}</div>
-        <div class="row wrap no-print" style="gap:6px;margin-top:10px"><button class="btn sm pri" data-act="crm-co-add" data-id="${p.id}">${icon('plus', 15)} شركة</button><button class="btn sm" data-act="crm-p-edit" data-id="${p.id}">${icon('edit', 15)} تعديل</button><button class="btn sm danger" data-act="crm-p-del" data-id="${p.id}">${icon('trash', 15)} حذف</button></div></div>
+        <div class="row wrap no-print" style="gap:6px;margin-top:10px"><button class="btn sm pri" data-act="crm-co-add" data-id="${p.id}">${icon('plus', 15)} شركة</button><button class="btn sm" data-act="crm-rep" data-id="${p.id}">🖨️ تقرير العميل PDF</button><button class="btn sm" data-act="crm-p-edit" data-id="${p.id}">${icon('edit', 15)} تعديل</button><button class="btn sm danger" data-act="crm-p-del" data-id="${p.id}">${icon('trash', 15)} حذف</button></div></div>
       ${cos.length ? cos.map(c => crmCoCard(c, ex)).join('') : '<div class="card pad empty" style="margin-top:10px">لسه مفيش شركات. اضغطي «➕ شركة».</div>'}
-      ${canTab('formation') && fpByPhone(p.phone).length ? `<h2 class="sec" style="margin-top:16px">🏗️ مشاريع التأسيس</h2>${fpByPhone(p.phone).map(fpCard).join('')}` : ''}`;
+      ${canTab('formation') && fpByPhone(p.phone).length ? `<h2 class="sec" style="margin-top:16px">🏗️ مشاريع التأسيس</h2>${fpByPhone(p.phone).map(fpCard).join('')}` : ''}
+      ${crmLogHtml(p.id)}`;
     if (canTab('formation') && Date.now() - FP.at > 300000) fpSync();
     return;
   }
@@ -6176,10 +6185,10 @@ Object.assign(ACT, {
   'crm-f': el => { CV.f = el.dataset.v; render(); },
   'crm-p-add': () => crmPersonForm(''),
   'crm-p-edit': async el => { if (await crmGate()) crmPersonForm(el.dataset.id); },
-  'crm-p-del': async el => { if (!(await crmGate())) return; const p = CRM.p[el.dataset.id]; if (!p || !(await ask(`حذف العميل «${esc(p.name)}» وكل شركاته من قاعدة البيانات؟`, 'حذف', true))) return; crmCos(p.id).forEach(c => crmPut('c', c.id, { deleted: '1' })); crmPut('p', p.id, { deleted: '1' }); go('crm'); },
+  'crm-p-del': async el => { if (!(await crmGate())) return; const p = CRM.p[el.dataset.id]; if (!p || !(await ask(`حذف العميل «${esc(p.name)}» وكل شركاته من قاعدة البيانات؟`, 'حذف', true))) return; crmCos(p.id).forEach(c => crmPut('c', c.id, { deleted: '1' })); crmPut('p', p.id, { deleted: '1' }); crmLogAdd(p.id, 'حذف العميل وشركاته'); go('crm'); },
   'crm-co-add': el => crmCoForm(el.dataset.id, ''),
   'crm-co-edit': async el => { if (!(await crmGate())) return; const c = CRM.c[el.dataset.id]; if (c) crmCoForm(c.pid, c.id); },
-  'crm-co-del': async el => { if (!(await crmGate())) return; const c = CRM.c[el.dataset.id]; if (!c || !(await ask(`حذف الشركة «${esc(c.name)}»؟`, 'حذف', true))) return; crmPut('c', c.id, { deleted: '1' }); render(); },
+  'crm-co-del': async el => { if (!(await crmGate())) return; const c = CRM.c[el.dataset.id]; if (!c || !(await ask(`حذف الشركة «${esc(c.name)}»؟`, 'حذف', true))) return; crmPut('c', c.id, { deleted: '1' }); crmLogAdd(c.pid, `حذف شركة «${c.name}»`); render(); },
   'crm-sec': async el => {
     const box = $('#sec-' + el.dataset.id); if (!box) return; if (box.innerHTML) { box.innerHTML = ''; return; }
     box.innerHTML = '<div class="small muted" style="margin-top:8px">بيجيب البيانات…</div>';
@@ -6298,7 +6307,7 @@ function crmMergePersons(kid, did) {
   if (d.note && d.note !== k.note) set.note = [k.note, d.note].filter(Boolean).join(' | ');
   crmCos(did).forEach(c => { if (String(c.id).startsWith('AC-') && !c.tax && nkey(c.name) === nkey(d.name)) crmPut('c', c.id, { deleted: '1' }); else crmPut('c', c.id, { pid: kid }); });
   if (Object.keys(set).length) crmPut('p', kid, set);
-  crmPut('p', did, { deleted: '1' });
+  crmPut('p', did, { deleted: '1' }); crmLogAdd(kid, `دمج العميل «${d.name}» فيه`);
 }
 function crmAfterAccMerge(keepId, dropId) {
   if (typeof CRM === 'undefined' || !crmCfg()) return;
@@ -6318,7 +6327,7 @@ function crmNameToAcc(p) {
   const isA = String(p.id).startsWith('A-'), L = crmAccOf(p), c = isA ? D.clients[resCid(p.id.slice(2))] : (L.length === 1 ? L[0] : null);
   if (!c || +c.active === 0 || c.name === p.name) return;
   const old = c.name; c.aliases = String(c.aliases || '').split('|').concat([old]).filter((x, i, a) => x && x !== p.name && a.indexOf(x) === i).join('|');
-  c.name = p.name; c.updatedAt = nowIso(); queue('saveClient', { client: c }); changed();
+  c.name = p.name; c.updatedAt = nowIso(); queue('saveClient', { client: c }); changed(); crmLogAdd(p.id, `توحيد الاسم في اليومية: «${old}» ← «${p.name}»`);
   const co = CRM.c['AC-' + c.id]; if (co && co.name === old) crmPut('c', co.id, { name: p.name });
 }
 const dvInfo = (k, id) => {
@@ -6427,6 +6436,63 @@ Object.assign(ACT, {
   'fp-undo': el => { const mp = fpDoneMap(); delete mp[el.dataset.id]; fpDoneSave(mp); toast('رجع لقايمة المشاريع المعتمدة'); render(); }
 });
 
+
+/* ====== تقرير العميل PDF ====== */
+function crmRepOpen(pid, onlyCo) {
+  const p = CRM.p[pid]; if (!p) return;
+  const cos = onlyCo ? [CRM.c[onlyCo]].filter(Boolean) : crmCos(pid);
+  const opt = { cos: true, tax: true, fp: false, sec: false };
+  const cb = (k, l, h) => `<label class="ipc" style="display:flex;gap:8px;margin:6px 0"><input type="checkbox" data-ro="${k}" ${opt[k] ? 'checked' : ''}><span>${l}${h ? `<br><small class="muted">${h}</small>` : ''}</span></label>`;
+  const m = modal(`<h3>🖨️ تقرير ${onlyCo ? 'الشركة' : 'العميل'} — ${esc(onlyCo && cos[0] ? cos[0].name : p.name)}</h3>
+    <p class="small muted" style="margin:0 0 6px">اختاري إيه اللي يطلع في الورقة:</p>
+    ${cb('cos', 'بيانات الشركات والتسجيل والتراخيص')}${cb('tax', 'الالتزامات الضريبية والمواعيد القادمة')}${canTab('formation') && !onlyCo ? cb('fp', 'مشاريع التأسيس والمدفوعات') : ''}
+    ${canSec() ? cb('sec', '🔒 بيانات الدخول (يوزر وباسورد المنظومة والفواتير)', 'لو العميل هيستلم الورقة اتأكدي إنه صاحب البيانات.') : ''}
+    <div class="acts"><button class="btn pri" id="ro-ok">🖨️ طباعة / حفظ PDF</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  m.addEventListener('change', e => { const c = e.target.closest('[data-ro]'); if (c) opt[c.dataset.ro] = c.checked; });
+  m.querySelector('#ro-ok').onclick = async () => { closeModal(); await crmRepPrint(p, cos, opt, onlyCo); };
+}
+async function crmRepPrint(p, cos, opt, onlyCo) {
+  const sec = (t, h) => `<div style="margin:12px 0 4px;padding:4px 10px;background:#0f2747;color:#fff;font-weight:700;font-size:12.5px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-after:avoid">${t}</div>${h}`;
+  const kv = arr => { arr = arr.filter(([, v]) => v != null && String(v).trim() !== ''); if (!arr.length) return '<div class="small" style="padding:4px 8px;color:#666">لا توجد بيانات مسجلة</div>'; let h = '<table class="pd-info">'; for (let i = 0; i < arr.length; i += 2) { const a = arr[i], b = arr[i + 1]; h += `<tr><th>${esc(a[0])}</th><td>${esc(a[1])}</td>${b ? `<th>${esc(b[0])}</th><td>${esc(b[1])}</td>` : '<th></th><td></td>'}</tr>`; } return h + '</table>'; };
+  const ex = crmExtracts(), td = today(); let body = '';
+  for (const c of cos) {
+    const ow = crmOwner(c), cr = crExpOf(c, ex), ob = [yes(c.vat) && (yes(c.simpl) ? 'قيمة مضافة ربع سنوي' : 'قيمة مضافة شهري'), yes(c.wages) && (yes(c.simpl) ? 'أجور سنوي + سداد شهري' : 'أجور ربع سنوي'), 'إقرار دخل' + (c.inc ? ' (' + c.inc + ')' : ''), yes(c.simpl) && 'مسجلة تسهيلات', yes(c.einv) && 'فواتير إلكترونية'].filter(Boolean);
+    body += `<div style="break-inside:avoid-page"><div style="font-size:15px;font-weight:800;color:#0f2747;margin:14px 0 2px;border-bottom:2px solid #c9a24a;padding-bottom:3px">🏢 ${esc(c.name)}</div>`;
+    if (opt.cos) body += sec('بيانات الشركة', kv([['النوع', c.kind], ['الحالة', c.status], ['المحافظة', c.gov], ['الحي', c.district], ['العنوان', c.addr], ['المسؤول', ow ? bareName(ow.name) : '']])) + sec('التسجيل والتراخيص', kv([['الرقم الضريبي', c.tax], ['السجل التجاري', c.cr], ['انتهاء مستخرج السجل', cr || ''], ['الرقم التأميني', c.ins], ['اتحاد التشييد', c.constr], ['البطاقة التصديرية', c.exportCard], ['تاريخ التأسيس', c.founded], ['بدء النشاط', c.start], ['انتهاء الختم', c.sealExp], ['المنظومة', c.portal === 'old' ? 'القديمة' : c.portal === 'new' ? 'الجديدة (SAP)' : '']]));
+    if (opt.tax) {
+      const F = crmFilings().filter(f => f.c.id === c.id && f.st === 'open').slice(0, 12);
+      body += sec('الالتزامات الضريبية', `<div style="padding:2px 8px;font-size:11.5px">${ob.map(esc).join(' · ')}</div>${F.length ? `<table class="pd-info" style="margin-top:4px"><tr><th>الإقرار</th><th>الفترة</th><th>الموعد</th><th>الحالة</th></tr>${F.map(f => `<tr><td>${esc(TXK[f.kind].replace(/^\S+\s/, ''))}</td><td>${esc(perLabel(f.period))}</td><td>${esc(f.due)}</td><td>${f.due < td ? 'متأخر' : 'قادم'}</td></tr>`).join('')}</table>` : ''}`);
+    }
+    if (opt.sec) {
+      let S = {}; try { S = await crmSecrets(c.id); } catch (e) { toast(e.message, 'err'); }
+      body += sec('🔒 بيانات الدخول', kv([['يوزر المنظومة', S.pUser], ['باسورد المنظومة', S.pPass], ['إيميل الفواتير', S.eEmail], ['باسورد الفواتير', S.ePass], ['رقم التوكن', S.tokNo], ['سيريال التوكن', S.tokSer]]));
+    }
+    if (c.note) body += `<div style="padding:4px 8px;font-size:11.5px">📝 ${esc(c.note)}</div>`;
+    body += '</div>';
+  }
+  if (opt.fp && !onlyCo) { const L = fpByPhone(p.phone).filter(x => x.app); if (L.length) body += sec('مشاريع التأسيس', `<table class="pd-info"><tr><th>المشروع</th><th>الإجمالي</th><th>المدفوع</th><th>الباقي</th></tr>${L.map(x => `<tr><td>${esc(x.name)}</td><td>${fmt(x.app.total)}</td><td>${fmt(x.app.paid)}</td><td>${fmt(x.app.total - x.app.paid)}</td></tr>`).join('')}</table>`); }
+  if (!body) body = '<div class="small" style="padding:10px">لم يتم اختيار أي بيانات للطباعة.</div>';
+  const info = [['العميل', esc(p.name)], ['التليفون', esc(p.phone || '—') + (p.wa && p.wa !== p.phone ? ' · واتساب ' + esc(p.wa) : '')]];
+  if (yes(p.poa) || yes(p.poaCap)) info.push(['التوكيلات', [yes(p.poa) && 'توكيل عادي', yes(p.poaCap) && 'توكيل بالصفة'].filter(Boolean).join(' · ')]);
+  if (p.note) info.push(['ملاحظات', esc(p.note)]);
+  printDoc({ title: 'تقرير بيانات العميل', info, body, file: 'تقرير ' + (onlyCo && cos[0] ? cos[0].name : p.name) + '_' + today() });
+}
+Object.assign(ACT, { 'crm-rep': el => crmRepOpen(el.dataset.id), 'crm-rep-co': el => { const c = CRM.c[el.dataset.id]; if (c) crmRepOpen(c.pid, c.id); } });
+
+
+/* ====== سجل تعديلات العميل (آخر صفحة العميل) ====== */
+const CRM_LBL = { name: 'الاسم', phone: 'التليفون', wa: 'الواتساب', poa: 'توكيل عادي', poaCap: 'توكيل بالصفة', note: 'ملاحظات', kind: 'النوع', gov: 'المحافظة', district: 'الحي', addr: 'العنوان', start: 'بدء النشاط', founded: 'التأسيس', cr: 'السجل التجاري', crExp: 'انتهاء المستخرج', tax: 'الرقم الضريبي', ins: 'الرقم التأميني', constr: 'اتحاد التشييد', exportCard: 'البطاقة التصديرية', sealExp: 'انتهاء الختم', portal: 'المنظومة', einv: 'فواتير إلكترونية', inc: 'إقرار الدخل', vat: 'قيمة مضافة', wages: 'أجور', simpl: 'تسهيلات', status: 'الحالة', owner: 'المسؤول' };
+const crmLogList = () => ((D.lists && D.lists.crmLog) || []).map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(Boolean);
+function crmLogAdd(pid, text) {
+  if (!pid || !text) return; D.lists = D.lists || {};
+  const a = (D.lists.crmLog || []).concat([JSON.stringify({ t: nowIso(), u: ME ? ME.id : '', p: pid, x: text })]).slice(-500);
+  D.lists.crmLog = a; queue('saveLists', { lists: { crmLog: a } }); changed();
+}
+const crmDiff = (before, after) => Object.keys(after).filter(k => CRM_LBL[k] && String(before[k] || '') !== String(after[k] || '')).map(k => CRM_LBL[k]);
+const crmLogHtml = pid => {
+  const cs = new Set(Object.values(CRM.c).filter(c => c.pid === pid).map(c => c.id)), L = crmLogList().filter(x => x.p === pid).reverse().slice(0, 60);
+  return `<h2 class="sec" style="margin-top:18px">🕘 سجل تعديلات العميل</h2><div class="card">${L.length ? L.map(x => `<div class="lrow" style="cursor:default;gap:8px;flex-wrap:wrap"><span class="small muted num" style="white-space:nowrap">${esc(new Date(x.t).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'short', timeStyle: 'short' }))}</span><b class="small">${esc(bareName((userById(x.u) || {}).name || x.u || '—'))}</b><span class="small grow">${esc(x.x)}</span></div>`).join('') : '<div class="empty">لسه مفيش تعديلات متسجلة على العميل ده.</div>'}</div>`;
+};
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
