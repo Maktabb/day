@@ -1647,7 +1647,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-191500';
+const BUILD = '20261118-203000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1984,12 +1984,10 @@ function navItems() {
   return [
     ['home', 'الرئيسية', 'home'],
     ...(canTab('tasks') ? [['tasks', 'المهام', 'check']] : []),
-    ...(priv ? [['review', 'مراجعة الاعتماد', 'check']] : []),
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
     ...(canTab('collect') ? [['collect', 'التحصيل', 'wallet']] : []),
     ...(canTab('deliver') ? [['deliver', 'التسليم', 'archive']] : []),
-    ['journal', priv ? 'اليومية' : 'حركاتي', 'list'],
-    ['accounts', priv ? 'الخزينة والعهد' : 'عهدتي', 'wallet'],
+    ...(priv ? [] : [['journal', 'حركاتي', 'list'], ['accounts', 'عهدتي', 'wallet']]),
     ['settings', 'الإعدادات', 'sliders']
   ];
 }
@@ -2010,13 +2008,13 @@ function renderShell() {
 }
 function paintNav() {
   const r = route().name;
-  const on = h => (r === h || (h === 'clients' && r === 'client') || (h === 'accounts' && r === 'account')) ? 'on' : '';
+  const on = h => (r === h || (h === 'clients' && r === 'client') || (h === 'accounts' && r === 'account') || (h === 'settings' && isPriv() && ['journal', 'accounts', 'account', 'review', 'reports', 'analytics', 'dups'].includes(r))) ? 'on' : '';
   $('#side').innerHTML = `<a class="cta" href="#entry">${icon('plus', 18, 2.2)} حركة جديدة</a>` +
     navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${appic(h, 28, h === 'accounts' && !isPriv() ? '👛' : '')} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}${h === 'tasks' && tkMyOpen().length ? ` <span class="cnt">${tkMyOpen().length}</span>` : ''}</a>`).join('') +
     `<hr><a href="#" data-act="logout">${appic('logout', 28)} تسجيل الخروج</a>`;
   $('#bnav').innerHTML = `
     <a href="#home" class="${on('home')}"><i class="ne">${EMO.home}</i>الرئيسية</a>
-    <a href="#journal" class="${on('journal')}"><i class="ne">${EMO.journal}</i>${isPriv() ? 'اليومية' : 'حركاتي'}</a>
+    ${isPriv() ? `<a href="#tasks" class="${on('tasks')}"><i class="ne">${EMO.tasks || '✅'}</i>المهام</a>` : `<a href="#journal" class="${on('journal')}"><i class="ne">${EMO.journal}</i>حركاتي</a>`}
     <a href="#entry" class="plus ${on('entry')}"><span>${icon('plus', 24, 2.4)}</span>حركة</a>
     ${isPriv() ? `<a href="#clients" class="${on('clients')}"><i class="ne">${EMO.clients}</i>العملاء</a>` : `<a href="#account/${myAcc()}" class="${on('accounts')}"><i class="ne">👛</i>عهدتي</a>`}
     <a href="#more" class="${['more', 'accounts', 'account', 'reports', 'analytics', 'settings', 'dups', 'review', 'tasks'].includes(r) ? 'on' : ''}"><i class="ne">${EMO.more}</i>المزيد</a>`;
@@ -2058,7 +2056,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn === vHome) { if (isFull()) dsumHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
+  try { fn(r, vw); if (fn === vHome) { setTimeout(notePop, 350); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2292,9 +2290,9 @@ function entryPicker() {
   const o = (k, md, n) => (allowed.includes(k) && !(k === 'TRANSFER' && md === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))) ? `<option value="entry/${k}${md ? '?mode=' + md : ''}">${n}</option>` : '';
   const IN = o('TRANSFER', 'in', 'وارد من خزنة المكتب') + o('IN_OWNER', '', 'وارد من الأستاذ محمود') + o('IN_CLIENT', '', 'وارد من عميل');
   const OUT = o('GOV_FEE', '', 'رسوم بإيصال') + o('OP_EXP', '', 'مصروف مباشر') + o('OFFICE_EXP', '', 'مصروف عمومي') + o('TRANSFER', 'out', 'تحويل عهدة لزميل');
-  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}' data-claim='${esc(o('FEE', '', 'مطالبة أتعاب') + o('TAXC', '', 'مطالبة ضرائب'))}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (claimOk() ? 1 : 0) + (isPriv() ? 1 : 0) + (canAddTask() ? 1 : 0); return n >= 5 ? 'p5' : n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
+  return `<div class="epick" data-in='${esc(IN)}' data-out='${esc(OUT)}' data-claim='${esc(o('FEE', '', 'مطالبة أتعاب') + o('TAXC', '', 'مطالبة ضرائب'))}'><div class="pm ${(() => { const n = (IN ? 1 : 0) + 1 + (claimOk() ? 1 : 0) + (isPriv() ? 1 : 0) + (canAddTask() ? 1 : 0) + (isFull() ? 1 : 0); return n >= 5 ? 'p5' : n === 4 ? 'p4' : n === 3 ? 'p3' : ''; })()}">
       ${IN ? `<button class="pmb in" data-act="pick-open" data-g="in"><span>📥</span>وارد</button>` : ''}
-      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${claimOk() ? `<button class="pmb fee" data-act="pick-open" data-g="claim"><span>💼</span>مطالبة</button>` : ''}${canAddTask() ? `<button class="pmb task" data-act="tk-add"><span>📋</span>مهمة</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}</div>
+      <button class="pmb out" data-act="pick-open" data-g="out"><span>📤</span>صرف</button>${claimOk() ? `<button class="pmb fee" data-act="pick-open" data-g="claim"><span>💼</span>مطالبة</button>` : ''}${canAddTask() ? `<button class="pmb task" data-act="tk-add"><span>📋</span>مهمة</button>` : ''}${isPriv() ? `<button class="pmb rev" data-act="go" data-h="review"><span>✅</span>مراجعة${queueTxs().length ? `<i class="pmn">${queueTxs().length}</i>` : ''}</button>` : ''}${isFull() ? `<button class="pmb" data-act="nt-manage" style="background:linear-gradient(135deg,#8b6bd6,#5f43ae);color:#fff;border:0"><span>📣</span>ملاحظات</button>` : ''}</div>
     <div class="eplist"></div></div>`;
 }
 function mainPair() {
@@ -3259,10 +3257,13 @@ function vDeliver(r, el) {
       return `<div class="card pad" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:10px">
         <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
           <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
+          ${dlWho(x) ? `<div class="small" style="margin-top:4px">👤 القائم بالمهمة: <b>${esc(bareName(dlWho(x).name))}</b></div>` : ''}${x.cn || x.cp ? `<div class="small" style="margin-top:2px">☎️ جهة التواصل: ${esc(x.cn || '')} <span class="num">${esc(x.cp || '')}</span></div>` : ''}
           ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
         <span class="badge">${DLK[dlKind(x)][3]} ${DLK[dlKind(x)][0]}</span><span class="badge ${p ? 'warn' : ''}">${p ? p + ' ' + DLK[dlKind(x)][2] : (dlKind(x) === 'in' ? 'تم الاستلام كله ✓' : 'تم التسليم كله ✓')}</span></div>
         <div style="margin-top:8px">${x.docs.map((d, i) => `<label class="row" style="gap:8px;align-items:center;cursor:pointer;padding:5px 0"><input type="checkbox" data-act="dl-doc" data-id="${x.id}" data-i="${i}" ${d.x ? 'checked' : ''} style="width:20px;height:20px"><span style="${d.x ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(d.t)}</span>${d.x ? `<small class="muted num">${esc(d.x)}</small>` : ''}</label>`).join('')}</div>
         <div class="row wrap no-print" style="margin-top:8px;gap:6px">
+          <button class="btn sm" data-act="dl-wc" data-id="${x.id}">📲 رسالة للعميل</button>
+          <button class="btn sm" data-act="dl-wm" data-id="${x.id}">📲 للقائم بالمهمة</button>
           <button class="btn sm" data-act="dl-edit" data-id="${x.id}">${icon('edit', 16)} تعديل</button>
           <button class="btn sm" data-act="dl-del" data-id="${x.id}">${icon('trash', 16)} حذف</button></div></div>`; }).join('')
     : `<div class="card pad empty" style="margin-top:12px">لا توجد سجلات. اضغطي «إضافة تسليم / استلام»، واختاري العميل ونوع العملية (تسليم له أو استلام منه) واكتبي المستندات (كل مستند في سطر).</div>`}`;
@@ -3292,6 +3293,43 @@ function dsumOpen(d) {
     hrPut({ [k(ME.id)]: { u: ME.id, d, w, n, i: n && m.querySelector('#ds-i').checked ? 1 : 0, at: nowIso() } }); toast('تم حفظ ملخص اليوم'); ACT.mclose && ACT.mclose();
   };
 }
+/* كشف النشاط: إنجازات تلقائية + إنجازات يضيفها الموظف (لازم على عميل) */
+const acManual = (u, d) => Object.entries(D.lists || {}).filter(([k]) => k.startsWith('ac_')).map(([k, v]) => { try { const r = JSON.parse(v[0]); return r && !r.del && r.u === u && r.d === d ? { ...r, _k: k } : null; } catch (e) { return null; } }).filter(Boolean).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+function acItems(u, d) {
+  const o = [];
+  tkAll().filter(t => t.status === 'done' && String(t.doneAt).slice(0, 10) === d && (tkUserOf(t.who) || {}).id === u).forEach(t => o.push({ t: t.text, c: t.clientName || '', a: 'task' }));
+  dlList().filter(x => x.who === u).forEach(x => x.docs.filter(q => q.x === d).forEach(q => o.push({ t: (dlKind(x) === 'in' ? 'تم استلام: ' : 'تم تسليم: ') + q.t, c: clientName(x.c), a: 'dl' })));
+  acManual(u, d).forEach(r => o.push({ t: r.t, c: clientName(r.c), a: 'man', k: r._k }));
+  return o;
+}
+const acLine = (x, own) => `<div class="lrow" style="align-items:flex-start"><span>✅</span><div class="grow">تم إنجاز: ${esc(x.t)}${x.c ? ` <b>— ${esc(x.c)}</b>` : ''}</div>${own && x.a === 'man' ? `<button class="btn sm" data-act="ac-del" data-k="${esc(x.k)}">🗑</button>` : ''}</div>`;
+function acHomeCard(view) {
+  const d = today(), mine = acItems(ME.id, d);
+  const team = isPriv() ? liveUsers().filter(u => u.id !== ME.id && +u.active !== 0).map(u => ({ u, L: acItems(u.id, d) })).filter(x => x.L.length) : [];
+  const c = document.createElement('div'); c.className = 'card';
+  c.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>📋 كشف نشاطي اليوم</b><span class="sp"></span><span class="small muted">${mine.length} إنجاز</span></div>
+    ${mine.length ? mine.map(x => acLine(x, 1)).join('') : '<div class="small muted" style="padding:6px 14px">لسه مفيش إنجازات اتسجلت النهارده.</div>'}
+    <div style="padding:8px 14px 12px"><button class="btn sm pri" data-act="ac-add">➕ إضافة إنجاز</button></div>
+    ${team.length ? team.map(x => `<details style="padding:0 14px 8px"><summary class="small"><b>${esc(bareName(x.u.name))}</b> — ${x.L.length} إنجاز</summary>${x.L.map(i => acLine(i, 0)).join('')}</details>`).join('') : ''}`;
+  (view.querySelector('.hops') || view).appendChild(c);
+}
+function acForm() {
+  let pick = '';
+  const m = modal(`<h3>➕ إضافة إنجاز</h3>
+    ${fld('العميل', `<div class="search">${icon('search', 18)}<input id="ac-q" class="inp" placeholder="ابحث عن العميل"></div><div id="ac-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="ac-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
+    ${fld('تم إنجاز', `<textarea id="ac-t" class="inp" rows="3" placeholder="مثال: تقديم الإقرار الضريبي"></textarea>`, { req: 1 })}
+    <div class="acts"><button class="btn pri" id="ac-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const paint = () => { const l = $('#ac-l'); if (l) l.innerHTML = clientSearch($('#ac-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
+  paint();
+  m.addEventListener('input', e => { if (e.target.id === 'ac-q') paint(); });
+  m.addEventListener('click', e => { const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#ac-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
+  m.querySelector('#ac-ok').onclick = () => {
+    const t = $('#ac-t').value.trim();
+    if (!pick) return toast('اختاري العميل أولًا — الإنجاز لازم يبقى على عميل', 'err');
+    if (!t) return toast('اكتبي الإنجاز', 'err');
+    const id = uid('AC'); hrPut({ ['ac_' + id]: { id, u: ME.id, d: today(), c: pick, t, at: nowIso() } }); toast('تمت الإضافة'); closeModal(); render();
+  };
+}
 function dsumHomeCard(view) {
   const imp = Object.entries(D.lists || {}).filter(([k]) => k.startsWith('dy_')).map(([k, v]) => { try { const r = JSON.parse(v[0]); return r && !r.del && r.i && r.n && !r.ok ? { ...r, _k: k } : null; } catch (e) { return null; } }).filter(Boolean).sort((a, b) => String(b.d).localeCompare(String(a.d)));
   if (!imp.length) return;
@@ -3299,6 +3337,23 @@ function dsumHomeCard(view) {
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>⭐ ملاحظات مهمة من الفريق</b><span class="sp"></span><span class="small muted">${imp.length}</span></div>
     ${imp.slice(0, 6).map(r => `<div class="lrow" style="align-items:flex-start"><div class="grow"><b>${esc(hrName(r.u))}</b> <span class="small muted">${esc(r.d)}</span><div style="white-space:pre-wrap">${esc(r.n)}</div></div><button class="btn sm" data-act="dsum-ok" data-k="${esc(r._k)}">تمت ✓</button></div>`).join('')}`;
   (view.querySelector('.hops') || view).prepend(d);
+}
+const dlWho = x => x.who ? userById(x.who) : null;
+const dlWhoPh = u => u ? ((hrGet('hr_p_' + u.id) || {}).ph || '') : '';
+const dlCont = x => { const c = D.clients[x.c] || {}; return { n: x.cn || c.name || '', p: x.cp || c.phone || '' }; };
+const dlDocs = x => { const a = x.docs.filter(d => !d.x); return (a.length ? a : x.docs).map(d => '• ' + d.t).join('\n'); };
+function dlMsg(x, to) {
+  const u = dlWho(x), ct = dlCont(x), c = D.clients[x.c] || {}, me = u ? bareName(u.name) : 'مندوب المكتب', mp = dlWhoPh(u), docs = dlDocs(x), out = dlKind(x) === 'out';
+  const tail = `${x.d ? '\nالموعد: ' + x.d : ''}${x.n ? '\nملاحظة: ' + x.n : ''}`;
+  if (to === 'client') return `السادة / ${ct.n || c.name}\nتحية طيبة من مكتب محمود سالم للمحاسبة والمراجعة\n\nسيقوم الأستاذ *${me}*${mp ? ' (رقم التواصل: ' + mp + ')' : ''} بالتواصل مع حضرتكم ${out ? 'لتسليمكم' : 'لاستلام'} المستندات التالية${out ? '' : ' منكم'}:\n${docs}${tail}\n\nشكرًا لتعاونكم.`;
+  const who = `*${c.name}*${ct.n && ct.n !== c.name ? ' — ' + (/^(أ|الأستاذ|السيد|م|د)[\/.]/.test(ct.n) ? '' : 'الأستاذ/ ') + ct.n : ''}`;
+  return `أ/ ${me}\n${out ? `برجاء التواصل مع ${who}${ct.p ? ' (رقم التواصل: ' + ct.p + ')' : ''} لتسليم المستندات التالية:` : `سيقوم ${who} بتسليمك أو إرسال المستندات التالية إليك${ct.p ? '، ورقم التواصل والتنسيق: ' + ct.p : ''}:`}\n${docs}${tail}`;
+}
+function dlSend(id, to) {
+  const x = dlList().find(q => q.id === id); if (!x) return;
+  if (to === 'me' && !dlWho(x)) return toast('حدّدي «القائم بالمهمة» من تعديل السجل أولًا', 'err');
+  const ph = to === 'client' ? dlCont(x).p : dlWhoPh(dlWho(x)), u = waUrl(ph, dlMsg(x, to), waApp());
+  if (u.startsWith('intent:')) location.href = u; else window.open(u, '_blank');
 }
 function dlWaText(c, recs) {
   const g = (title, k) => { const a = recs.filter(x => dlKind(x) === k).flatMap(x => x.docs.filter(d => !d.x).map(d => d.t)); return a.length ? `\n*${title}*\n` + a.map(t => '• ' + t).join('\n') : ''; };
@@ -3326,6 +3381,8 @@ function dlForm(id, clientId) {
     ${pick ? `<p><b>${esc(clientName(pick))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="dl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="dl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="dl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
     ${fld('المستندات (كل مستند في سطر)', `<textarea id="dl-t" class="inp" rows="5" placeholder="السجل التجاري&#10;البطاقة الضريبية&#10;عقد التأسيس">${esc((cur.docs || []).map(d => d.t).join('\\n'))}</textarea>`, { req: 1 })}
     ${fld('الموعد (اختياري)', `<input id="dl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
+    ${fld('القائم بالمهمة (من الفريق)', `<select id="dl-w" class="inp"><option value="">— بدون —</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}" ${cur.who === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+    ${fld('جهة التواصل (فاضية = بيانات العميل)', `<div class="row" style="gap:6px"><input id="dl-cn" class="inp grow" placeholder="الاسم" value="${esc(cur.cn || '')}"><input id="dl-cp" class="inp grow ltr" inputmode="tel" placeholder="الموبايل" value="${esc(cur.cp || '')}"></div>`)}
     ${fld('ملاحظة (اختياري)', `<input id="dl-n" class="inp" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="dl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
   let kind = cur.k === 'in' ? 'in' : 'out';
@@ -3338,7 +3395,7 @@ function dlForm(id, clientId) {
     const names = $('#dl-t').value.split('\n').map(x => x.trim()).filter(Boolean);
     if (!names.length) return toast('اكتبي مستند واحد على الأقل', 'err');
     const old = Object.fromEntries((cur.docs || []).map(d => [d.t, d.x]));
-    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
+    const rec = { id: cur.id || uid('D-'), k: kind, c: pick, docs: names.map(t => ({ t, x: old[t] || '' })), d: $('#dl-d').value, n: $('#dl-n').value.trim(), who: $('#dl-w').value, cn: $('#dl-cn').value.trim(), cp: $('#dl-cp').value.trim(), by: cur.by || ME.id, at: cur.at || today() };
     dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
   };
 }
@@ -4315,7 +4372,7 @@ function vSettings(r, el) {
   if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|كود التعديل|النسخ الاحتياطي|سجل التعديلات)<\/h2>/, ''); if (r.arg === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
     <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
-    ${[...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="go" data-h="${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
+    ${[...(isPriv() ? [['journal', 'اليومية', 'كل الحركات والبحث والتصدير'], ['accounts', 'الخزينة والعهد', 'الأرصدة وحركات العهد'], ['review', 'مراجعة الاعتماد', 'المعتمد وبانتظار الاعتماد']] : []), ...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="go" data-h="${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
     <div style="text-align:center;margin-top:18px">${canInstallUI() ? `<button class="btn pri sm" data-act="pwa-install" style="margin-inline-end:8px">${icon('download', 15)} تثبيت التطبيق على هذا الجهاز</button>` : ''}<button class="btn sm" data-act="app-update">${icon('sync', 15)} تحديث البرنامج لآخر نسخة</button>
     <p class="small muted" style="margin-top:8px">إصدار التطبيق ${APP_VER} · ${BUILD}</p></div>`;
 }
@@ -4565,6 +4622,8 @@ const ACT = {
     };
   },
   'dl-wa': () => dlWaModal(),
+  'dl-wc': el => dlSend(el.dataset.id, 'client'),
+  'dl-wm': el => dlSend(el.dataset.id, 'me'),
   'dl-filt': el => { DLF = el.dataset.k; render(); },
   'dl-add': el => dlForm('', el.dataset.id || ''),
   'dl-edit': el => dlForm(el.dataset.id),
@@ -4796,6 +4855,9 @@ const ACT = {
   },
   'day-review': () => dayReview(),
   dsum: () => dsumOpen(),
+  'nt-manage': () => ntManage(),
+  'ac-add': () => acForm(),
+  'ac-del': el => { const r = hrGet(el.dataset.k); if (r && r.u === ME.id) { r.del = 1; hrPut({ [el.dataset.k]: r }); render(); } },
   'dsum-ok': el => { const r = hrGet(el.dataset.k); if (r) { r.ok = 1; hrPut({ [el.dataset.k]: r }); render(); } },
   'xl-update': async () => {
     if (!isFull() || !xlDone()) return;
@@ -5484,6 +5546,37 @@ function tkForm(clientId) {
   };
 }
 /* رسالة أول اليوم: مهامك المفتوحة */
+/* ملاحظات للفريق: رسالة افتتاحية تظهر مرة واحدة لحد ما يضغط «تمام» */
+const ntAll = () => Object.entries(D.lists || {}).filter(([k]) => k.startsWith('nt_')).map(([k, v]) => { try { const r = JSON.parse(v[0]); return r && !r.del ? { ...r, _k: k } : null; } catch (e) { return null; } }).filter(Boolean).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+const ntRead = (id, u) => hrGet(`nr_${id}_${u}`);
+const ntFor = (n, u) => n.to === 'all' || (Array.isArray(n.to) && n.to.includes(u));
+function notePop() {
+  if (!ME || modalOpen()) return;
+  const L = ntAll().filter(n => n.by !== ME.id && ntFor(n, ME.id) && !ntRead(n.id, ME.id));
+  if (!L.length) return;
+  const m = modal(`<h3>📣 ملاحظات من الإدارة</h3>
+    ${L.map(n => `<div class="card pad" style="margin-top:8px"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="small muted" style="margin-top:6px">${esc(bareName((userById(n.by) || {}).name || ''))} · ${esc(String(n.at).slice(0, 10))}</div></div>`).join('')}
+    <div class="acts"><button class="btn pri" id="nt-ok">تمام ✓ قريتها</button></div>`);
+  m.querySelector('#nt-ok').onclick = () => { const map = {}; L.forEach(n => map[`nr_${n.id}_${ME.id}`] = { n: n.id, u: ME.id, at: nowIso() }); hrPut(map); closeModal(); if (canTab('tasks')) setTimeout(tkMorningPop, 300); };
+}
+function ntManage() {
+  const us = liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id), L = ntAll().reverse();
+  const m = modal(`<h3>📣 ملاحظات للفريق</h3>
+    ${fld('الملاحظة (تظهر لكل واحد مرة واحدة عند فتح البرنامج)', `<textarea id="nt-t" class="inp" rows="3"></textarea>`)}
+    <div class="chips" style="margin:6px 0" id="nt-to"><button class="chip on" data-n="all">الكل</button>${us.map(u => `<button class="chip" data-n="${u.id}">${esc(bareName(u.name))}</button>`).join('')}</div>
+    <div class="acts"><button class="btn pri" id="nt-add">إرسال الملاحظة</button><button class="btn" data-act="mclose">إغلاق</button></div>
+    <h4 style="margin:14px 0 6px">الملاحظات السابقة</h4>
+    ${L.length ? L.slice(0, 15).map(n => { const tg = n.to === 'all' ? us : us.filter(u => n.to.includes(u.id)), rd = tg.filter(u => ntRead(n.id, u.id)); return `<div class="card pad" style="margin-top:6px"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="small muted" style="margin-top:6px">${esc(String(n.at).slice(0, 10))} · ${n.to === 'all' ? 'الكل' : tg.map(u => bareName(u.name)).join('، ')}</div><div class="small" style="margin-top:4px">✓ قرأها ${rd.length}/${tg.length}${rd.length < tg.length ? ' — لسه: ' + esc(tg.filter(u => !ntRead(n.id, u.id)).map(u => bareName(u.name)).join('، ')) : ''}</div><button class="btn sm" data-nd="${n._k}" style="margin-top:6px">حذف</button></div>`; }).join('') : '<div class="small muted">لا توجد.</div>'}`);
+  m.addEventListener('click', e => {
+    const c = e.target.closest('#nt-to .chip'); if (c) { const all = m.querySelector('[data-n=all]'); if (c.dataset.n === 'all') { m.querySelectorAll('#nt-to .chip').forEach(x => x.classList.toggle('on', x === c)); } else { c.classList.toggle('on'); all.classList.remove('on'); if (!m.querySelector('#nt-to .chip.on')) all.classList.add('on'); } return; }
+    const d = e.target.closest('[data-nd]'); if (d) { const r = hrGet(d.dataset.nd); if (r) { r.del = 1; hrPut({ [d.dataset.nd]: r }); ntManage(); } }
+  });
+  m.querySelector('#nt-add').onclick = () => {
+    const text = m.querySelector('#nt-t').value.trim(); if (!text) return toast('اكتبي الملاحظة', 'err');
+    const sel = [...m.querySelectorAll('#nt-to .chip.on')].map(x => x.dataset.n), id = uid('NT');
+    hrPut({ ['nt_' + id]: { id, by: ME.id, at: nowIso(), text, to: sel.includes('all') ? 'all' : sel } }); toast('تم الإرسال — هتظهر لهم عند فتح البرنامج'); ntManage();
+  };
+}
 function tkMorningPop() {
   if (!ME || !canTab('tasks') || modalOpen()) return;
   const key = 'tkpop:' + ME.id; if (LS.get(key, '') === today()) return;
