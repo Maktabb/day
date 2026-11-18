@@ -1651,7 +1651,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261118-233000';
+const BUILD = '20261119-001500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -5775,7 +5775,27 @@ const yes = v => v === '1' || v === 1 || v === true || v === 'true';
 const crmP = () => Object.values(CRM.p).filter(x => !yes(x.deleted)).sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
 const crmCos = pid => Object.values(CRM.c).filter(x => !yes(x.deleted) && (!pid || x.pid === pid)).sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
 const crmPByPhone = ph => { const n = normPhone(ph || ''); return n ? crmP().find(p => normPhone(p.phone) === n || normPhone(p.wa) === n) : null; };
-const crmAccOf = p => { const n = normPhone((p || {}).phone || ''); return n ? activeClients().filter(c => normPhone(c.phone) === n) : []; };
+const crmAccOf = p => { if (!p) return []; const n = normPhone(p.phone || ''), own = String(p.id).startsWith('A-') ? D.clients[resCid(p.id.slice(2))] : null; const L = n ? activeClients().filter(c => normPhone(c.phone) === n) : []; if (own && !own.deleted && !L.includes(own)) L.unshift(own); return L; };
+const crmAccMissing = () => { const seen = new Set(); return activeClients().filter(c => { const n = normPhone(c.phone); if (CRM.p['A-' + c.id] || (n && crmPByPhone(c.phone)) || (n && seen.has(n))) return false; if (n) seen.add(n); return true; }); };
+function crmImportPick() {
+  const all = crmAccMissing().sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar')); if (!all.length) return toast('كل عملاء اليومية موجودين في قاعدة البيانات');
+  const sel = new Set(); let q = '', onlyPh = false;
+  const m = modal(`<h3>📥 اختاري العملاء اللي ينزلوا قاعدة البيانات</h3>
+    <div class="search">${icon('search', 18)}<input id="ci-q" class="inp" style="width:100%" placeholder="بحث بالاسم أو الرقم"></div>
+    <div class="row wrap" style="gap:6px;margin:8px 0"><button class="btn sm" id="ci-all">تحديد المعروض</button><button class="btn sm" id="ci-none">إلغاء التحديد</button><label class="ipc small"><input type="checkbox" id="ci-ph"> اللي ليهم رقم بس</label><span class="grow"></span><b id="ci-n" class="small"></b></div>
+    <div id="ci-l" class="card" style="max-height:52vh;overflow:auto"></div>
+    <div class="acts"><button class="btn pri" id="ci-ok">إضافة المختار</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const vis = () => { const n = nkey(q); return all.filter(c => (!onlyPh || normPhone(c.phone)) && (!n || nkey(c.name).includes(n) || (normPhone(q) && normPhone(c.phone).includes(normPhone(q))))); };
+  const paint = () => { const V = vis(); m.querySelector('#ci-l').innerHTML = V.slice(0, 400).map(c => `<label class="lrow" style="cursor:pointer"><input type="checkbox" data-ci="${c.id}" ${sel.has(c.id) ? 'checked' : ''}><b class="grow">${esc(c.name)}</b><span class="small muted num">${esc(c.phone || 'بدون رقم')}</span></label>`).join('') || '<div class="empty">لا نتائج</div>'; m.querySelector('#ci-n').textContent = `المختار ${sel.size} من ${all.length}`; };
+  paint();
+  m.querySelector('#ci-q').oninput = e => { q = e.target.value; paint(); };
+  m.querySelector('#ci-ph').onchange = e => { onlyPh = e.target.checked; paint(); };
+  m.querySelector('#ci-all').onclick = () => { vis().forEach(c => sel.add(c.id)); paint(); };
+  m.querySelector('#ci-none').onclick = () => { sel.clear(); paint(); };
+  m.addEventListener('change', e => { const b = e.target.closest('[data-ci]'); if (!b) return; b.checked ? sel.add(b.dataset.ci) : sel.delete(b.dataset.ci); m.querySelector('#ci-n').textContent = `المختار ${sel.size} من ${all.length}`; });
+  m.querySelector('#ci-ok').onclick = () => { if (!sel.size) return toast('اختاري عميل واحد على الأقل', 'err'); crmImportAcc(all.filter(c => sel.has(c.id))); closeModal(); };
+}
+function crmImportAcc(L) { if (!L || !L.length) return; L.forEach(c => { const pid = 'A-' + c.id; crmPut('p', pid, { name: c.name, phone: c.phone || '', wa: '', poa: '', poaCap: '', note: '', deleted: '' }); crmPut('c', 'AC-' + c.id, { pid, name: c.name, deleted: '' }); }); toast(`اتضاف ${L.length} عميل — بيترفعوا للشيت على دفعات`); render(); }
 const crmOwner = c => c && c.owner ? userById(c.owner) : null;
 const canSec = () => isFull() || canTab('sec');
 
@@ -5785,12 +5805,12 @@ async function crmSync(force) {
   if (CRM_ST.busy) return; CRM_ST.busy = true; CRM_ST.last = Date.now();
   let dirty = false;
   try {
-    if (CRM.q.length) {
-      const batch = CRM.q.slice(0, 60), body = { key: c.key, action: 'save', by: bareName(ME.name), p: [], c: [], f: [] };
+    while (CRM.q.length) {
+      const batch = CRM.q.slice(0, 120), body = { key: c.key, action: 'save', by: bareName(ME.name), p: [], c: [], f: [] };
       batch.forEach(o => { const arr = body[o.k], ex = arr.find(x => x.id === o.id); if (ex) Object.assign(ex.set, o.set); else arr.push({ id: o.id, set: { ...o.set } }); });
       const j = await (await fetchT(c.url, { method: 'POST', redirect: 'follow', body: JSON.stringify(body) }, 60000)).json();
       if (!j.ok) throw new Error(j.error === 'BAD_KEY' ? 'رمز ربط قاعدة البيانات غير صحيح' : (j.error || 'خطأ'));
-      CRM.q.splice(0, batch.length); crmSave();
+      CRM.q.splice(0, batch.length); crmSave(); dirty = true;
     }
     const u = new URL(c.url); u.searchParams.set('key', c.key); u.searchParams.set('action', 'all'); if (!force && CRM.rev) u.searchParams.set('rev', CRM.rev);
     const j = await (await fetchT(u.toString(), { method: 'GET', redirect: 'follow', cache: 'no-store' }, 45000)).json();
@@ -5809,7 +5829,7 @@ async function crmSync(force) {
 }
 function crmPut(k, id, set) {
   const t = CRM[k]; t[id] = { ...(t[id] || { id }), ...set, updatedAt: nowIso() };
-  CRM.q.push({ k, id, set }); crmSave(); VER++; setTimeout(() => crmSync(), 200);
+  CRM.q.push({ k, id, set }); crmSave(); VER++; clearTimeout(CRM_ST.pt); CRM_ST.pt = setTimeout(() => crmSync(), 400);
 }
 async function crmPost(body) {
   const c = crmCfg(); if (!c) throw new Error('قاعدة البيانات غير مربوطة');
@@ -5868,7 +5888,7 @@ let _crmF = null, _crmFk = '';
 function crmFilings() {
   const k = VER + '|' + CRM.rev + '|' + today() + '|' + CRM.q.length; if (_crmF && _crmFk === k) return _crmF;
   const cfg = crmCfg() || {}, from = cfg.start || '2026-11-01', td = today(), out = [];
-  crmCos().forEach(c => crmOblig(c, from, td).forEach(x => {
+  crmCos().filter(c => String(c.tax || '').trim()).forEach(c => crmOblig(c, from, td).forEach(x => {
     const id = `${c.tax || c.id}|${x.kind}|${x.period}`, f = CRM.f[id] || {}, ow = f.who ? userById(f.who) : crmOwner(c);
     out.push({ ...x, id, c, st: f.st === 'done' ? 'done' : 'open', who: ow ? ow.id : '', whoN: ow ? bareName(ow.name) : '', doneAt: f.doneAt || '', doneBy: f.doneBy || '', note: f.note || '' });
   }));
@@ -5941,7 +5961,7 @@ function crmPersonForm(id) {
   m.querySelector('#cp-ok').onclick = () => {
     const name = m.querySelector('#cp-n').value.trim(), phone = m.querySelector('#cp-ph').value.trim();
     if (!name) return toast('اكتبي اسم العميل', 'err');
-    if (!normPhone(phone)) return toast('رقم التليفون أساسي — هو المفتاح اللي بيربط العميل', 'err');
+    if (!normPhone(phone) && !String(id).startsWith('A-')) return toast('رقم التليفون أساسي — هو المفتاح اللي بيربط العميل', 'err');
     const dup = crmPByPhone(phone); if (dup && dup.id !== id) { closeModal(); toast('الرقم ده متسجل لعميل تاني — فتحتهولك'); return go('crm/p/' + dup.id); }
     const pid = id || uid('CP');
     crmPut('p', pid, { name, phone, wa: m.querySelector('#cp-wa').value.trim(), poa: m.querySelector('#cp-poa').checked ? '1' : '', poaCap: m.querySelector('#cp-poac').checked ? '1' : '', note: m.querySelector('#cp-no').value.trim(), deleted: '' });
@@ -6068,8 +6088,9 @@ function vCrm(r, el) {
   };
   const L = all.filter(p => (!qn || nkey(p.name).includes(qn) || normPhone(p.phone).includes(normPhone(CV.q)) || crmCos(p.id).some(c => nkey(c.name).includes(qn) || String(c.tax).includes(CV.q))) && (F[CV.f] || F[''])(p));
   const byPh = {}; activeClients().forEach(c => { const n = normPhone(c.phone); if (n) (byPh[n] = byPh[n] || []).push(c); });
-  const dups = isFull() ? Object.values(byPh).filter(a => a.length > 1) : [];
+  const dups = isFull() ? Object.values(byPh).filter(a => a.length > 1) : [], miss = isFull() ? crmAccMissing().length : 0;
   el.innerHTML = head + err + `
+    ${miss ? `<div class="note info" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">فيه <b>${miss}</b> عميل في اليومية لسه مش في قاعدة البيانات.</div><button class="btn sm pri" data-act="crm-imp">📥 اختيار واستيراد</button></div>` : ''}${CRM.q.length ? `<div class="small muted" style="margin-bottom:8px">⏳ ${CRM.q.length} تعديل بيترفع للشيت…</div>` : ''}
     <div class="card sumrow"><div><small>العملاء</small><b>${all.length}</b></div><div><small>الشركات</small><b>${crmCos().length}</b></div><div><small>عليها قيمة مضافة</small><b>${crmCos().filter(c => yes(c.vat)).length}</b></div></div>
     <div class="search" style="margin:10px 0">${icon('search', 18)}<input class="inp" style="width:100%" data-crm="q" value="${esc(CV.q)}" placeholder="بحث: اسم العميل، الشركة، التليفون، الرقم الضريبي"></div>
     <div class="chips scroll" style="margin-bottom:10px">${[['', 'الكل'], ['vat', 'قيمة مضافة'], ['simpl', 'تسهيلات'], ['einv', 'فواتير إلكترونية'], ['exp', 'مستخرج قرب ينتهي'], ['nolink', 'مش مربوط بالحسابات']].map(([k, l]) => `<button class="chip ${CV.f === k ? 'on' : ''}" data-act="crm-f" data-v="${k}">${l}</button>`).join('')}</div>
@@ -6110,7 +6131,7 @@ function vTaxes(r, el) {
     ${CV.tab !== 'ren' ? `<div class="chips scroll" style="margin-bottom:10px"><button class="chip ${!CV.kind ? 'on' : ''}" data-act="cv-kind" data-v="">كل الأنواع</button>${Object.entries(TXK).map(([k, l]) => `<button class="chip ${CV.kind === k ? 'on' : ''}" data-act="cv-kind" data-v="${k}">${l}</button>`).join('')}</div>
     ${isPriv() && users.length ? `<div class="chips scroll" style="margin-bottom:10px"><button class="chip ${!CV.who ? 'on' : ''}" data-act="cv-who" data-v="">كل الفريق</button>${users.map(u => `<button class="chip ${CV.who === u.id ? 'on' : ''}" data-act="cv-who" data-v="${u.id}">${esc(bareName(u.name))}</button>`).join('')}</div>` : ''}` : ''}
     ${body}
-    <p class="small muted" style="margin-top:14px">الإقرارات بتنزل لوحدها من التزامات كل شركة في قاعدة البيانات. الدخل: آخر مارس للأفراد والتضامن والتوصية، وآخر أبريل للشركات. القيمة المضافة الشهري: آخر الشهر اللي بعده. التسهيلات: قيمة مضافة ربع سنوي، وأجور سنوي (آخر يناير) ونموذج سداد شهري (15 الشهر اللي بعده). الأجور العادي: ربع سنوي.</p>`;
+    <p class="small muted" style="margin-top:14px">الإقرارات بتنزل لوحدها من التزامات كل شركة في قاعدة البيانات ليها رقم تسجيل ضريبي. الدخل: آخر مارس للأفراد والتضامن والتوصية، وآخر أبريل للشركات. القيمة المضافة الشهري: آخر الشهر اللي بعده. التسهيلات: قيمة مضافة ربع سنوي، وأجور سنوي (آخر يناير) ونموذج سداد شهري (15 الشهر اللي بعده). الأجور العادي: ربع سنوي.</p>`;
 }
 function crmTfMore(fid) {
   const f = crmFilings().find(x => x.id === fid); if (!f) return;
@@ -6128,6 +6149,7 @@ Object.assign(ACT, {
     CRM.rev = ''; crmSave(); toast('اتحفظ — بجرّب الاتصال…'); crmSync(true).then(() => { toast(CRM_ST.state === 'ok' ? 'تم الربط ✓' : 'الاتصال فشل: ' + CRM_ST.msg, CRM_ST.state === 'ok' ? 'ok' : 'err'); if (CRM_ST.state === 'ok') { crmPushPerms(true); go('crm'); } });
   },
   'crm-perms': () => crmPushPerms(true),
+  'crm-imp': () => crmImportPick(),
   'crm-f': el => { CV.f = el.dataset.v; render(); },
   'crm-p-add': () => crmPersonForm(''),
   'crm-p-edit': async el => { if (await crmGate()) crmPersonForm(el.dataset.id); },
