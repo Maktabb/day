@@ -1239,7 +1239,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1651,7 +1651,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261119-013000';
+const BUILD = '20261119-015000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -4369,12 +4369,18 @@ function vSettings(r, el) {
     <p class="small muted" style="margin:12px 0 0">هذه الاختيارات تُحفظ على هذا الجهاز فقط.</p></div>`);
   if (isFull()) push('hr', hrView());
   if (isSup()) Object.keys(secs).forEach(k => { if (!['lists', 'acct'].includes(k)) delete secs[k]; });
-  const CATS = [['acct', 'حسابي', 'user', 'الاسم ورمز الدخول'], ['look', 'المظهر', 'sliders', 'الوضع الداكن والخلفية المتحركة'], ['conn', 'الاتصال بالشيت', 'sync', 'رابط الشيت والمزامنة'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
-    ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['rem', 'التذكير اليومي', 'alert', 'إشعار إدخال يومية اليوم الساعة 3 و4'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['xl', 'ترحيل حركات الإكسيل', 'upload', 'تحويل يومية الإكسيل إلى حركات في البرنامج'], ['bk', 'النسخ الاحتياطي', 'download', 'تنزيل واسترجاع وتصدير'], ['log', 'سجل التعديلات', 'list', 'مين عدّل أو حذف إيه وإمتى'], ['hr', 'الموارد البشرية HR', 'users', 'الحضور والإجازات والسلف والتقييم والمسحوبات']].filter(c => secs[c[0]]);
-  if (r.arg && secs[r.arg]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === r.arg)[1]}</h1>` + secs[r.arg].replace(/<h2 class="sec">(الاتصال بالشيت \(Google Sheets\)|حسابي|المظهر|القوائم|كود الحذف|كود التعديل|النسخ الاحتياطي|سجل التعديلات)<\/h2>/, ''); if (r.arg === 'log') setTimeout(logLoad, 0); return; }
+  const GEN = ['acct', 'look', 'conn', 'rem', 'xl', 'bk', 'log'];
+  if (isFull()) secs.ntl = `<h2 class="sec">سجل الإشعارات</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">الإشعارات المرسلة للفريق ومين شافها.</p><button class="btn" data-act="nt-log">${icon('list', 17)} فتح سجل الإشعارات</button></div>`;
+  if (secs.xl) secs.xl = '<h2 class="sec">ترحيل حركات الإكسيل</h2>' + secs.xl;
+  const genOrder = [...GEN, 'ntl'].filter(k => secs[k]);
+  if (genOrder.length) secs.gen = genOrder.map(k => secs[k]).join('');
+  const GENSET = new Set([...GEN, 'ntl']), argK = GENSET.has(r.arg) ? 'gen' : r.arg;
+  const CATS = [['gen', 'إعدادات التطبيق', 'sliders', 'حسابي · المظهر · الاتصال بالشيت · التذكير · ترحيل الإكسيل · النسخ الاحتياطي · سجل التعديلات والإشعارات'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
+    ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['hr', 'الموارد البشرية HR', 'users', 'الحضور والإجازات والسلف والتقييم والمسحوبات']].filter(c => secs[c[0]]);
+  if (argK && secs[argK]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === argK)[1]}</h1>` + (argK === 'gen' ? secs.gen : secs[argK].replace(/<h2 class="sec">(القوائم|كود الحذف|كود التعديل)<\/h2>/, '')); if (argK === 'gen' && secs.log || argK === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
     <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
-    ${[...(isFull() ? [['ntlog', 'سجل الإشعارات', 'الإشعارات المرسلة للفريق ومين شافها']] : []), ...(isPriv() ? [['journal', 'اليومية', 'كل الحركات والبحث والتصدير'], ['accounts', 'الخزينة والعهد', 'الأرصدة وحركات العهد'], ['review', 'مراجعة الاعتماد', 'المعتمد وبانتظار الاعتماد']] : []), ...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="${k === 'ntlog' ? 'nt-log' : 'go'}" data-h="${k}">${appic(k === 'ntlog' ? 'review' : k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
+    ${[...(isPriv() ? [['journal', 'اليومية', 'كل الحركات والبحث والتصدير'], ['accounts', 'الخزينة والعهد', 'الأرصدة وحركات العهد'], ['review', 'مراجعة الاعتماد', 'المعتمد وبانتظار الاعتماد']] : []), ...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="${k === 'ntlog' ? 'nt-log' : 'go'}" data-h="${k}">${appic(k === 'ntlog' ? 'review' : k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
     <div style="text-align:center;margin-top:18px">${canInstallUI() ? `<button class="btn pri sm" data-act="pwa-install" style="margin-inline-end:8px">${icon('download', 15)} تثبيت التطبيق على هذا الجهاز</button>` : ''}<button class="btn sm" data-act="app-update">${icon('sync', 15)} تحديث البرنامج لآخر نسخة</button>
     <p class="small muted" style="margin-top:8px">إصدار التطبيق ${APP_VER} · ${BUILD}</p></div>`;
 }
