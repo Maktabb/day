@@ -1651,7 +1651,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261119-001500';
+const BUILD = '20261119-013000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2703,12 +2703,14 @@ function openClientModal(o = {}) {
       if (ph2 && !phoneOk(ph2)) return toast('الرقم الإضافي غير صحيح', 'err');
       const d = dupOf(ph) || (ph2 && dupOf(ph2));
       if (d) return toast(`الرقم مسجل للعميل «${d.name}»`, 'err');
+      const oldNm = c ? c.name : '';
       const obj = Object.assign(c || { id: uid('C-'), createdAt: nowIso(), createdBy: ME.id, aliases: '', projectRef: '', mergedInto: '', active: 1 }, {
         name, phone: normPhone(ph), phone2: ph2 ? normPhone(ph2) : '', kind, contact: $('#cm-contact').value.trim(),
         service: $('#cm-service').value, notes: $('#cm-notes').value.trim(), updatedAt: nowIso()
       });
       D.clients[obj.id] = obj;
       queue('saveClient', { client: obj }, { isNew });
+      if (!isNew && oldNm !== obj.name) nameSyncAcc(obj);
       changed();
       toast(isNew ? 'تمت إضافة العميل' : 'تم حفظ بيانات العميل');
       closeModal();
@@ -3635,9 +3637,8 @@ async function deleteClient(id) {
   c.active = 0; c.updatedAt = nowIso();
   queue('saveClient', { client: c }); changed(); toast('تم حذف العميل'); go('clients');
 }
-async function mergeClients(keepId, dropId) {
+function mergeClientsCore(keepId, dropId) {
   const keep = D.clients[keepId], drop = D.clients[dropId];
-  if (!(await ask(`سيتم دمج <b>«${esc(drop.name)}»</b> داخل <b>«${esc(keep.name)}»</b> ونقل كل الحركات إليه. هل تريد المتابعة؟`, 'دمج'))) return;
   const al = String(keep.aliases || '').split('|').concat([drop.name], String(drop.aliases || '').split('|')).filter((x, i, a) => x && x !== keep.name && a.indexOf(x) === i);
   keep.aliases = al.join('|');
   if (!keep.phone && drop.phone) keep.phone = drop.phone; else if (drop.phone && !keep.phone2 && drop.phone !== keep.phone) keep.phone2 = drop.phone;
@@ -3648,6 +3649,12 @@ async function mergeClients(keepId, dropId) {
   A = { ...A }; persistArchive();
   (D.dups || []).forEach(d => { if ((d.a === keepId && d.b === dropId) || (d.a === dropId && d.b === keepId)) d.status = 'merged'; });
   queue('mergeClients', { keepId, dropId });
+  try { crmAfterAccMerge(keepId, dropId); } catch (e) { }
+}
+async function mergeClients(keepId, dropId) {
+  const keep = D.clients[keepId], drop = D.clients[dropId];
+  if (!(await ask(`سيتم دمج <b>«${esc(drop.name)}»</b> داخل <b>«${esc(keep.name)}»</b> ونقل كل الحركات إليه. هل تريد المتابعة؟`, 'دمج'))) return;
+  mergeClientsCore(keepId, dropId);
   changed();
   toast('تم الدمج');
   go('client/' + keepId);
@@ -3825,18 +3832,7 @@ function vReports(r, el) {
 }
 
 /* ====== مراجعة التكرار ====== */
-function vDups(r, el) {
-  const pend = (D.dups || []).filter(d => !d.status && D.clients[d.a] && D.clients[d.b] && +D.clients[d.a].active !== 0 && +D.clients[d.b].active !== 0);
-  const ast = archIndex().st, cs = calc().cli;
-  const card = id => { const c = D.clients[id], a = ast[id] || {}, s = cs[id] || {}; return `<div class="grow"><b>${esc(c.name)}</b><div class="small muted">${c.phone ? esc(c.phone) : 'بدون رقم'} · ${(a.n || 0) + (s.n || 0)} حركة${a.last ? ' · آخر نشاط ' + dShort(a.last) : ''}</div></div>`; };
-  el.innerHTML = `<h1 class="pg">مراجعة تكرار العملاء <small>${pend.length} حالة</small></h1>
-    <div class="note info" style="margin-bottom:12px">${icon('info', 18)}<div>أسماء متشابهة في يومية الإكسيل قد تكون لنفس العميل (اختلاف كتابة). اختر الاسم الصحيح للإبقاء عليه وسيُدمج الآخر فيه بكل حركاته، أو اضغط «ليسا نفس العميل».</div></div>
-    <div class="grid">${pend.map(d => `<div class="card pad"><div class="row wrap" style="align-items:stretch">
-      ${card(d.a)}<div style="align-self:center;color:var(--gold-ink)">${icon('swap', 20)}</div>${card(d.b)}</div>
-      <div class="row wrap" style="margin-top:10px"><button class="btn sm pri" data-act="dup-keep" data-k="${d.a}" data-d="${d.b}">الإبقاء على «${esc(D.clients[d.a].name)}»</button>
-      <button class="btn sm pri" data-act="dup-keep" data-k="${d.b}" data-d="${d.a}">الإبقاء على «${esc(D.clients[d.b].name)}»</button>
-      <button class="btn sm" data-act="dup-no" data-a="${d.a}" data-b="${d.b}">ليسا نفس العميل</button></div></div>`).join('') || '<div class="card empty">لا توجد حالات للمراجعة.</div>'}</div>`;
-}
+function vDups(r, el) { dvRender(el); }
 
 /* ====== المراجعة والاعتماد ====== */
 const RV = { tab: 'q', who: '', per: 'week' };
@@ -5776,20 +5772,30 @@ const crmP = () => Object.values(CRM.p).filter(x => !yes(x.deleted)).sort((a, b)
 const crmCos = pid => Object.values(CRM.c).filter(x => !yes(x.deleted) && (!pid || x.pid === pid)).sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
 const crmPByPhone = ph => { const n = normPhone(ph || ''); return n ? crmP().find(p => normPhone(p.phone) === n || normPhone(p.wa) === n) : null; };
 const crmAccOf = p => { if (!p) return []; const n = normPhone(p.phone || ''), own = String(p.id).startsWith('A-') ? D.clients[resCid(p.id.slice(2))] : null; const L = n ? activeClients().filter(c => normPhone(c.phone) === n) : []; if (own && !own.deleted && !L.includes(own)) L.unshift(own); return L; };
-const crmAccMissing = () => { const seen = new Set(); return activeClients().filter(c => { const n = normPhone(c.phone); if (CRM.p['A-' + c.id] || (n && crmPByPhone(c.phone)) || (n && seen.has(n))) return false; if (n) seen.add(n); return true; }); };
-function crmImportPick() {
-  const all = crmAccMissing().sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar')); if (!all.length) return toast('كل عملاء اليومية موجودين في قاعدة البيانات');
+const crmAccPending = () => activeClients().filter(c => { const n = normPhone(c.phone); return !(CRM.p['A-' + c.id] || (n && crmPByPhone(c.phone))); });
+const crmAccDupPh = () => { const by = {}; crmAccPending().forEach(c => { const n = normPhone(c.phone); if (n) (by[n] = by[n] || []).push(c); }); return by; };
+const crmAccMissing = () => { const by = crmAccDupPh(); return crmAccPending().filter(c => { const n = normPhone(c.phone); return !(n && by[n].length > 1); }); };
+const crmAccDupList = () => Object.entries(crmAccDupPh()).filter(([, a]) => a.length > 1).sort((a, b) => a[0].localeCompare(b[0])).flatMap(([, a]) => a.sort((x, y) => String(x.name).localeCompare(String(y.name), 'ar')));
+function crmImportPick(dupMode) {
+  const dupN = crmAccDupList().length;
+  const all = (dupMode ? crmAccDupList() : crmAccMissing().sort((x, y) => String(x.name).localeCompare(String(y.name), 'ar')));
+  if (!all.length && !dupN) return toast('كل عملاء اليومية موجودين في قاعدة البيانات');
+  if (!all.length) return crmImportPick(true);
   const sel = new Set(); let q = '', onlyPh = false;
-  const m = modal(`<h3>📥 اختاري العملاء اللي ينزلوا قاعدة البيانات</h3>
+  const m = modal(`<h3>${dupMode ? '👥 عملاء بنفس الرقم' : '📥 اختاري العملاء اللي ينزلوا قاعدة البيانات'}</h3>
+    ${dupMode ? '<p class="small muted" style="margin:0 0 6px">دول أكتر من عميل في اليومية بنفس رقم التليفون (متجمعين جنب بعض). اختاري اللي ينزل قاعدة البيانات، أو راجعيهم الأول من «مراجعة التكرار» في الإعدادات.</p>' : ''}
+    <div class="row wrap" style="gap:6px;margin-bottom:6px">${dupMode ? '<button class="btn sm" id="ci-back">↩ رجوع للقايمة العادية</button>' : dupN ? `<button class="btn sm" id="ci-dup">👥 بنفس الرقم (${dupN})</button>` : ''}</div>
     <div class="search">${icon('search', 18)}<input id="ci-q" class="inp" style="width:100%" placeholder="بحث بالاسم أو الرقم"></div>
-    <div class="row wrap" style="gap:6px;margin:8px 0"><button class="btn sm" id="ci-all">تحديد المعروض</button><button class="btn sm" id="ci-none">إلغاء التحديد</button><label class="ipc small"><input type="checkbox" id="ci-ph"> اللي ليهم رقم بس</label><span class="grow"></span><b id="ci-n" class="small"></b></div>
+    <div class="row wrap" style="gap:6px;margin:8px 0"><button class="btn sm" id="ci-all">تحديد المعروض</button><button class="btn sm" id="ci-none">إلغاء التحديد</button>${dupMode ? '' : '<label class="ipc small"><input type="checkbox" id="ci-ph"> اللي ليهم رقم بس</label>'}<span class="grow"></span><b id="ci-n" class="small"></b></div>
     <div id="ci-l" class="card" style="max-height:52vh;overflow:auto"></div>
     <div class="acts"><button class="btn pri" id="ci-ok">إضافة المختار</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
   const vis = () => { const n = nkey(q); return all.filter(c => (!onlyPh || normPhone(c.phone)) && (!n || nkey(c.name).includes(n) || (normPhone(q) && normPhone(c.phone).includes(normPhone(q))))); };
-  const paint = () => { const V = vis(); m.querySelector('#ci-l').innerHTML = V.slice(0, 400).map(c => `<label class="lrow" style="cursor:pointer"><input type="checkbox" data-ci="${c.id}" ${sel.has(c.id) ? 'checked' : ''}><b class="grow">${esc(c.name)}</b><span class="small muted num">${esc(c.phone || 'بدون رقم')}</span></label>`).join('') || '<div class="empty">لا نتائج</div>'; m.querySelector('#ci-n').textContent = `المختار ${sel.size} من ${all.length}`; };
+  const paint = () => { const V = vis(); let last = ''; m.querySelector('#ci-l').innerHTML = V.slice(0, 400).map(c => { const ph = normPhone(c.phone), hd = dupMode && ph !== last ? `<div class="small muted num" style="padding:6px 12px;background:var(--bg2,#f3f1ea)">📞 ${esc(ph)}</div>` : ''; last = ph; return `${hd}<label class="lrow" style="cursor:pointer"><input type="checkbox" data-ci="${c.id}" ${sel.has(c.id) ? 'checked' : ''}><b class="grow">${esc(c.name)}</b><span class="small muted num">${esc(c.phone || 'بدون رقم')}</span></label>`; }).join('') || '<div class="empty">لا نتائج</div>'; m.querySelector('#ci-n').textContent = `المختار ${sel.size} من ${all.length}`; };
   paint();
   m.querySelector('#ci-q').oninput = e => { q = e.target.value; paint(); };
-  m.querySelector('#ci-ph').onchange = e => { onlyPh = e.target.checked; paint(); };
+  const ph = m.querySelector('#ci-ph'); if (ph) ph.onchange = e => { onlyPh = e.target.checked; paint(); };
+  const bd = m.querySelector('#ci-dup'); if (bd) bd.onclick = () => { closeModal(); crmImportPick(true); };
+  const bb = m.querySelector('#ci-back'); if (bb) bb.onclick = () => { closeModal(); crmImportPick(false); };
   m.querySelector('#ci-all').onclick = () => { vis().forEach(c => sel.add(c.id)); paint(); };
   m.querySelector('#ci-none').onclick = () => { sel.clear(); paint(); };
   m.addEventListener('change', e => { const b = e.target.closest('[data-ci]'); if (!b) return; b.checked ? sel.add(b.dataset.ci) : sel.delete(b.dataset.ci); m.querySelector('#ci-n').textContent = `المختار ${sel.size} من ${all.length}`; });
@@ -5965,6 +5971,7 @@ function crmPersonForm(id) {
     const dup = crmPByPhone(phone); if (dup && dup.id !== id) { closeModal(); toast('الرقم ده متسجل لعميل تاني — فتحتهولك'); return go('crm/p/' + dup.id); }
     const pid = id || uid('CP');
     crmPut('p', pid, { name, phone, wa: m.querySelector('#cp-wa').value.trim(), poa: m.querySelector('#cp-poa').checked ? '1' : '', poaCap: m.querySelector('#cp-poac').checked ? '1' : '', note: m.querySelector('#cp-no').value.trim(), deleted: '' });
+    crmNameToAcc(CRM.p[pid]);
     closeModal(); toast('تم الحفظ'); if (!id || ph0 !== phone) go('crm/p/' + pid); else render();
   };
 }
@@ -6088,9 +6095,9 @@ function vCrm(r, el) {
   };
   const L = all.filter(p => (!qn || nkey(p.name).includes(qn) || normPhone(p.phone).includes(normPhone(CV.q)) || crmCos(p.id).some(c => nkey(c.name).includes(qn) || String(c.tax).includes(CV.q))) && (F[CV.f] || F[''])(p));
   const byPh = {}; activeClients().forEach(c => { const n = normPhone(c.phone); if (n) (byPh[n] = byPh[n] || []).push(c); });
-  const dups = isFull() ? Object.values(byPh).filter(a => a.length > 1) : [], miss = isFull() ? crmAccMissing().length : 0;
+  const dups = isFull() ? Object.values(byPh).filter(a => a.length > 1) : [], miss = isFull() ? crmAccMissing().length : 0, missDup = isFull() ? crmAccDupList().length : 0;
   el.innerHTML = head + err + `
-    ${miss ? `<div class="note info" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">فيه <b>${miss}</b> عميل في اليومية لسه مش في قاعدة البيانات.</div><button class="btn sm pri" data-act="crm-imp">📥 اختيار واستيراد</button></div>` : ''}${CRM.q.length ? `<div class="small muted" style="margin-bottom:8px">⏳ ${CRM.q.length} تعديل بيترفع للشيت…</div>` : ''}
+    ${miss || missDup ? `<div class="note info" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">فيه <b>${miss}</b> عميل في اليومية لسه مش في قاعدة البيانات${missDup ? ` (و<b>${missDup}</b> بنفس الرقم على جنب)` : ''}.</div><button class="btn sm pri" data-act="crm-imp">📥 اختيار واستيراد</button></div>` : ''}${CRM.q.length ? `<div class="small muted" style="margin-bottom:8px">⏳ ${CRM.q.length} تعديل بيترفع للشيت…</div>` : ''}
     <div class="card sumrow"><div><small>العملاء</small><b>${all.length}</b></div><div><small>الشركات</small><b>${crmCos().length}</b></div><div><small>عليها قيمة مضافة</small><b>${crmCos().filter(c => yes(c.vat)).length}</b></div></div>
     <div class="search" style="margin:10px 0">${icon('search', 18)}<input class="inp" style="width:100%" data-crm="q" value="${esc(CV.q)}" placeholder="بحث: اسم العميل، الشركة، التليفون، الرقم الضريبي"></div>
     <div class="chips scroll" style="margin-bottom:10px">${[['', 'الكل'], ['vat', 'قيمة مضافة'], ['simpl', 'تسهيلات'], ['einv', 'فواتير إلكترونية'], ['exp', 'مستخرج قرب ينتهي'], ['nolink', 'مش مربوط بالحسابات']].map(([k, l]) => `<button class="chip ${CV.f === k ? 'on' : ''}" data-act="crm-f" data-v="${k}">${l}</button>`).join('')}</div>
@@ -6149,7 +6156,7 @@ Object.assign(ACT, {
     CRM.rev = ''; crmSave(); toast('اتحفظ — بجرّب الاتصال…'); crmSync(true).then(() => { toast(CRM_ST.state === 'ok' ? 'تم الربط ✓' : 'الاتصال فشل: ' + CRM_ST.msg, CRM_ST.state === 'ok' ? 'ok' : 'err'); if (CRM_ST.state === 'ok') { crmPushPerms(true); go('crm'); } });
   },
   'crm-perms': () => crmPushPerms(true),
-  'crm-imp': () => crmImportPick(),
+  'crm-imp': () => crmImportPick(!crmAccMissing().length),
   'crm-f': el => { CV.f = el.dataset.v; render(); },
   'crm-p-add': () => crmPersonForm(''),
   'crm-p-edit': async el => { if (await crmGate()) crmPersonForm(el.dataset.id); },
@@ -6212,29 +6219,31 @@ function fpToCrm(id) {
   crmPut('c', uid('CC'), { pid, name: x.name, kind: x.solo ? 'شخص واحد' : 'مسؤولية محدودة', gov: x.gov, vat: x.srv.includes('vat') ? '1' : '', einv: x.srv.includes('einvoice') ? '1' : '', status: 'صفري', note: 'من مشروع التأسيس' + (x.srv.length ? ' — خدمات: ' + x.srv.map(k => FP_SRV[k]).join('، ') : ''), deleted: '' });
   toast('اتضافت لقاعدة البيانات — كمّلي الرقم الضريبي والسجل لما يطلعوا'); go('crm/p/' + pid);
 }
-function fpCard(x) {
+function fpCard(x, dn) {
+  dn = dn || {}; const isDone = x.id in dn, dc = isDone ? D.clients[resCid(dn[x.id])] : null;
   const p = crmPByPhone(x.phone), acc = activeClients().filter(c => normPhone(c.phone) && normPhone(c.phone) === normPhone(x.phone)), inDb = p && crmCos(p.id).some(c => nkey(c.name) === nkey(x.name)), a = x.app;
   return `<div class="card pad" style="margin-top:8px"><div class="row wrap" style="gap:6px;align-items:center"><b class="grow">🏗️ ${esc(x.name)}</b>${x.solo ? '<span class="badge">شخص واحد</span>' : x.manual ? '' : '<span class="badge">مسؤولية محدودة</span>'}${x.law === '72' ? '<span class="badge">استثمار 72</span>' : ''}</div>
     <div class="small muted" style="margin-top:2px">${[x.client, x.gov].filter(Boolean).map(esc).join(' — ')}${x.phone ? ` · <span class="num">${esc(x.phone)}</span>` : ''}</div>
     ${x.srv.length ? `<div class="chips" style="margin-top:6px">${x.srv.map(k => `<span class="chip on" style="cursor:default">${FP_SRV[k]}</span>`).join('')}</div>` : ''}
     ${a ? `<div class="small" style="margin-top:6px">✅ اعتُمد ${esc(a.at)} · الإجمالي <b class="num">${fmt(a.total)}</b> · المدفوع <b class="num">${fmt(a.paid)}</b> · الباقي <b class="num ${a.total - a.paid > 0 ? 'neg' : ''}">${fmt(a.total - a.paid)}</b></div>` : x.quote ? `<div class="small" style="margin-top:6px">عرض سعر: <b class="num">${fmt(x.quote)}</b></div>` : ''}
     <div class="row wrap no-print" style="gap:6px;margin-top:8px">
+      ${isDone ? `<span class="badge">اتدمج مع ${dc ? `<a href="#client/${dc.id}">${esc(dc.name)}</a>` : 'عميل'}</span><button class="btn sm" data-act="fp-undo" data-id="${esc(x.id)}">↩ رجوع للمعتمدة</button>` : a && canTab('formation') ? `<button class="btn sm pri" data-act="fp-enter" data-id="${esc(x.id)}">✅ تم دخوله كعميل في المكتب</button>` : ''}
       ${inDb ? `<a class="btn sm" href="#crm/p/${p.id}">🗂️ في قاعدة البيانات</a>` : canTab('crm') && crmCfg() ? `<button class="btn sm pri" data-act="fp-crm" data-id="${esc(x.id)}">➕ إضافة لقاعدة البيانات</button>` : ''}
       ${acc.map(c => `<a class="btn sm" href="#client/${c.id}">📒 كشف حساب ${esc(c.name)}</a>`).join('')}</div></div>`;
 }
 function vFormation(r, el) {
   if (!canTab('formation')) { el.innerHTML = '<div class="card pad empty">مالكيش صلاحية على مشاريع التأسيس.</div>'; return; }
   if (Date.now() - FP.at > 120000 && !FP_ST.busy) fpSync();
-  const qn = nkey(FPV.q), L = FP.list.filter(x => (FPV.tab === 'app' ? x.app : !x.app && !x.manual) && (!qn || nkey(x.name + ' ' + x.client).includes(qn) || normPhone(x.phone).includes(normPhone(FPV.q) || '#'))).sort((a, b) => String((b.app || {}).at || b.at).localeCompare(String((a.app || {}).at || a.at)));
-  const ap = FP.list.filter(x => x.app), rem = ap.reduce((s, x) => s + Math.max(0, x.app.total - x.app.paid), 0);
+  const dn = fpDoneMap(), qn = nkey(FPV.q), L = FP.list.filter(x => (FPV.tab === 'app' ? x.app && !(x.id in dn) : FPV.tab === 'done' ? (x.id in dn) : !x.app && !x.manual) && (!qn || nkey(x.name + ' ' + x.client).includes(qn) || normPhone(x.phone).includes(normPhone(FPV.q) || '#'))).sort((a, b) => String((b.app || {}).at || b.at).localeCompare(String((a.app || {}).at || a.at)));
+  const ap = FP.list.filter(x => x.app && !(x.id in dn)), doneN = FP.list.filter(x => x.id in dn).length, rem = ap.reduce((s, x) => s + Math.max(0, x.app.total - x.app.paid), 0);
   const notDb = ap.filter(x => { const p = crmPByPhone(x.phone); return !(p && crmCos(p.id).some(c => nkey(c.name) === nkey(x.name))); }).length;
   el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">🏗️ مشاريع التأسيس</h1><button class="btn sm" data-act="fp-sync">🔄 تحديث</button></div>
     ${FP_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div>تعذّر الاتصال بشيت التأسيس (${esc(FP_ST.msg)}).</div></div>` : ''}
     ${!FP.at ? '<div class="card pad empty">بيجيب المشاريع من شيت التأسيس…</div>' : `
     <div class="card sumrow"><div><small>مشاريع معتمدة</small><b>${ap.length}</b></div><div><small>باقي التحصيل</small><b class="num">${fmt(rem)}</b></div><div><small>مش في قاعدة البيانات</small><b>${notDb}</b></div></div>
-    <div class="chips" style="margin:10px 0">${[['app', `✅ معتمدة (${ap.length})`], ['q', `📝 عروض أسعار (${FP.list.filter(x => !x.app && !x.manual).length})`]].map(([k, l]) => `<button class="chip ${FPV.tab === k ? 'on' : ''}" data-act="fp-tab" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="chips" style="margin:10px 0">${[['app', `✅ معتمدة (${ap.length})`], ...(doneN ? [['done', `🏢 دخلوا المكتب (${doneN})`]] : []), ['q', `📝 عروض أسعار (${FP.list.filter(x => !x.app && !x.manual).length})`]].map(([k, l]) => `<button class="chip ${FPV.tab === k ? 'on' : ''}" data-act="fp-tab" data-v="${k}">${l}</button>`).join('')}</div>
     <div class="search" style="margin-bottom:6px">${icon('search', 18)}<input class="inp" style="width:100%" data-fp="q" value="${esc(FPV.q)}" placeholder="بحث بالاسم أو التليفون"></div>
-    ${L.length ? L.slice(0, 200).map(fpCard).join('') : '<div class="card pad empty">لا توجد مشاريع.</div>'}`}
+    ${L.length ? L.slice(0, 200).map(x => fpCard(x, dn)).join('') : '<div class="card pad empty">لا توجد مشاريع.</div>'}`}
     <p class="small muted" style="margin-top:14px">البيانات بتتقري من برنامج «مشروع تأسيس شركات» (قراءة بس). الربط بقاعدة البيانات وكشف الحساب على رقم تليفون العميل. «إضافة لقاعدة البيانات» بتنقل اسم الشركة ونوعها والمحافظة، ولو العرض فيه «قيمة مضافة» بتتعلَّم عليها فتنزل إقراراتها في الضرائب.</p>
     ${isFull() ? `<details style="margin-top:8px"><summary class="small">⚙️ رابط شيت التأسيس</summary><div class="form" style="margin-top:8px">${fld('الرابط', `<input id="fp-u" class="inp ltr" value="${esc(fpCfg().url)}">`)}${fld('كلمة سر المزامنة', `<input id="fp-t" class="inp ltr" value="${esc(fpCfg().token)}">`)}<button class="btn sm pri" data-act="fp-cfg">حفظ</button></div></details>` : ''}`;
 }
@@ -6245,6 +6254,162 @@ Object.assign(ACT, {
   'fp-cfg': () => { D.lists.fpCfg = [$('#fp-u').value.trim(), $('#fp-t').value.trim()]; queue('saveLists', { lists: { fpCfg: D.lists.fpCfg } }); changed(); FP.at = 0; fpSync(); toast('اتحفظ'); }
 });
 document.addEventListener('input', e => { const t = e.target.closest && e.target.closest('[data-fp="q"]'); if (!t) return; FPV.q = t.value; clearTimeout(FP_ST.qt); FP_ST.qt = setTimeout(() => { const pos = t.selectionStart; render(); const n = document.querySelector('[data-fp="q"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { } } }, 250); });
+
+
+/* ====== مراجعة التكرار + الدمج ====== */
+const STOPW = new Set(['شركه', 'مكتب', 'استاذ', 'الاستاذ', 'استاذه', 'الاستاذه', 'السيد', 'السيده', 'م', 'د', 'دكتور', 'المهندس', 'مهندس', 'الحاج', 'حاج', 'حاجه', 'ال']);
+const dvTok = s => String(s || '').replace(/[\/\.\-_،,()]+/g, ' ').split(/\s+/).map(nkey).filter(w => w && !STOPW.has(w));
+const dvKey = s => dvTok(s).sort().join('');
+const dvScore = (a, b) => { const ka = dvKey(a), kb = dvKey(b); if (!ka || !kb) return 0; if (ka === kb) return 1; if (Math.abs(ka.length - kb.length) > 0.2 * Math.max(ka.length, kb.length)) return 0; return 1 - lev(ka, kb) / Math.max(ka.length, kb.length); };
+const dvNoSet = () => new Set(LS.get('dupNo2', []));
+const dvPk = (k, a, b) => k + ':' + [a, b].sort().join('|');
+const DV = { tab: 'a', mode: 'auto', q: '', sel: new Set(), keep: '', pairs: { a: null, c: null } };
+const dvItems = k => k === 'a' ? activeClients() : crmP();
+const dvPairs = k => {
+  if (DV.pairs[k]) return DV.pairs[k];
+  const L = dvItems(k), no = dvNoSet(), out = [], seen = new Set();
+  const add = (a, b, sc, why) => { const id = dvPk(k, a.id, b.id); if (seen.has(id) || no.has(id)) return; seen.add(id); out.push({ a: a.id, b: b.id, sc, why }); };
+  if (k === 'a') (D.dups || []).forEach(d => { const A1 = D.clients[d.a], B1 = D.clients[d.b]; if (!d.status && A1 && B1 && +A1.active !== 0 && +B1.active !== 0) add(A1, B1, +d.score || .9, 'تشابه اسم'); });
+  const byPh = {}; L.forEach(c => { const n = normPhone(c.phone); if (n) (byPh[n] = byPh[n] || []).push(c); });
+  Object.values(byPh).forEach(g => { for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) add(g[i], g[j], 1, 'نفس رقم التليفون'); });
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const sc = dvScore(L[i].name, L[j].name); if (sc >= 0.84) add(L[i], L[j], sc, sc === 1 ? 'نفس الاسم (اختلاف كتابة/ترتيب)' : 'أسماء متشابهة'); }
+  return DV.pairs[k] = out.sort((x, y) => y.sc - x.sc);
+};
+function crmMergePersons(kid, did) {
+  const k = CRM.p[kid], d = CRM.p[did]; if (!k || !d || kid === did) return;
+  const set = {}; ['phone', 'wa'].forEach(f => { if (!k[f] && d[f]) set[f] = d[f]; });
+  if (yes(d.poa) && !yes(k.poa)) set.poa = '1'; if (yes(d.poaCap) && !yes(k.poaCap)) set.poaCap = '1';
+  if (d.note && d.note !== k.note) set.note = [k.note, d.note].filter(Boolean).join(' | ');
+  crmCos(did).forEach(c => { if (String(c.id).startsWith('AC-') && !c.tax && nkey(c.name) === nkey(d.name)) crmPut('c', c.id, { deleted: '1' }); else crmPut('c', c.id, { pid: kid }); });
+  if (Object.keys(set).length) crmPut('p', kid, set);
+  crmPut('p', did, { deleted: '1' });
+}
+function crmAfterAccMerge(keepId, dropId) {
+  if (typeof CRM === 'undefined' || !crmCfg()) return;
+  const pk = CRM.p['A-' + keepId], pd = CRM.p['A-' + dropId];
+  if (pk && pd && !yes(pk.deleted) && !yes(pd.deleted)) crmMergePersons(pk.id, pd.id);
+  nameSyncAcc(D.clients[keepId]);
+}
+function nameSyncAcc(c) {
+  if (!c || typeof CRM === 'undefined' || !crmCfg()) return;
+  const pids = new Set(), own = CRM.p['A-' + c.id]; if (own && !yes(own.deleted)) pids.add(own.id);
+  const bp = crmPByPhone(c.phone); if (bp && crmAccOf(bp).length === 1) pids.add(bp.id);
+  pids.forEach(pid => { const p = CRM.p[pid]; if (p && p.name !== c.name) crmPut('p', pid, { name: c.name }); });
+  const co = CRM.c['AC-' + c.id]; if (co && !yes(co.deleted) && co.name !== c.name) crmPut('c', co.id, { name: c.name });
+}
+function crmNameToAcc(p) {
+  if (!p || typeof CRM === 'undefined') return;
+  const isA = String(p.id).startsWith('A-'), L = crmAccOf(p), c = isA ? D.clients[resCid(p.id.slice(2))] : (L.length === 1 ? L[0] : null);
+  if (!c || +c.active === 0 || c.name === p.name) return;
+  const old = c.name; c.aliases = String(c.aliases || '').split('|').concat([old]).filter((x, i, a) => x && x !== p.name && a.indexOf(x) === i).join('|');
+  c.name = p.name; c.updatedAt = nowIso(); queue('saveClient', { client: c }); changed();
+  const co = CRM.c['AC-' + c.id]; if (co && co.name === old) crmPut('c', co.id, { name: p.name });
+}
+const dvInfo = (k, id) => {
+  if (k === 'a') { const c = D.clients[id], a = (DV.ast || {})[id] || {}, s = (DV.cs || {})[id] || {}; return { n: c.name, ph: c.phone || '', meta: `${(a.n || 0) + (s.n || 0)} حركة${a.last ? ' · آخر نشاط ' + dShort(a.last) : ''}` }; }
+  const p = CRM.p[id], cs = crmCos(id); return { n: p.name, ph: p.phone || '', meta: cs.length ? cs.length + ' شركة: ' + cs.slice(0, 3).map(c => c.name).join('، ') : 'بدون شركات' };
+};
+function dvRender(el) {
+  const k = DV.tab; if (k === 'c' && typeof CRM === 'undefined') DV.tab = 'a';
+  DV.ast = archIndex().st; DV.cs = calc().cli;
+  const hasC = !!crmCfg() && canTab('crm');
+  const pairs = DV.mode === 'auto' ? dvPairs(DV.tab) : [];
+  const card = id => { const i = dvInfo(DV.tab, id); return `<div class="grow"><b>${esc(i.n)}</b><div class="small muted">${i.ph ? esc(i.ph) : 'بدون رقم'} · ${esc(i.meta)}</div></div>`; };
+  el.innerHTML = `<h1 class="pg">مراجعة تكرار العملاء</h1>
+    <div class="chips" style="margin-bottom:8px"><button class="chip ${DV.tab === 'a' ? 'on' : ''}" data-act="dv-tab" data-v="a">📒 عملاء اليومية</button>${hasC ? `<button class="chip ${DV.tab === 'c' ? 'on' : ''}" data-act="dv-tab" data-v="c">🗂️ قاعدة البيانات</button>` : ''}</div>
+    <div class="chips" style="margin-bottom:10px"><button class="chip ${DV.mode === 'auto' ? 'on' : ''}" data-act="dv-mode" data-v="auto">🔎 المتشابهين تلقائي (${DV.mode === 'auto' ? pairs.length : (dvPairs(DV.tab).length)})</button><button class="chip ${DV.mode === 'man' ? 'on' : ''}" data-act="dv-mode" data-v="man">☑️ أختار بنفسي من القايمة</button></div>
+    <div class="note info" style="margin-bottom:12px">${icon('info', 18)}<div>${DV.mode === 'auto' ? 'الأسماء المتشابهة (اختلاف كتابة، همزة، ترتيب الكلمات) ونفس رقم التليفون. اضغطي على الاسم اللي <b>يفضل</b> (الأصل)، والتاني بيتدمج فيه بكل حركاته وبياناته.' : 'علّمي على العملاء اللي هم نفس الشخص، وبعدين اختاري مين الأصل واللي يفضل.'}</div></div>
+    ${DV.mode === 'auto' ? `<div class="grid">${pairs.slice(0, 100).map(d => `<div class="card pad"><div class="row wrap" style="align-items:stretch">${card(d.a)}<div style="align-self:center;color:var(--gold-ink)">${icon('swap', 20)}</div>${card(d.b)}</div>
+      <div class="small muted" style="margin-top:6px">السبب: ${esc(d.why)}${d.sc < 1 ? ' (' + Math.round(d.sc * 100) + '%)' : ''}</div>
+      <div class="row wrap" style="margin-top:8px"><button class="btn sm pri" data-act="dv-merge" data-k="${d.a}" data-d="${d.b}">الأصل «${esc(dvInfo(DV.tab, d.a).n)}» ← يتدمج فيه «${esc(dvInfo(DV.tab, d.b).n)}»</button>
+      <button class="btn sm pri" data-act="dv-merge" data-k="${d.b}" data-d="${d.a}">الأصل «${esc(dvInfo(DV.tab, d.b).n)}» ← يتدمج فيه «${esc(dvInfo(DV.tab, d.a).n)}»</button>
+      <button class="btn sm" data-act="dv-no" data-a="${d.a}" data-b="${d.b}">ليسا نفس العميل</button></div></div>`).join('') || '<div class="card empty">لا توجد حالات للمراجعة.</div>'}${pairs.length > 100 ? `<p class="small muted">معروض أول 100 من ${pairs.length}.</p>` : ''}</div>`
+    : `<div class="search">${icon('search', 18)}<input id="dv-q" class="inp" style="width:100%" placeholder="بحث بالاسم أو الرقم" value="${esc(DV.q)}"></div>
+      <div id="dv-sel" class="card pad" style="margin:8px 0"></div><div id="dv-list" class="card" style="max-height:60vh;overflow:auto"></div>`}`;
+  if (DV.mode === 'man') dvPaint();
+}
+function dvPaint() {
+  const k = DV.tab, L = $('#dv-list'), S = $('#dv-sel'); if (!L || !S) return;
+  const n = nkey(DV.q), nq = normPhone(DV.q);
+  const items = dvItems(k).filter(c => !n || nkey(c.name).includes(n) || (nq && normPhone(c.phone).includes(nq))).sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
+  const gone = [...DV.sel].filter(id => !items.length && false); DV.sel.forEach(id => { if (!(k === 'a' ? D.clients[id] : CRM.p[id])) DV.sel.delete(id); });
+  L.innerHTML = items.slice(0, 300).map(c => `<label class="lrow" style="cursor:pointer"><input type="checkbox" data-dvs="${c.id}" ${DV.sel.has(c.id) ? 'checked' : ''}><b class="grow">${esc(c.name)}</b><span class="small muted num">${esc(c.phone || 'بدون رقم')}</span></label>`).join('') || '<div class="empty">لا نتائج</div>';
+  const sel = [...DV.sel]; if (!sel.includes(DV.keep)) DV.keep = sel[0] || '';
+  S.innerHTML = sel.length < 2 ? `<span class="small muted">علّمي على عميلين أو أكتر (المختار ${sel.length}).</span>` : `<b>اختاري الأصل (اللي يفضل):</b>${sel.map(id => { const i = dvInfo(k, id); return `<label class="lrow" style="cursor:pointer"><input type="radio" name="dvk" data-dvk="${id}" ${DV.keep === id ? 'checked' : ''}><b class="grow">${esc(i.n)}</b><span class="small muted">${esc(i.ph)} · ${esc(i.meta)}</span></label>`; }).join('')}
+    <button class="btn pri" style="margin-top:8px" data-act="dv-selmerge">دمج ${sel.length - 1} في «${esc(dvInfo(k, DV.keep).n)}»</button>`;
+}
+async function dvDoMerge(k, keepId, dropIds) {
+  const kn = dvInfo(k, keepId).n, names = dropIds.map(d => '«' + esc(dvInfo(k, d).n) + '»').join('، ');
+  if (!(await ask(`الأصل اللي هيفضل: <b>«${esc(kn)}»</b><br>هيتدمج فيه: <b>${names}</b>${k === 'a' ? '<br>كل حركاتهم بتتنقل للأصل، وأسماؤهم بتتحفظ في «الأسماء الأخرى».' : '<br>شركاتهم وبياناتهم بتتنقل للأصل.'}`, 'دمج'))) return;
+  if (k === 'c') { if (!(await crmGate())) return; dropIds.forEach(d => crmMergePersons(keepId, d)); }
+  else dropIds.forEach(d => { if (D.clients[d] && d !== keepId) mergeClientsCore(keepId, d); });
+  DV.pairs = { a: null, c: null }; DV.sel.clear(); DV.keep = ''; changed(); toast('تم الدمج'); render();
+}
+Object.assign(ACT, {
+  'dv-tab': el => { DV.tab = el.dataset.v; DV.sel.clear(); DV.keep = ''; render(); },
+  'dv-mode': el => { DV.mode = el.dataset.v; DV.sel.clear(); DV.keep = ''; render(); },
+  'dv-merge': el => dvDoMerge(DV.tab, el.dataset.k, [el.dataset.d]),
+  'dv-selmerge': () => { const s = [...DV.sel]; if (s.length > 1 && DV.keep) dvDoMerge(DV.tab, DV.keep, s.filter(x => x !== DV.keep)); },
+  'dv-no': el => {
+    const { a, b } = el.dataset, no = dvNoSet(); no.add(dvPk(DV.tab, a, b)); LS.set('dupNo2', [...no]);
+    if (DV.tab === 'a' && (D.dups || []).some(d => !d.status && ((d.a === a && d.b === b) || (d.a === b && d.b === a)))) { (D.dups || []).forEach(d => { if ((d.a === a && d.b === b) || (d.a === b && d.b === a)) d.status = 'dismissed'; }); queue('dismissDup', { a, b }); changed(); }
+    DV.pairs[DV.tab] = null; render();
+  }
+});
+document.addEventListener('input', e => { const t = e.target.closest && e.target.closest('#dv-q'); if (!t) return; DV.q = t.value; dvPaint(); });
+document.addEventListener('change', e => {
+  const c = e.target.closest && e.target.closest('[data-dvs]'); if (c) { c.checked ? DV.sel.add(c.dataset.dvs) : DV.sel.delete(c.dataset.dvs); dvPaint(); return; }
+  const r = e.target.closest && e.target.closest('[data-dvk]'); if (r) { DV.keep = r.dataset.dvk; dvPaint(); }
+});
+
+/* ====== دخول مشروع التأسيس كعميل في المكتب ====== */
+const fpDoneMap = () => { const m = {}; ((D.lists && D.lists.fpDone) || []).forEach(x => { const [a, b] = String(x).split('>'); if (a) m[a] = b || ''; }); return m; };
+const fpDoneSave = m => { D.lists.fpDone = Object.entries(m).map(([a, b]) => a + '>' + b); queue('saveLists', { lists: { fpDone: D.lists.fpDone } }); changed(); };
+function fpEnter(id) {
+  const x = FP.list.find(r => r.id === id); if (!x) return;
+  const px = normPhone(x.phone), cand = px ? activeClients().filter(c => normPhone(c.phone) === px || normPhone(c.phone2) === px) : [];
+  let chosen = cand.length === 1 ? cand[0].id : '', q = '';
+  const m = modal(`<h3>✅ «${esc(x.name)}» دخل كعميل في المكتب</h3>
+    <p class="small muted" style="margin:0 0 8px">اختاري العميل اللي عندك في اليومية، وبيانات المشروع هتتدمج معاه وبيتشال من قايمة المشاريع المعتمدة.</p>
+    ${cand.length ? '<div class="small" style="margin-bottom:4px">متطابق بالتليفون:</div>' : ''}
+    <div class="search">${icon('search', 18)}<input id="fe-q" class="inp" style="width:100%" placeholder="أو دوّري على عميل تاني بالاسم أو الرقم"></div>
+    <div id="fe-l" class="card" style="margin-top:8px;max-height:36vh;overflow:auto"></div>
+    <div id="fe-c" class="small" style="margin:8px 0"></div>
+    <div class="acts"><button class="btn pri" id="fe-ok">تأكيد الدخول</button>${px ? '<button class="btn" id="fe-new">عميل جديد بالمشروع ده</button>' : ''}<button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const paint = () => {
+    const L = q ? clientSearch(q, 10) : cand;
+    m.querySelector('#fe-l').innerHTML = L.map(c => `<label class="lrow" style="cursor:pointer"><input type="radio" name="fe" data-fe="${c.id}" ${chosen === c.id ? 'checked' : ''}><b class="grow">${esc(c.name)}</b><span class="small muted num">${esc(c.phone || 'بدون رقم')}</span></label>`).join('') || `<div class="empty">${q ? 'لا نتائج' : 'مفيش عميل بنفس الرقم — ابحثي بالاسم أو اضغطي «عميل جديد»'}</div>`;
+    m.querySelector('#fe-c').innerHTML = chosen ? `هيتدمج مع: <b>${esc((D.clients[chosen] || {}).name || '')}</b>` : '<span class="muted">لسه ما اخترتيش عميل.</span>';
+  };
+  paint();
+  m.querySelector('#fe-q').oninput = e => { q = e.target.value; paint(); };
+  m.addEventListener('change', e => { const r = e.target.closest('[data-fe]'); if (r) { chosen = r.dataset.fe; paint(); } });
+  const done = cid => { fpEnterApply(x, cid); closeModal(); };
+  m.querySelector('#fe-ok').onclick = () => { if (!chosen) return toast('اختاري العميل الأول', 'err'); done(chosen); };
+  const nb = m.querySelector('#fe-new'); if (nb) nb.onclick = () => {
+    if (!phoneOk(x.phone)) return toast('رقم تليفون المشروع غير صحيح', 'err');
+    const obj = { id: uid('C-'), createdAt: nowIso(), createdBy: ME.id, aliases: '', projectRef: '', mergedInto: '', active: 1, name: x.client || x.name, phone: px, phone2: '', kind: 'شركة', contact: '', service: '', notes: 'من مشروع التأسيس: ' + x.name, updatedAt: nowIso() };
+    D.clients[obj.id] = obj; queue('saveClient', { client: obj }, { isNew: true }); done(obj.id);
+  };
+}
+function fpEnterApply(x, cid) {
+  const c = D.clients[cid]; if (!c) return;
+  const px = normPhone(x.phone);
+  if (!normPhone(c.phone) && px && phoneOk(px) && !activeClients().some(o => o.id !== cid && normPhone(o.phone) === px)) { c.phone = px; c.updatedAt = nowIso(); queue('saveClient', { client: c }); }
+  let inCrm = false;
+  if (crmCfg()) {
+    const own = CRM.p['A-' + cid], p = own && !yes(own.deleted) ? own : crmPByPhone(c.phone || x.phone), pid = p ? p.id : 'A-' + cid;
+    if (!p) crmPut('p', pid, { name: c.name, phone: c.phone || '', wa: '', poa: '', poaCap: '', note: '', deleted: '' });
+    if (!crmCos(pid).some(co => nkey(co.name) === nkey(x.name))) crmPut('c', uid('CC'), { pid, name: x.name, kind: x.solo ? 'شخص واحد' : 'مسؤولية محدودة', gov: x.gov, vat: x.srv.includes('vat') ? '1' : '', einv: x.srv.includes('einvoice') ? '1' : '', status: 'صفري', note: 'من مشروع التأسيس' + (x.srv.length ? ' — خدمات: ' + x.srv.map(k => FP_SRV[k]).join('، ') : ''), deleted: '' });
+    inCrm = true;
+  }
+  const mp = fpDoneMap(); mp[x.id] = cid; fpDoneSave(mp);
+  changed(); toast(inCrm ? `اتدمج مع «${c.name}» واتضافت الشركة في قاعدة البيانات` : `اتسجل إنه عميل «${c.name}» (اربطي قاعدة البيانات عشان الشركة تنزل)`); render();
+}
+Object.assign(ACT, {
+  'fp-enter': el => fpEnter(el.dataset.id),
+  'fp-undo': el => { const mp = fpDoneMap(); delete mp[el.dataset.id]; fpDoneSave(mp); toast('رجع لقايمة المشاريع المعتمدة'); render(); }
+});
 
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
