@@ -1106,6 +1106,13 @@ html{overscroll-behavior-y:none}
 
 .stmt tbody.st-p{display:none}
 @media print{.stmt tbody.st-p{display:table-row-group!important}.stmt tbody.st-v{display:none!important}}
+  .fu-k{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:620px){.fu-k{grid-template-columns:repeat(2,minmax(0,1fr))}.fu-k .bal{grid-column:1/-1}}
+  .fu-prog{height:6px;background:var(--line,#e4dfd2);border-radius:3px;margin:6px 0 2px;overflow:hidden}.fu-prog i{display:block;height:6px;background:var(--gold,#c9a24a);border-radius:3px}
+  .fu-mh{font-weight:700;font-size:13px;color:var(--navy,#0f2747);margin:10px 0 4px;padding-bottom:3px;border-bottom:1px dashed var(--line,#d5d9e2)}.fu-mh:first-child{margin-top:0}
+  .fu-tl{display:flex;gap:10px;align-items:flex-start;padding:6px 0}.fu-ic{font-size:18px;min-width:24px;text-align:center}
+  .fu-an{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:10px}.fu-kv{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:14px;border-bottom:1px solid var(--line,#eee)}.fu-kv span{color:var(--muted,#667)}
+  .fu-bars{display:flex;gap:4px;align-items:flex-end;margin-top:10px;overflow-x:auto}.fu-bm{flex:1;min-width:26px;text-align:center}.fu-bb{display:flex;gap:1px;align-items:flex-end;justify-content:center;height:112px}.fu-bb i{display:block;width:7px;border-radius:2px 2px 0 0}.fu-bm span{font-size:10px;color:var(--muted,#667)}
+  .b1{background:#0f766e}.b2{background:var(--gold,#c9a24a)}.b3{background:#94a3b8}.fu-lg{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -1652,7 +1659,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261119-040000';
+const BUILD = '20261120-073000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3094,7 +3101,7 @@ function exportClRep() {
 let _pdClients = null;
 function vClients(r, el) {
   if (r.q.get('f')) { CJ.f = r.q.get('f'); }
-  const sup = isSup(); if (sup && !['month', 'quarter', 'owing', 'owing1'].includes(CJ.f)) CJ.f = 'month';
+  const sup = isSup(); if (sup && !['month', 'quarter', 'owing', 'owing1', 'fu'].includes(CJ.f)) CJ.f = 'month';
   const c = calc().cli, ast = archIndex().st, SAB = isPriv() ? saBalances() : {};
   const act = id => { const a = (c[id] || {}).last || '', b = (ast[id] || {}).last || ''; return a > b ? a : b; };
   let arr = CJ.q ? clientSearch(CJ.q, 500) : activeClients().sort((a, b) => act(b.id).localeCompare(act(a.id)));
@@ -3103,7 +3110,7 @@ function vClients(r, el) {
   const d3 = dBack(3), d1 = dBack(1);
   const pa = id => xlDone() ? ((c[id] || {}).last || '') : act(id);
   const filt = {
-    all: () => true, nophone: x => !x.phone, debt: x => (c[x.id] || {}).bal < 0, credit: x => (c[x.id] || {}).bal > 0,
+    all: () => true, fu: x => !!fuIndex()[x.id], nophone: x => !x.phone, debt: x => (c[x.id] || {}).bal < 0, credit: x => (c[x.id] || {}).bal > 0,
     new: x => !String(x.createdBy).includes('ترحيل'),
     month: x => pa(x.id) >= mStart, quarter: x => pa(x.id) >= qStart,
     owing: x => (c[x.id] || {}).bal < -0.004 && pa(x.id) >= d3,
@@ -3125,13 +3132,13 @@ function vClients(r, el) {
       ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(r.x.name)}</td><td>${esc(r.x.phone || '')}</td><td class="c">${r.p.n}</td><td class="n">${fmt(r.p.inc)}</td><td class="n">${fmt(r.p.exp)}</td><td class="n">${fmt(r.p.fee)}</td><td class="n"><b class="${r.bal < 0 ? 'neg' : ''}">${fmt(r.bal)}</b></td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="4">الإجمالي (${rows.length} عميل)</td><td class="n">${fmt(sm('inc'))}</td><td class="n">${fmt(sm('exp'))}</td><td class="n">${fmt(sm('fee'))}</td><td class="n">${fmt(r2(cr - db))}</td></tr></tfoot></table></div>`;
   }
-  const _lbl = ({ all: 'كل العملاء', month: 'تعاملنا معهم هذا الشهر', quarter: 'تعاملنا معهم هذا الربع', owing1: 'عليهم رصيد (آخر شهر)', owing: 'عليهم رصيد (آخر 3 شهور)', nophone: 'بدون رقم موبايل', debt: 'عليهم رصيد (مدينون)', credit: 'لهم رصيد', new: 'عملاء جدد' })[CJ.f] || 'كل العملاء';
+  const _lbl = ({ all: 'كل العملاء', fu: 'عملاء عندهم متابعة مفتوحة', month: 'تعاملنا معهم هذا الشهر', quarter: 'تعاملنا معهم هذا الربع', owing1: 'عليهم رصيد (آخر شهر)', owing: 'عليهم رصيد (آخر 3 شهور)', nophone: 'بدون رقم موبايل', debt: 'عليهم رصيد (مدينون)', credit: 'لهم رصيد', new: 'عملاء جدد' })[CJ.f] || 'كل العملاء';
   _pdClients = () => printClients(arr, _lbl + (CJ.q ? ' · بحث: ' + CJ.q : ''));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</b><div class="small muted">${per ? (CJ.f === 'month' ? 'تقرير عملاء الشهر' : 'تقرير عملاء الربع') + ' — من ' + from + ' إلى ' + td : 'العملاء'}</div></div></div>
     <h1 class="pg no-print">${sup ? 'عملاء هذه الفترة' : 'العملاء'} <small>${sup ? arr.length : activeClients().length} عميل</small><span class="sp"></span><button class="btn pri sm" data-act="client-new">${icon('plus', 16)} عميل جديد</button></h1>
     <div class="filters card pad">
       <div class="search">${icon('search', 18)}<input class="inp" data-cj="q" value="${esc(CJ.q)}" placeholder="ابحث بالاسم أو رقم الموبايل"></div>
-      <div class="chips scroll">${[['all', 'الكل'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
+      <div class="chips scroll">${[['all', 'الكل'], ['fu', '📊 المتابعة'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing', 'fu'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
     </div>
     ${isPriv() ? `<div class="row no-print" style="margin-top:10px;justify-content:flex-end"><button class="btn pri sm" data-act="pd-clients">${icon('print', 16)} طباعة PDF — بيان أرصدة العملاء (${arr.length})</button></div>` : ''}
     ${rep}
@@ -3140,7 +3147,7 @@ function vClients(r, el) {
       const s = c[x.id], a = ast[x.id];
       return `<div class="lrow" data-act="go" data-h="client/${x.id}"><div class="av">${esc(initials(x.name))}</div>
         <div class="grow"><b>${esc(x.name)}</b><div class="small muted">${x.phone ? `<span class="num">${esc(x.phone)}</span>` : '<span class="badge warn">بدون رقم</span>'}
-        ${a ? ` · ${a.n} حركة في الإكسيل` : ''}${act(x.id) ? ` · آخر نشاط ${dShort(act(x.id))}` : ''}</div></div>
+        ${a ? ` · ${a.n} حركة في الإكسيل` : ''}${act(x.id) ? ` · آخر نشاط ${dShort(act(x.id))}` : ''}</div>${(b => b ? `<div class="small">${b}</div>` : '')(fuBadge(x.id))}</div>
         ${s && s.n ? `<b class="${s.bal < 0 ? 'neg' : 'pos'}">${money(s.bal)}</b>` : (SAB[x.id] != null ? `<b class="${SAB[x.id] < 0 ? 'neg' : 'pos'}" title="رصيد المحاسب الذكي">${money(SAB[x.id])}</b>` : '')}</div>`;
     }).join('') || '<div class="empty">لا يوجد عملاء مطابقون.</div>'}
     ${arr.length > CJ.limit ? `<div class="totbar"><button class="btn sm" data-act="cj-more">عرض المزيد (${arr.length - CJ.limit})</button></div>` : ''}</div>`;
@@ -3561,6 +3568,7 @@ function vClient(r, el) {
         </div>
       </div>
     </div>
+    ${cvSwitch(c)}
     <div class="card sumrow">
       <div><small>💰 المدفوع</small><b class="pos">${fmt(P.paid)}</b></div>
       <div><small>💼 الأتعاب</small><b style="color:#0f766e">${fmt(P.fee)}</b></div>
@@ -3613,6 +3621,7 @@ function vClient(r, el) {
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>المحاسب</th><th>البيان</th><th>المكان</th><th class="n">وارد</th><th class="n">نثرية</th><th class="n">رسوم</th></tr></thead>
       <tbody>${arch.map(x => `<tr><td class="num">${x[ci.date]}</td><td>${esc(x[ci.member])}</td><td>${esc(x[ci.desc])}</td><td>${esc(x[ci.place])}</td>
         <td class="n">${+x[ci.inc] ? fmt(x[ci.inc]) : ''}</td><td class="n">${+x[ci.misc] ? fmt(x[ci.misc]) : ''}</td><td class="n">${+x[ci.fee] ? fmt(x[ci.fee]) : ''}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
+  if (cliView() === 'fu') fuApply(el, c);
 }
 function clientWhatsApp(id) {
   const c = D.clients[id], s = cliStat(id), st = clientStatement(id), sa = saFor(id);
@@ -6527,8 +6536,9 @@ function wkImport() {
   WK_SEED.forEach(x => { const k = x.s + '|' + nkey(x.n) + '|' + nkey(x.st) + '|' + nkey(x.nt); if (have.has(k)) return; have.add(k); const m = wkMatch(x.n); if (m.cid || m.pid) linked++; cur.push({ id: uid('WK'), s: x.s, n: x.n, st: x.st || '', nx: x.nx || '', nt: x.nt || '', d: x.d || '', dn: [], fin: 0, by: ME ? ME.id : '', at: nowIso(), ...m }); n++; });
   wkSave(cur); toast(`اتضاف ${n} ملف (${linked} منهم اتربطوا بعملاء)`); render();
 }
-function wkForm(id, sec) {
-  const it = id ? wkList().find(x => x.id === id) : null, cur = it || { s: sec && sec !== 'all' ? sec : 'found', n: '', dn: [], st: '', nx: '', nt: '', d: '', cid: '', pid: '' };
+function wkForm(id, sec, cid0) {
+  const c0 = cid0 && D.clients[cid0];
+  const it = id ? wkList().find(x => x.id === id) : null, cur = it || { s: sec && sec !== 'all' ? sec : 'found', n: c0 ? c0.name : '', dn: [], st: '', nx: '', nt: '', d: '', cid: c0 ? c0.id : '', pid: c0 ? (wkMatch(c0.name).pid || '') : '' };
   const lk = { cid: cur.cid || '', pid: cur.pid || '' };
   const m = modal(`<h3>📂 ${it ? 'تعديل الملف' : 'ملف شغال جديد'}</h3>
     ${fld('القسم', `<select id="wk-s" class="inp">${WK_SECS.map(x => `<option value="${x.k}" ${cur.s === x.k ? 'selected' : ''}>${x.e} ${x.n}</option>`).join('')}</select>`)}
@@ -6587,6 +6597,185 @@ Object.assign(ACT, {
 });
 document.addEventListener('input', e => { const t = e.target.closest && e.target.closest('[data-wk="q"]'); if (!t) return; WKV.q = t.value; clearTimeout(WKV.t); WKV.t = setTimeout(() => { const pos = t.selectionStart; render(); const n = document.querySelector('[data-wk="q"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { } } }, 250); });
 const wkForClient = (pid, names) => { const ks = new Set([...(names || []).map(nkey)].filter(Boolean)); return wkList().filter(x => !x.fin && (x.pid === pid || ks.has(nkey(x.n)))); };
+/* ====== المتابعة: العميل محور الربط (مهام + يومية + ملفات شغالة + خدمات + تسليمات) ====== */
+const FUV = { v: LS.get('cliView', 'fu'), more: 0, id: '' };
+const cliView = () => FUV.v === 'st' ? 'st' : 'fu';
+const fuMon = d => { d = String(d || ''); return /^\d{4}-\d{2}/.test(d) ? MON_AR[+d.slice(5, 7) - 1] + ' ' + d.slice(0, 4) : 'بدون تاريخ'; };
+function fuPids(c) {
+  const s = new Set(); if (typeof CRM === 'undefined' || !crmCfg()) return s;
+  const own = CRM.p['A-' + c.id]; if (own && !yes(own.deleted)) s.add(own.id);
+  [c.phone, c.phone2].filter(Boolean).forEach(ph => { const p = crmPByPhone(ph); if (p && !yes(p.deleted) && crmAccOf(p).some(a => a.id === c.id)) s.add(p.id); });
+  return s;
+}
+function fuData(c) {
+  const td = today(), pids = fuPids(c), cos = [...pids].flatMap(pid => crmCos(pid));
+  const keys = new Set([c.name, ...String(c.aliases || '').split('|')].map(nkey).filter(Boolean));
+  const work = wkList().filter(x => (x.cid && resCid(x.cid) === c.id) || (x.pid && pids.has(x.pid)) || keys.has(nkey(x.n)));
+  const tasks = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name)));
+  const cosIds = new Set(cos.map(x => x.id));
+  const fil = cos.length ? crmFilings().filter(f => cosIds.has(f.c.id)) : [];
+  const haveT = new Set(tasks.map(t => t.id));
+  const xtra = fil.filter(f => f.st === 'open' && f.due <= addDays(td, 60) && !haveT.has('TF-' + f.id)).map(f => ({ id: 'TF-' + f.id, crm: 'f', cid: c.id, clientName: '', text: `${TXK[f.kind]} — ${perLabel(f.period)}${cos.length > 1 ? ' · ' + f.c.name : ''}`, cat: 'ضرائب', note: f.note, who: f.whoN, due: f.due, d: f.due, status: 'open', why: '' }));
+  const dl = dlList().filter(x => x.c === c.id);
+  const dn = fpDoneMap(), fp = (typeof FP !== 'undefined' ? FP.list : []).filter(x => x.app && (dn[x.id] === c.id || (!(x.id in dn) && normPhone(x.phone) && [c.phone, c.phone2].some(p => p && normPhone(p) === normPhone(x.phone)))));
+  const acs = Object.entries(D.lists || {}).filter(([k]) => k.startsWith('ac_')).map(([, v]) => { try { return JSON.parse(v[0]); } catch (e) { return null; } }).filter(r => r && !r.del && r.c && resCid(r.c) === c.id);
+  return { pids, cos, work, tasks, fil, xtra, dl, fp, acs, st: clientStatement(c.id) };
+}
+function fuServices(c, F) {
+  const m = new Map(), add = (k, n) => m.set(k, (m.get(k) || 0) + (n || 1));
+  F.cos.forEach(x => { if (String(x.tax || '').trim()) add('🧾 إقرار الدخل'); if (yes(x.vat)) add('🧮 قيمة مضافة'); if (yes(x.wages)) add('👥 أجور ومرتبات'); if (yes(x.einv)) add('🧾 فاتورة إلكترونية'); });
+  F.work.forEach(x => { const s = wkSec(x.s); add(s.e + ' ' + s.n); });
+  if (F.fp.length) add('🏗️ تأسيس شركة', F.fp.length);
+  if (F.dl.length) add('📦 تسليم واستلام مستندات', F.dl.length);
+  F.st.forEach(({ t }) => { if (t.type === 'FEE' && t.category) add('💼 ' + t.category); });
+  if (c.service) String(c.service).split(/[،,|]/).map(s => s.trim()).filter(Boolean).forEach(s => add('⭐ ' + s));
+  return [...m.entries()];
+}
+function fuDone(c, F) {
+  const o = [];
+  F.tasks.filter(t => !tkOpen(t) && !t.crm).forEach(t => {
+    const tx = t.txId && D.txs[t.txId];
+    o.push({ d: String(t.doneAt || t.due || t.d || '').slice(0, 10), ic: t.status === 'nx' ? '✕' : t.auto ? '🧾' : '✅', t: t.text + (t.status === 'nx' ? ' — لم تُنفَّذ' + (t.why ? ': ' + t.why : '') : ''), sub: [tkWhoName(t), t.note].filter(Boolean).join(' · '), amt: tx ? +tx.amount || 0 : 0, src: t.auto ? 'من اليومية' : 'مهمة', tx: tx ? tx.id : '' });
+  });
+  F.fil.filter(f => f.st === 'done').forEach(f => o.push({ d: String(f.doneAt).slice(0, 10), ic: '🏛️', t: `${TXK[f.kind]} — ${perLabel(f.period)}`, sub: [f.doneBy, F.cos.length > 1 ? f.c.name : ''].filter(Boolean).join(' · '), src: 'ضرائب' }));
+  F.work.forEach(x => { const s = wkSec(x.s), dn = (x.dn || []).map(j => s.steps[j]).filter(Boolean); if (dn.length || x.fin) o.push({ d: String(x.at || '').slice(0, 10), ic: x.fin ? '🏁' : '📂', t: `${s.n}${x.n && nkey(x.n) !== nkey(c.name) ? ' — ' + x.n : ''}: ${x.fin ? 'الملف خلص' : 'تم ' + dn.join(' ← ')}`, sub: dn.length && x.fin ? 'الخطوات: ' + dn.join(' ← ') : '', src: 'ملف شغال' }); });
+  F.dl.forEach(x => x.docs.filter(q => q.x).forEach(q => o.push({ d: String(q.x).slice(0, 10), ic: dlKind(x) === 'in' ? '📥' : '📤', t: (dlKind(x) === 'in' ? 'تم استلام: ' : 'تم تسليم: ') + q.t, sub: dlWho(x) ? bareName(dlWho(x).name) : '', src: 'تسليمات' })));
+  F.acs.forEach(r => o.push({ d: String(r.d || r.at || '').slice(0, 10), ic: '⭐', t: r.t, sub: hrName(r.u), src: 'إنجاز' }));
+  return o.sort((a, b) => String(b.d).localeCompare(String(a.d)));
+}
+function fuMoney(c, F) {
+  const P = F.st.reduce((o, { t, cr, dr }) => { const k = stKind(t); if (k === 'pay' || (k === 'open' && cr)) o.paid += cr; else if (k === 'open') o.open += dr; else if (k === 'fee') o.fee += dr; else if (k === 'gov') o.gov += dr; else if (k === 'exp') o.exp += dr; return o; }, { paid: 0, fee: 0, gov: 0, exp: 0, open: 0 });
+  Object.keys(P).forEach(k => P[k] = r2(P[k]));
+  P.bal = cliStat(c.id).bal; P.chg = r2(P.fee + P.gov + P.exp + P.open);
+  P.feeShare = P.chg ? Math.round(P.fee / P.chg * 100) : 0;
+  P.coll = P.chg ? Math.min(100, Math.round(P.paid / P.chg * 100)) : (P.paid ? 100 : 0);
+  P.feeColl = r2(Math.max(0, Math.min(P.fee, P.paid - P.gov - P.exp - P.open)));   // تقدير: المدفوع يغطي الرسوم والمصروفات الأول
+  const ds = F.st.map(x => x.t.date).filter(Boolean).sort();
+  P.first = ds[0] || ''; P.last = ds[ds.length - 1] || '';
+  P.months = P.first ? Math.max(1, (+today().slice(0, 4) - +P.first.slice(0, 4)) * 12 + (+today().slice(5, 7) - +P.first.slice(5, 7)) + 1) : 0;
+  P.avgFee = P.months ? r2(P.fee / P.months) : 0;
+  const mon = []; for (let k = 11; k >= 0; k--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - k); mon.push({ m: d.toLocaleDateString('en-CA').slice(0, 7), fee: 0, paid: 0, cost: 0 }); }
+  const mi = Object.fromEntries(mon.map((x, i) => [x.m, i]));
+  F.st.forEach(({ t, cr, dr }) => { const i = mi[String(t.date).slice(0, 7)]; if (i == null) return; const k = stKind(t), x = mon[i]; if (k === 'pay') x.paid += cr; else if (k === 'fee') x.fee += dr; else if (k === 'gov' || k === 'exp') x.cost += dr; });
+  P.mon = mon;
+  const cat = {}; F.st.forEach(({ t, dr }) => { const k = stKind(t); if ((k === 'gov' || k === 'exp') && dr) { const n = t.category || (TYPES[t.type] || {}).n || 'أخرى'; cat[n] = (cat[n] || 0) + dr; } });
+  P.cats = Object.entries(cat).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  return P;
+}
+function fuTaskStats(F) {
+  const own = F.tasks.filter(t => !t.crm && !t.auto), done = own.filter(t => t.status === 'done');
+  const dur = done.map(t => { const a = String(t.d || '').slice(0, 10), b = String(t.doneAt || '').slice(0, 10); return a && b && b >= a ? (new Date(b) - new Date(a)) / 864e5 : null; }).filter(x => x != null);
+  const withDue = done.filter(t => t.due && t.doneAt), ontime = withDue.filter(t => String(t.doneAt).slice(0, 10) <= t.due).length;
+  return { done: done.length, auto: F.tasks.filter(t => t.auto).length, avg: dur.length ? Math.round(dur.reduce((a, b) => a + b, 0) / dur.length * 10) / 10 : null, ontime: withDue.length ? Math.round(ontime / withDue.length * 100) : null, late: F.tasks.concat(F.xtra).filter(tkLate).length };
+}
+function fuBars(mon) {
+  const mx = Math.max(1, ...mon.map(x => Math.max(x.fee, x.paid, x.cost)));
+  const h = v => Math.max(v ? 3 : 0, Math.round(v / mx * 110));
+  return `<div class="fu-bars">${mon.map(x => `<div class="fu-bm" title="${fuMon(x.m)} — أتعاب ${fmt(x.fee)} · مدفوع ${fmt(x.paid)} · رسوم ومصروفات ${fmt(x.cost)}"><div class="fu-bb"><i class="b1" style="height:${h(x.fee)}px"></i><i class="b2" style="height:${h(x.paid)}px"></i><i class="b3" style="height:${h(x.cost)}px"></i></div><span>${MON_AR[+x.m.slice(5) - 1].slice(0, 3)}</span></div>`).join('')}</div>
+    <div class="row wrap small" style="gap:12px;margin-top:6px"><span><i class="fu-lg b1"></i> الأتعاب</span><span><i class="fu-lg b2"></i> المدفوع</span><span><i class="fu-lg b3"></i> الرسوم والمصروفات</span></div>`;
+}
+const fuReqRow = x => `<div class="lrow" style="align-items:flex-start;cursor:default"><span style="font-size:20px">${x.ic}</span><div class="grow"><b>${esc(x.t)}</b> <span class="badge">${esc(x.src)}</span>${x.sub ? `<div class="small muted">${x.sub}</div>` : ''}${x.prog != null ? `<div class="fu-prog"><i style="width:${x.prog}%"></i></div>` : ''}</div>${x.btn || ''}</div>`;
+function fuReqs(c, F) {
+  const o = [];
+  F.work.filter(x => !x.fin).forEach(x => { const s = wkSec(x.s), tot = s.steps.length, dn = (x.dn || []).length, last = wkLast(x);
+    o.push({ ic: s.e, t: `${s.n}${x.n && nkey(x.n) !== nkey(c.name) ? ' — ' + x.n : ''}`, src: 'ملف شغال', sub: [last ? '📍 آخر موقف: <b>' + esc(last) + '</b>' : '', tot ? `${dn}/${tot} خطوة` : '', x.nt ? '📝 ' + esc(x.nt) : '', x.d ? '<span class="num">' + esc(x.d) + '</span>' : ''].filter(Boolean).join(' · '), prog: tot ? Math.round(dn / tot * 100) : null, btn: `<button class="btn sm" data-act="wk-edit" data-id="${x.id}">${icon('edit', 15)}</button>` }); });
+  F.fp.forEach(x => o.push({ ic: '🏗️', t: 'تأسيس — ' + x.name, src: 'مشروع تأسيس', sub: `الإجمالي <b class="num">${fmt(x.app.total)}</b> · المدفوع <b class="num">${fmt(x.app.paid)}</b>${x.app.total > x.app.paid ? ` · الباقي <b class="num neg">${fmt(x.app.total - x.app.paid)}</b>` : ''}`, prog: x.app.total ? Math.min(100, Math.round(x.app.paid / x.app.total * 100)) : null }));
+  F.dl.filter(dlPend).forEach(x => { const a = x.docs.filter(d => !d.x).map(d => d.t), inn = dlKind(x) === 'in';
+    o.push({ ic: inn ? '📥' : '📤', t: (inn ? 'مستندات مطلوبة منه: ' : 'مستندات جاهزة لتسليمها: ') + a.join('، '), src: 'تسليمات', sub: [dlWho(x) ? 'مع ' + esc(bareName(dlWho(x).name)) : '', x.d ? 'الموعد ' + esc(dShort(x.d)) : ''].filter(Boolean).join(' · '), btn: `<button class="btn sm" data-act="dl-wc" data-id="${x.id}" title="رسالة للعميل">${icon('chat', 15)}</button>` }); });
+  return o;
+}
+function fuHtml(c) {
+  const F = fuData(c), P = fuMoney(c, F), S = fuTaskStats(F), sv = fuServices(c, F), req = fuReqs(c, F), done = fuDone(c, F);
+  const plan = F.tasks.filter(tkOpen).concat(F.xtra).sort(tkSort);
+  const nxt = F.work.filter(x => !x.fin && wkNext(x)).map(x => ({ x, s: wkSec(x.s), nx: wkNext(x) }));
+  if (FUV.id !== c.id) { FUV.id = c.id; FUV.more = 0; }
+  const lim = 25 + FUV.more * 40, shown = done.slice(0, lim);
+  let lastM = '';
+  const tl = shown.map(x => { const m = fuMon(x.d), hd = m !== lastM ? `<div class="fu-mh">${esc(m)}</div>` : ''; lastM = m;
+    return hd + `<div class="fu-tl"><span class="fu-ic">${x.ic}</span><div class="grow"><div>${esc(x.t)}${x.amt ? ` <b class="num">${fmt(x.amt)}</b>` : ''}</div><div class="small muted">${x.d ? `<span class="num">${esc(dShort(x.d))}</span> · ` : ''}${esc(x.src)}${x.sub ? ' · ' + esc(x.sub) : ''}</div></div>${x.tx ? `<button class="btn sm ghost" data-act="tx" data-id="${esc(x.tx)}">الحركة</button>` : ''}</div>`; }).join('');
+  const last = F.st.slice(-6).reverse();
+  const kp = (l, v, cls) => `<div><small>${l}</small><b class="${cls || ''}">${v}</b></div>`;
+  return `<div class="card sumrow fu-k">
+      ${kp('📥 طلبات مفتوحة', req.length)}${kp('✅ مراحل تمت', done.filter(x => x.ic !== '✕').length)}${kp('🗓️ مهام مخططة', plan.length + nxt.length + (S.late ? ` <span class="small neg">(${S.late} متأخرة)</span>` : ''))}
+      ${kp('💼 الأتعاب', fmt(P.fee), 'pos')}<div class="bal ${P.bal < -0.004 ? 'neg' : ''}"><small>${P.bal < -0.004 ? '⚠️ عليه' : '✅ له'}</small><b class="${P.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(P.bal))}</b></div></div>
+    <div class="row wrap no-print" style="gap:6px;margin:8px 0">
+      ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة جديدة</button>` : ''}
+      ${canTab('work') ? `<button class="btn sm" data-act="wk-addc" data-c="${c.id}">📂 ملف شغال</button>` : ''}
+      ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">📦 مستندات</button>` : ''}
+      <span class="sp"></span><button class="btn sm" data-act="fu-print" data-id="${c.id}">${icon('print', 15)} تقرير المتابعة PDF</button></div>
+    ${sv.length ? `<h2 class="sec">🧩 الخدمات المقدمة</h2><div class="card pad"><div class="chips" style="flex-wrap:wrap">${sv.map(([n, k]) => `<span class="chip">${esc(n)}${k > 1 ? ` <b class="num">${k}</b>` : ''}</span>`).join('')}</div>
+      ${F.cos.length ? `<div class="small muted" style="margin-top:6px">🗂️ في قاعدة البيانات: ${F.cos.map(x => `<a href="#crm/p/${x.pid}">${esc(x.name)}</a>`).join('، ')}</div>` : (typeof CRM !== 'undefined' && crmCfg() ? '<div class="small muted" style="margin-top:6px">العميل لسه مش متربط بقاعدة البيانات.</div>' : '')}</div>` : ''}
+    <h2 class="sec">📥 طلبات العميل <span class="cnt">${req.length}</span></h2>
+    <div class="card">${req.length ? req.map(fuReqRow).join('') : '<div class="empty">مفيش طلبات مفتوحة دلوقتي (ملفات شغالة / تأسيس / مستندات).</div>'}</div>
+    <h2 class="sec">🗓️ المخطط — مهام جديدة <span class="cnt">${plan.length + nxt.length}</span></h2>
+    <div class="card">${nxt.map(({ x, s, nx }) => `<div class="tk"><button class="tk-c" data-act="wk-step" data-id="${x.id}" aria-label="خلّصت ${esc(nx)}"></button><div class="grow"><div class="tk-t">➡️ ${esc(nx)}</div><div class="tk-m">${s.e} ${esc(s.n)}${x.n && nkey(x.n) !== nkey(c.name) ? ' — ' + esc(x.n) : ''} · الخطوة القادمة في الملف</div></div></div>`).join('')}${plan.map(t => tkRow({ ...t, clientName: '' }, { who: true })).join('')}${plan.length || nxt.length ? '' : '<div class="empty">مفيش مهام مخططة. ضيفي مهمة جديدة من فوق.</div>'}</div>
+    <h2 class="sec">✅ مراحل التنفيذ اللي تمت <span class="cnt">${done.length}</span></h2>
+    <div class="card pad">${tl || '<div class="empty">لسه مفيش مراحل متسجلة.</div>'}${done.length > lim ? `<div class="totbar"><button class="btn sm" data-act="fu-more">عرض المزيد (${done.length - lim})</button></div>` : ''}</div>
+    <h2 class="sec">💰 كشف الحساب</h2>
+    <div class="card sumrow">${kp('💰 المدفوع', fmt(P.paid), 'pos')}${kp('💼 الأتعاب', fmt(P.fee))}${kp('🧾 الرسوم', fmt(P.gov))}${kp('🚗 المصروفات', fmt(P.exp))}<div class="bal ${P.bal < -0.004 ? 'neg' : ''}"><small>${P.bal < -0.004 ? 'المستحق عليه' : 'الرصيد له'}</small><b class="${P.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(P.bal))}</b></div></div>
+    <div class="card">${last.length ? last.map(({ t, cr, dr }) => `<div class="lrow" data-act="tx" data-id="${t.id}"><span class="num small muted" style="min-width:64px">${esc(dShort(t.date))}</span><div class="grow"><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}</div><b class="num ${cr ? 'pos' : 'neg'}">${cr ? '+' + fmt(cr) : dr ? '−' + fmt(dr) : ''}</b></div>`).join('') : '<div class="empty">لا توجد حركات بعد.</div>'}
+      <div class="totbar"><button class="btn sm pri" data-act="cv-set" data-v="st">🧾 كشف الحساب الكامل (${F.st.length} حركة)</button></div></div>
+    <h2 class="sec">📈 الربحية والتحليلات</h2>
+    <div class="grid fu-an">
+      <div class="card pad"><b>الربحية</b>
+        <div class="fu-kv"><span>إجمالي المطالبة على العميل</span><b class="num">${fmt(P.chg)}</b></div>
+        <div class="fu-kv"><span>منها أتعاب المكتب (الربح)</span><b class="num pos">${fmt(P.fee)} <small>(${P.feeShare}%)</small></b></div>
+        <div class="fu-kv"><span>منها رسوم ومصروفات (بتتحمّل على العميل)</span><b class="num">${fmt(r2(P.gov + P.exp))}</b></div>
+        <div class="fu-kv"><span>الأتعاب المحصّلة فعلًا (تقدير)</span><b class="num">${fmt(P.feeColl)}</b></div>
+        <div class="fu-kv"><span>نسبة التحصيل</span><b>${P.coll}%</b></div><div class="fu-prog"><i style="width:${P.coll}%"></i></div>
+        <div class="fu-kv"><span>متوسط الأتعاب في الشهر</span><b class="num">${fmt(P.avgFee)}</b></div>
+        <div class="fu-kv"><span>أول تعامل · آخر حركة</span><b class="num">${esc(P.first || '—')} · ${esc(P.last || '—')}</b></div></div>
+      <div class="card pad"><b>التنفيذ</b>
+        <div class="fu-kv"><span>مهام خلصت</span><b>${S.done}</b></div>
+        <div class="fu-kv"><span>مصروفات اتسجلت كمهام من اليومية</span><b>${S.auto}</b></div>
+        <div class="fu-kv"><span>متوسط مدة تنفيذ المهمة</span><b>${S.avg == null ? '—' : S.avg + ' يوم'}</b></div>
+        <div class="fu-kv"><span>الالتزام بالمواعيد</span><b>${S.ontime == null ? '—' : S.ontime + '%'}</b></div>
+        <div class="fu-kv"><span>مهام متأخرة دلوقتي</span><b class="${S.late ? 'neg' : ''}">${S.late}</b></div>
+        <div class="fu-kv"><span>ملفات شغالة · خلصت</span><b>${F.work.filter(x => !x.fin).length} · ${F.work.filter(x => x.fin).length}</b></div></div>
+      <div class="card pad" style="grid-column:1/-1"><b>آخر 12 شهر</b>${fuBars(P.mon)}</div>
+      ${P.cats.length ? `<div class="card pad" style="grid-column:1/-1"><b>أكتر بنود الرسوم والمصروفات</b>${P.cats.map(([n, v]) => `<div class="fu-kv"><span>${esc(n)}</span><b class="num">${fmt(r2(v))}</b></div><div class="fu-prog"><i style="width:${Math.round(v / P.cats[0][1] * 100)}%"></i></div>`).join('')}</div>` : ''}
+    </div>`;
+}
+function fuApply(el, c) {
+  const sw = el.querySelector('.cv-sw'); if (!sw) return;
+  el.querySelectorAll('.st-head').forEach(x => x.remove());
+  let n = sw.nextElementSibling; while (n) { const nx = n.nextElementSibling; n.remove(); n = nx; }
+  sw.insertAdjacentHTML('afterend', fuHtml(c));
+}
+const cvSwitch = c => `<div class="chips cv-sw no-print" style="margin:10px 0"><button class="chip ${cliView() === 'fu' ? 'on' : ''}" data-act="cv-set" data-v="fu">📊 المتابعة</button><button class="chip ${cliView() === 'st' ? 'on' : ''}" data-act="cv-set" data-v="st">🧾 كشف الحساب</button></div>`;
+function fuPrint(id) {
+  const c = D.clients[id]; if (!c) return;
+  const F = fuData(c), P = fuMoney(c, F), sv = fuServices(c, F), req = fuReqs(c, F), done = fuDone(c, F).filter(x => x.ic !== '✕').slice(0, 60), plan = F.tasks.filter(tkOpen).concat(F.xtra).sort(tkSort);
+  const nxt = F.work.filter(x => !x.fin && wkNext(x)), strip = s => String(s || '').replace(/<[^>]+>/g, '');
+  const sec = (t, b) => `<div class="crm-part"><div class="crm-pt">${t}</div>${b}</div>`;
+  const ul = L => L.length ? `<table class="pd-t"><tbody>${L.join('')}</tbody></table>` : '<p>—</p>';
+  printDoc({ title: 'تقرير متابعة عميل', file: 'متابعة_' + c.name,
+    info: [['العميل', `<b>${esc(c.name)}</b>`], ['الموبايل', esc(c.phone || '—')], ['الخدمات', esc(sv.map(x => x[0].replace(/^\S+\s/, '')).join('، ') || '—')]],
+    kpis: [['طلبات مفتوحة', req.length], ['مراحل تمت', done.length], ['مهام مخططة', plan.length + nxt.length], ['الأتعاب', fmt(P.fee)], [P.bal < -0.004 ? 'المستحق عليه' : 'الرصيد له', fmt(Math.abs(P.bal)), P.bal < -0.004 ? 'neg' : '']],
+    body: sec('📥 طلبات العميل', ul(req.map(x => `<tr><td>${esc(x.t)}</td><td>${strip(x.sub)}</td></tr>`)))
+      + sec('🗓️ المخطط', ul(nxt.map(x => `<tr><td>${esc(wkNext(x))}</td><td>${esc(wkSec(x.s).n)} — الخطوة القادمة</td></tr>`).concat(plan.map(t => `<tr><td>${esc(t.text)}</td><td>${t.due ? esc(t.due) : ''} ${esc(tkWhoName(t))}</td></tr>`))))
+      + sec('✅ مراحل التنفيذ اللي تمت', ul(done.map(x => `<tr><td class="num" style="width:90px">${esc(x.d)}</td><td>${esc(x.t)}${x.amt ? ' — ' + fmt(x.amt) : ''}</td></tr>`)))
+      + sec('💰 الحساب', ul([['المدفوع', P.paid], ['الأتعاب', P.fee], ['الرسوم', P.gov], ['المصروفات', P.exp], ['نسبة التحصيل', P.coll + '%']].map(([k, v]) => `<tr><td>${k}</td><td class="n">${typeof v === 'number' ? fmt(v) : v}</td></tr>`)))
+  });
+}
+/* فهرس سريع لتاب العملاء ← فلتر «المتابعة» */
+let _fuIx = null, _fuIxV = -1;
+function fuIndex() {
+  if (_fuIx && _fuIxV === VER) return _fuIx;
+  const ix = {}, g = id => ix[id] || (ix[id] = { w: 0, t: 0, d: 0, l: 0 });
+  const byKey = {}; activeClients().forEach(c => [c.name, ...String(c.aliases || '').split('|')].forEach(n => { const k = nkey(n); if (k && !byKey[k]) byKey[k] = c.id; }));
+  wkList().filter(x => !x.fin).forEach(x => { const id = (x.cid && D.clients[resCid(x.cid)] && resCid(x.cid)) || byKey[nkey(x.n)]; if (id) g(id).w++; });
+  tkAll().filter(tkOpen).forEach(t => { const id = t.cid || byKey[nkey(t.clientName)]; if (id && D.clients[id]) { g(id).t++; if (tkLate(t)) g(id).l++; } });
+  dlList().filter(dlPend).forEach(x => g(x.c).d++);
+  _fuIx = ix; _fuIxV = VER; return ix;
+}
+const fuBadge = id => { const x = fuIndex()[id]; if (!x) return ''; return [x.w ? `📂 ${x.w}` : '', x.t ? `📋 ${x.t}${x.l ? ` <span class="neg">(${x.l} متأخرة)</span>` : ''}` : '', x.d ? `📦 ${x.d}` : ''].filter(Boolean).join(' · '); };
+Object.assign(ACT, {
+  'cv-set': el => { FUV.v = el.dataset.v === 'st' ? 'st' : 'fu'; LS.set('cliView', FUV.v); render(); window.scrollTo(0, 0); },
+  'fu-more': () => { FUV.more++; render(); },
+  'fu-print': el => fuPrint(el.dataset.id),
+  'wk-addc': el => wkForm(null, 'found', el.dataset.c)
+});
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
