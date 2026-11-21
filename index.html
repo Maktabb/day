@@ -1734,7 +1734,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-030000';
+const BUILD = '20261122-033000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -7471,8 +7471,83 @@ if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) window.a
 boot();
 
 
-/* ====== المساعد الذكي: بتكتبي الأمر، هو يفهمه ويقترح التنفيذ، وانتي بتأكدي ====== */
+/* ====== المساعد (مجاني، بدون ذكاء اصطناعي خارجي): بيفهم صيغ شائعة بالعامية ويقترح، وانتي بتأكدي ====== */
 const AI = { hist: [], busy: false };
+const AI_DAYS = { 'السبت': 6, 'الاحد': 0, 'الحد': 0, 'الاثنين': 1, 'الاتنين': 1, 'الثلاثاء': 2, 'التلات': 2, 'الثلات': 2, 'الاربعاء': 3, 'الاربع': 3, 'الخميس': 4, 'الجمعه': 5, 'الجمعة': 5 };
+function aiParse(msg) {
+  let t = ' ' + String(msg).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/[ًٌٍَُِّْ]/g, '').replace(/[؟?!،,]/g, ' ') + ' ';
+  const take = (re) => { const m = t.match(re); if (m) t = t.replace(re, ' '); return m; };
+  const td = today(), iso = d => d.toISOString().slice(0, 10), dt0 = new Date(td + 'T12:00:00');
+  const wantOpen = /\s(افتح|افتحي|روح|روحي|وريني|وريني|عايز اشوف|عايزه اشوف)\s/.test(t);
+  const wantColl = /تحصيل|حصل|حصلي|تحصل/.test(t), wantAp = /موعد|ميعاد|مواعيد|اجتماع|زيارة|زياره|فكرني|فكريني/.test(t);
+  // التاريخ
+  let date = '';
+  let m;
+  if ((m = take(/\s(\d{4})-(\d{1,2})-(\d{1,2})\s/))) date = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  else if ((m = take(/\s(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\s/))) { let y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : td.slice(0, 4); date = `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; if (!m[3] && date < td) date = (+y + 1) + date.slice(4); }
+  else if (take(/\sبعد (بكره|بكرة|بكرا|غد)\s/)) date = iso(new Date(+dt0 + 2 * 864e5));
+  else if (take(/\s(بكره|بكرة|بكرا|غدا)\s/)) date = iso(new Date(+dt0 + 864e5));
+  else if (take(/\s(النهارده|النهاردة|اليوم|انهارده)\s/)) date = td;
+  else if ((m = take(/\sبعد (\d+) (يوم|ايام|اسبوع|اسابيع|شهر)\s/))) date = iso(new Date(+dt0 + (+m[1]) * (m[2][0] === 'ا' && m[2] !== 'ايام' ? 7 : m[2] === 'شهر' ? 30 : 1) * 864e5));
+  else if (take(/\sبعد اسبوع\s|\sالاسبوع (الجاي|الجايه|القادم)\s/)) date = iso(new Date(+dt0 + 7 * 864e5));
+  else for (const [k, v] of Object.entries(AI_DAYS)) { const re = new RegExp('\\s' + k + '(\\s|$)'); if (re.test(t)) { t = t.replace(re, ' '); let n = (v - dt0.getDay() + 7) % 7; if (!n) n = 7; date = iso(new Date(+dt0 + n * 864e5)); break; } }
+  t = t.replace(/\s(الجاي|الجايه|القادم|القادمه|ده|دي)\s/g, ' ');
+  t = t.replace(/\sو(?=(كلف|خلي|اسند|يحصل|على|علي)\S*\s)/g, ' ');
+  // الوقت
+  let time = '';
+  if ((m = take(/\s(?:الساعه|الساعة|ساعه|س)\s*(\d{1,2})(?::(\d{2}))?\s*(صباحا|الصبح|ص|مساء|بالليل|العصر|م|ظهرا|الضهر)?\s/)) || (m = take(/\s(\d{1,2})(?::(\d{2}))?\s*(صباحا|الصبح|مساء|بالليل|العصر|ظهرا|الضهر)\s/))) {
+    let h = +m[1]; const mi = m[2] || '00', pm = /مساء|ليل|العصر|^م$|ظهر|ضهر/.test(m[3] || '');
+    if (pm && h < 12) h += 12; else if (!m[3] && h >= 1 && h <= 6) h += 12;
+    time = String(h).padStart(2, '0') + ':' + mi;
+  }
+  // المكلَّف
+  const users = liveUsers().filter(u => +u.active !== 0); let who = '', amb = null;
+  const uk = u => nkey(bareName(u.name)).replace(/^ا\./, '');
+  const firstTok = u => nkey(String(bareName(u.name)).split(/\s+/).filter(x => !/^(ا|م|د|أ)\.?$/.test(x))[0] || '');
+  const KW = '(?:كلفي|كلف|اسندي|اسند|خليها|خليه|خلي|يحصلها|يحصله|المسؤول|مسؤول|تكليف|لتحصيل|على|علي|لـ|ل)';
+  for (const mm of t.matchAll(new RegExp('\\s' + KW + '\\s*(\\S+)(?:\\s+(\\S+))?(?=\\s|$)', 'g'))) {
+    const w1 = nkey(mm[1]).replace(/^ال/, ''), w2 = mm[2] ? nkey(mm[2]) : '';
+    const full = w2 && users.filter(u => nkey(bareName(u.name)).replace(/^ا\./, '').startsWith(w1 + w2));
+    if (full && full.length === 1) { who = full[0].id; t = t.replace(mm[0], ' '); break; }
+    const us = users.filter(u => firstTok(u) && (firstTok(u) === w1 || firstTok(u).replace(/^ال/, '') === w1));
+    if (us.length > 1) { amb = us.map(u => bareName(u.name)); t = t.replace(mm[0], ' '); break; }
+    if (us.length === 1) { who = us[0].id; t = t.replace(' ' + mm[0].trim().split(/\s+/).slice(0, 2).join(' '), ' '); break; }
+  }
+  // المبلغ
+  let amt = 0;
+  if ((m = take(/\s(\d[\d,.]*)\s*(الف|الاف|آلاف|k)\s/))) amt = parseFloat(m[1].replace(/,/g, '')) * 1000;
+  else if ((m = take(/\s(\d[\d,.]*)\s*(?:ج|جنيه|جنيها|جم|pound|egp)\s/))) amt = parseFloat(m[1].replace(/,/g, ''));
+  else if ((m = t.match(/\s(\d{3,}[\d,.]*)\s/))) { amt = parseFloat(m[1].replace(/,/g, '')); t = t.replace(m[0], ' '); }
+  const agree = /اتفاق|الاتفاق|اتفاقي/.test(t);
+  const kind = /تحصيل/.test(t) ? 'collect' : /اجتماع|زيارة|زياره|مقابله|مقابلة/.test(t) ? 'meet' : /تسليم|استلام/.test(t) ? 'deliver' : /ضريب|اقرار/.test(t) ? 'tax' : /تسكير|اقفال/.test(t) ? 'close' : 'other';
+  // اسم العميل = اللي فاضل بعد شيل كلمات الأمر
+  const stop = /\s(ضيف|ضيفي|اضف|اضيف|اعمل|اعملي|سجل|سجلي|ابعت|ابعتي|ابعته|حط|حطي|حطه|حطها|افتح|افتحي|روح|روحي|وريني|فكرني|فكريني|موعد|ميعاد|للتحصيل|تحصيل|لتحصيل|حصل|حصلي|تحصل|اجتماع|زيارة|زياره|مقابله|مقابلة|تسليم|ضريبه|ضريبة|اقرار|تسكير|للعميل|لعميل|العميل|عميل|لشركه|لشركة|الشركه|الشركة|مع|عن|عند|ب|بمبلغ|مبلغ|دفعه|دفعة|من|الاتفاق|اتفاق|الرصيد|رصيد|بالرصيد|ل|لـ|ف|في|و|على|علي|الساعه|الساعة|جنيه|ج|يوم|عايز|عايزه|عاوز|محتاج|محتاجه|لو سمحت|بقي|بقى|ده|دي|كمان|ممكن|من فضلك|تكليف|كلف|كلفي|اسند|اسندي|خلي|خليه|خليها|يحصلها)(?=\s)/g;
+  let q = t; for (let i = 0; i < 4; i++) q = q.replace(stop, ' ');
+  q = q.replace(/\s+/g, ' ').trim();
+  const intent = wantOpen ? 'open' : (wantAp && !(wantColl && !/موعد|ميعاد/.test(t) && amt)) ? 'ap' : wantColl ? 'coll' : '';
+  return { intent, q, date, time, who, amb, amt, agree, kind, msg };
+}
+function aiPlan(msg, pickId) {
+  const P = aiParse(msg); const say = x => ({ say: x, calls: [] });
+  if (!P.intent) return say('ما فهمتش الطلب. جرّبي مثلًا: «ضيفي موعد لشركة كذا بكرة الساعة 11»، أو «ابعتي كذا للتحصيل 5000 وكلفي سارة»، أو «افتحي كذا».');
+  let cid = pickId || '';
+  if (!cid) {
+    if (!P.q) return say('أنهي عميل؟ اكتبي اسمه في الأمر.');
+    const L = clientSearch(P.q, 5);
+    if (!L.length) return say('ماقدرتش ألاقي عميل باسم «' + P.q + '».');
+    if (L.length > 1 && nkey(L[0].name) !== nkey(P.q) && !(nkey(L[0].name).startsWith(nkey(P.q)) && !nkey(L[1].name).startsWith(nkey(P.q)))) return { say: 'تقصدي أنهي عميل؟', pick: L.slice(0, 4).map(x => ({ id: x.id, name: x.name })), calls: [] };
+    cid = L[0].id;
+  }
+  if (P.amb) return { say: 'تقصدي أنهي واحد من: ' + P.amb.join(' / ') + '؟ اكتبي الاسم بالكامل.', calls: [], keep: 1 };
+  if (P.intent === 'open') return { calls: [{ n: 'open_client', a: { client_id: cid } }] };
+  if (P.intent === 'ap') {
+    if (!P.date) return { say: 'تاريخ الموعد إمتى؟ (مثلًا بكرة أو الأحد أو 25/12)', calls: [], keep: { cid } };
+    const nm = clientName(cid);
+    return { calls: [{ n: 'add_appointment', a: { client_id: cid, title: ({ collect: 'تحصيل', meet: 'اجتماع / زيارة', deliver: 'تسليم', tax: 'ضرائب', close: 'تسكير', other: 'متابعة' })[P.kind] + ' — ' + nm, date: P.date, time: P.time, kind: P.kind, assignee_id: P.who } }] };
+  }
+  const mode = P.agree ? 'agree' : P.amt > 0 ? 'amt' : 'bal';
+  return { calls: [{ n: 'send_to_collection', a: { client_id: cid, mode, amount: P.amt, agree_index: 0, assignee_id: P.who, note: '' } }] };
+}
 const aiLbl = c => { const a = c.a || {}, cn = k => clientName(resCid(a[k] || '')) || '؟', un = k => { const u = userById(a[k]); return u ? bareName(u.name) : ''; };
   if (c.n === 'add_appointment') return `📅 موعد «${esc(a.title || '')}» — ${esc(cn('client_id'))} — ${esc(a.date || '')}${a.time ? ' ' + esc(a.time) : ''}${a.assignee_id ? ' — ' + esc(un('assignee_id')) : ''}`;
   if (c.n === 'send_to_collection') return `💰 تحصيل — ${esc(cn('client_id'))} — ${a.mode === 'amt' ? 'دفعة ' + fmt(+a.amount || 0) + ' ج' : a.mode === 'agree' ? 'دفعة من الاتفاق' : 'بالرصيد المستحق'}${a.assignee_id ? ' — يحصّلها ' + esc(un('assignee_id')) : ''}${a.note ? ' — ' + esc(a.note) : ''}`;
@@ -7499,43 +7574,34 @@ function aiRun(c) {
   return 'أمر غير مدعوم';
 }
 function aiOpen() {
-  if (!crmCfg()) return toast('المساعد محتاج ربط قاعدة البيانات الأول', 'err');
-  const m = modal(`<h3>🤖 المساعد</h3><div class="small muted" style="margin-bottom:8px">اكتبي اللي عايزاه بالعامية، مثال: «ضيفي موعد لشركة كذا بكرة الساعة 11 للتحصيل» أو «ابعتي فلان للتحصيل ٥٠٠٠ ج وكلّفي سارة».</div>
+  const m = modal(`<h3>🤖 المساعد</h3><div class="small muted" style="margin-bottom:8px">اكتبي الأمر بالعامية، وأنا أفهمه وأعرضه عليكي قبل التنفيذ. أمثلة:<br>• ضيفي موعد لشركة كذا بكرة الساعة 11 وكلفي سارة<br>• ابعتي كذا للتحصيل 5000 وكلفي سارة<br>• ابعتي كذا للتحصيل بدفعة من الاتفاق<br>• افتحي كذا</div>
     <div id="ai-log" style="max-height:34vh;overflow:auto"></div>
     <div class="row" style="gap:6px;margin-top:8px"><input id="ai-q" class="inp grow" placeholder="اكتبي الأمر هنا"><button class="btn pri" id="ai-go">إرسال</button></div>
     <div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`);
-  const log = m.querySelector('#ai-log'), q = m.querySelector('#ai-q');
+  const log = m.querySelector('#ai-log'), q = m.querySelector('#ai-q'); let pend = '';
   const add = h => { log.insertAdjacentHTML('beforeend', h); log.scrollTop = log.scrollHeight; };
-  const send = async () => {
-    const msg = q.value.trim(); if (!msg || AI.busy) return; q.value = ''; AI.busy = true;
-    add(`<div class="card pad" style="margin:6px 0;background:var(--bg2,#f3f5f9)">${esc(msg)}</div><div class="small muted" id="ai-w">بفكّر…</div>`);
-    try {
-      const ctx = { today: today(), dow: new Date(today() + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long' }),
-        clients: Object.values(D.clients).filter(c => +c.active !== 0 && !c.mergedInto).slice(0, 1500).map(c => c.id + '|' + c.name),
-        users: liveUsers().filter(u => +u.active !== 0).map(u => u.id + '|' + bareName(u.name)) };
-      const j = await crmPost({ action: 'ask', uid: ME.id, code: ME.code, msg, hist: AI.hist, ctx });
-      m.querySelector('#ai-w')?.remove(); AI.hist.push({ role: 'user', content: msg });
-      const acts = (j.calls || []).filter(c => c.n !== 'answer'), say = (j.calls || []).filter(c => c.n === 'answer').map(c => (c.a || {}).text).filter(Boolean).join('\n');
-      AI.hist.push({ role: 'assistant', content: say || acts.map(aiLbl).join(' | ').replace(/<[^>]+>/g, '') || '…' });
-      if (say) add(`<div class="note info" style="margin:6px 0"><div>${esc(say)}</div></div>`);
-      if (acts.length) {
-        const id = 'ai' + Date.now();
-        add(`<div class="card pad" style="margin:6px 0" id="${id}"><b>هنفّذ ده؟</b>${acts.map(c => `<div style="margin-top:6px">${aiLbl(c)}</div>`).join('')}<div class="row" style="gap:6px;margin-top:10px"><button class="btn pri sm" data-ok>✓ نفّذ</button><button class="btn sm" data-no>إلغاء</button></div></div>`);
-        const box = m.querySelector('#' + id);
-        box.querySelector('[data-no]').onclick = () => { box.querySelector('.row').outerHTML = '<div class="small muted">اتلغى</div>'; };
-        box.querySelector('[data-ok]').onclick = () => {
-          const errs = acts.map(aiRun).filter(Boolean);
-          box.querySelector('.row').outerHTML = errs.length ? `<div class="small neg">${esc(errs.join(' · '))}</div>` : '<div class="small pos">✓ اتنفّذ</div>';
-          if (!errs.length) { toast('اتنفّذ'); if (!acts.some(c => c.n === 'open_client')) render(); else closeModal(); }
-        };
-      }
-      if (!say && !acts.length) add(`<div class="small muted">ماقدرتش أفهم الطلب، جرّبي صياغة تانية.</div>`);
-    } catch (e) {
-      m.querySelector('#ai-w')?.remove();
-      const msgE = /NO_KEY/.test(e.message) ? 'لسه ماتحطش مفتاح Claude في السكربت (CLAUDE_KEY).' : /UNKNOWN_ACTION/.test(e.message) ? 'لازم تحدّثي السكربت الجديد وتنشريه من جديد.' : e.message;
-      add(`<div class="note warn" style="margin:6px 0"><div>${esc(msgE)}</div></div>`);
+  const show = (pl) => {
+    if (pl.say) add(`<div class="note info" style="margin:6px 0"><div>${esc(pl.say)}</div></div>`);
+    if (pl.pick) { const id = 'ai' + Date.now(); add(`<div class="row wrap" id="${id}" style="gap:6px;margin:6px 0">${pl.pick.map(x => `<button class="btn sm" data-p="${esc(x.id)}">${esc(x.name)}</button>`).join('')}</div>`); m.querySelectorAll('#' + id + ' [data-p]').forEach(bt => bt.onclick = () => { m.querySelector('#' + id).remove(); show(aiPlan(pend, bt.dataset.p)); }); }
+    const acts = pl.calls || [];
+    if (acts.length) {
+      const id = 'ai' + Date.now() + 'x'; pend = '';
+      add(`<div class="card pad" style="margin:6px 0" id="${id}"><b>هنفّذ ده؟</b>${acts.map(c => `<div style="margin-top:6px">${aiLbl(c)}</div>`).join('')}<div class="row" style="gap:6px;margin-top:10px"><button class="btn pri sm" data-ok>✓ نفّذ</button><button class="btn sm" data-no>إلغاء</button></div></div>`);
+      const box = m.querySelector('#' + id);
+      box.querySelector('[data-no]').onclick = () => { box.querySelector('.row').outerHTML = '<div class="small muted">اتلغى</div>'; };
+      box.querySelector('[data-ok]').onclick = () => {
+        const errs = acts.map(aiRun).filter(Boolean);
+        box.querySelector('.row').outerHTML = errs.length ? `<div class="small neg">${esc(errs.join(' · '))}</div>` : '<div class="small pos">✓ اتنفّذ</div>';
+        if (!errs.length) { toast('اتنفّذ'); if (acts.some(c => c.n === 'open_client')) closeModal(); else render(); }
+      };
     }
-    AI.busy = false; q.focus();
+  };
+  const send = () => {
+    let msg = q.value.trim(); if (!msg) return; q.value = '';
+    add(`<div class="card pad" style="margin:6px 0;background:var(--bg2,#f3f5f9)">${esc(msg)}</div>`);
+    if (pend && !aiParse(msg).intent) msg = pend + ' ' + msg;
+    const pl = aiPlan(msg); if (pl.pick || pl.keep || (pl.say && /تاريخ|أنهي|اكتبي اسمه/.test(pl.say))) pend = msg;
+    show(pl); q.focus();
   };
   m.querySelector('#ai-go').onclick = send; q.addEventListener('keydown', e => { if (e.key === 'Enter') send(); }); q.focus();
 }
