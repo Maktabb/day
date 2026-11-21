@@ -1701,7 +1701,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-120000';
+const BUILD = '20261121-123000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -4464,7 +4464,7 @@ function vSettings(r, el) {
     <p class="small muted" style="margin-top:8px">${delCodeSet() ? '✅ الكود مفعّل: لا تُحذف أي حركة (من أي عضو) إلا بإدخاله.' : '⚠️ لم يُحدَّد كود بعد، فالحذف حاليًا بدون كود. حدّد كودًا ليصبح الحذف به فقط.'}</p></div>`);
   if (isFull()) push('sec', `<h2 class="sec">كود التعديل</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="ec-new" type="password" inputmode="numeric" autocomplete="off" placeholder="${editCodeSet() ? 'كود جديد (يستبدل الحالي)' : 'اكتب كود التعديل'}" style="max-width:240px"><button class="btn pri" data-act="editcode-save">حفظ الكود</button></div>
     <p class="small muted" style="margin-top:8px">${editCodeSet() ? '✅ مفعّل: أي حركة تاريخها قبل اليوم (من أي عضو، حتى الأدمن) لا تُعدَّل ولا يتغيّر تصنيفها ولا تتحوّل إلا بإدخال الكود. حركات اليوم تتعدّل عادي.' : '⚠️ لم يُحدَّد كود بعد، فالتعديل حاليًا بدون كود. حدّد كودًا ليُقفل تعديل الأيام السابقة.'}</p></div>`);
-  if (isFull() && crmCfg()) push('sec', `<h2 class="sec">رمز الإدارة لقاعدة البيانات</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="ca-new" type="password" autocomplete="off" placeholder="${LS.get('crmAdmin', '') ? 'رمز جديد (يستبدل المحفوظ)' : 'اكتب رمز الإدارة (CRM_ADMIN)'}" style="max-width:240px"><button class="btn pri" data-act="crmadm-save">حفظ الرمز</button>${LS.get('crmAdmin', '') ? `<button class="btn" data-act="crmadm-clear">مسح من الجهاز</button>` : ''}</div>
+  if (isFull() && crmCfg()) push('sec', `<h2 class="sec">رمز الإدارة لقاعدة البيانات</h2><div class="card pad"><div class="row wrap"><input class="inp ltr" id="ca-new" type="password" autocomplete="off" placeholder="${LS.get('crmAdmin', '') ? 'رمز جديد (يستبدل المحفوظ)' : 'اكتب رمز الإدارة (CRM_ADMIN)'}" style="max-width:240px"><button class="btn pri" data-act="crmadm-save">حفظ الرمز</button><button class="btn" data-act="crmadm-reset">🔄 نسيت الرمز؟ استبدال</button>${LS.get('crmAdmin', '') ? `<button class="btn" data-act="crmadm-clear">مسح من الجهاز</button>` : ''}</div>
     <p class="small muted" style="margin-top:8px">${LS.get('crmAdmin', '') ? '✅ محفوظ على هذا الجهاز بس. لو غيّرتِ CRM_ADMIN جوه السكربت، اكتبي نفس القيمة الجديدة هنا.' : '⚠️ مش محفوظ على الجهاز ده، وهيتطلب منك عند حفظ صلاحيات الباسوردات.'} الرمز نفسه متخزّن في كود الـ Apps Script؛ التغيير من هنا بيحدّث نسخة الجهاز بعد التأكد من مطابقته للسكربت.</p></div>`);
   if (isFull()) push('log', `<h2 class="sec">سجل التعديلات</h2><p class="small muted" style="margin:0 0 10px">كل إضافة وتعديل وحذف اتسجّل في الشيت: مين عمله وإمتى، وقبل التعديل كان إيه وبعده بقى إيه.</p><div id="log-box">${logShell()}</div>`);
   if (isFull()) push('bk', `<h2 class="sec">النسخ الاحتياطي</h2><div class="card pad"><div class="row wrap">
@@ -5120,6 +5120,14 @@ const ACT = {
     const old = LS.get('crmAdmin', '');
     try { await crmPost({ action: 'setPerms', admin: v, perms: crmPermList() }); LS.set('crmAdmin', v); LS.set('crmPermSig', JSON.stringify(crmPermList())); toast('الرمز مطابق للسكربت واتحفظ على الجهاز'); }
     catch (e) { if (old) LS.set('crmAdmin', old); return toast(e.message, 'err'); }
+    render();
+  },
+  'crmadm-reset': async () => {
+    if (!isFull()) return; const v = ($('#ca-new').value || '').trim();
+    if (v.length < 4) return toast('اكتبي الرمز الجديد في الخانة (4 حروف أو أرقام على الأقل) وبعدين دوسي استبدال', 'err');
+    if (!await ask('هيتغيّر رمز الإدارة في قاعدة البيانات نفسها للرمز اللي كتبتيه، والقديم مش هيشتغل بعد كده. متأكدة؟', 'استبدال', true)) return;
+    try { await crmPost({ action: 'resetAdmin', uid: ME.id, code: ME.code, neu: v }); LS.set('crmAdmin', v); toast('اتغيّر رمز الإدارة واتحفظ على الجهاز'); }
+    catch (e) { return toast(/UNKNOWN_ACTION/.test(e.message) ? 'السكربت لسه على النسخة القديمة: الصقي النسخة الجديدة وانشريها الأول' : e.message, 'err'); }
     render();
   },
   'crmadm-clear': () => { LS.del('crmAdmin'); toast('اتمسح الرمز من الجهاز'); render(); },
