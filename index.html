@@ -1716,7 +1716,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-150000';
+const BUILD = '20261121-153000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3343,6 +3343,22 @@ function apMigrate() {   // مواعيد التحصيل القديمة (حقل �
   L.forEach(q => { if (!hrGet('ap_cd_' + q.c)) put['ap_cd_' + q.c] = { id: 'cd_' + q.c, d: q.d, tm: '', t: 'تحصيل من ' + clientName(q.c), c: q.c, k: 'collect', who: '', n: q.n || '', ok: 0, by: q.by || ME.id, at: now }; });
   if (Object.keys(put).length) hrPut(put);
   collSave(collList().map(q => ({ ...q, d: '' })));
+}
+/* المواعيد المرتبطة بعميل تظهر كمهام عند المكلَّف (أو اللي سجّلها لو الموعد للكل)، والإغلاق من أي مكان يقفلها في الاتنين */
+let _apT = null, _apTk = '';
+function apTasks() {
+  if (!ME || !D || !D.lists) return [];
+  const k = VER + '|' + (ME && ME.id); if (_apT && _apTk === k) return _apT;
+  _apT = apAll().filter(a => a.c && D.clients[resCid(a.c)]).map(a => {
+    const c = D.clients[resCid(a.c)], u = userById(a.who || a.by);
+    return { id: 'AP-' + a.id, crm: 'a', apt: true, cid: c.id, clientName: c.name, text: a.t, cat: '', place: a.tm || '', note: a.n || '', who: u ? u.name : '', due: a.d, d: a.d, status: a.ok ? 'done' : 'open', why: '', doneAt: a.okAt || '', doneBy: a.okBy ? hrName(a.okBy) : '', by: a.by };
+  }); _apTk = k; return _apT;
+}
+function apTaskSet(id, patch) {
+  const a = hrGet('ap_' + id.slice(3)); if (!a) return;
+  if (!('done' in patch) && !('nx' in patch)) return;
+  const done = !!patch.done || !!patch.nx;
+  hrPut({ ['ap_' + a.id]: { ...a, ok: done ? 1 : 0, okBy: done ? ME.id : '', okAt: done ? nowIso() : '' } });
 }
 function apRow(a, o = {}) {
   const td = today(), late = !a.ok && a.d < td, cid = a.c && resCid(a.c), c = cid && D.clients[cid];
@@ -5566,8 +5582,8 @@ const tkAuto = linked => { const from = (D.meta || {}).cutover || '0000'; return
   return { id: 'AX-' + t.id, local: true, auto: true, cid: c.id, clientName: c.name, text: t.category || TYPES[t.type].n, cat: '', note: t.description || '', who: u ? u.name : '', due: t.date, d: t.date, status: 'done', why: '', doneAt: t.createdAt || t.date, txId: t.id, by: t.userId };
 }); };
 const tkLocal = () => { if (_tkl && _tklV === VER) return _tkl; const L = Object.values(tkRecs()).map(tkFromRec), linked = new Set(Object.values(OPS.tasks).map(t => t.txId).concat(L.map(t => t.txId)).filter(Boolean)); _tkl = L.concat(tkAuto(linked)); _tklV = VER; return _tkl; };
-const tkAll = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks());
-const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id) || crmTasks().find(t => t.id === id);
+const tkAll = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks(), apTasks());
+const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id) || crmTasks().find(t => t.id === id) || apTasks().find(t => t.id === id);
 function tkRecSave(r) { D.lists = D.lists || {}; D.lists[TKL + r.id] = [JSON.stringify(r)]; queue('saveLists', { lists: { [TKL + r.id]: D.lists[TKL + r.id] } }); changed(); }
 function tkLocalSet(id, p) {
   const r = tkRecs()[id]; if (!r) return;
@@ -5623,6 +5639,7 @@ function opsBuild(projects) {
 // تعديل حالة مهمة: يُحدَّث محليًا فورًا ويُرفع إلى إدارة المكتب دمجًا على مستوى المهمة (taskops) فلا يطغى على تعديل آخر في الملف
 function opsSet(id, patch, touch) {
   if (/^(TF|RN)-/.test(id)) return crmTaskSet(id, patch);
+  if (/^AP-/.test(id)) return apTaskSet(id, patch);
   if (!OPS.tasks[id] && tkLocal().some(x => x.id === id)) return tkLocalSet(id, patch);
   const t = OPS.tasks[id]; if (!t) return;
   const raw = { ...t.raw, ...patch };
@@ -5935,6 +5952,7 @@ function tkMergePick(autoId) {
   m.addEventListener('click', e => { const r = e.target.closest('[data-mt]'); if (r) tkMerge(r.dataset.mt, a.txId); });
 }
 function openTaskMore(id) {
+  if (id.startsWith('AP-')) return apForm(id.slice(3));
   if (id.startsWith('TF-')) return crmTfMore(id.slice(3));
   if (id.startsWith('RN-')) return crmRenewForm(id);
   const t = tkGet(id); if (!t) return;
