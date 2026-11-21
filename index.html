@@ -1148,6 +1148,8 @@ html{overscroll-behavior-y:none}
   .sr.st-open .sr1{justify-content:space-between}
   .ch-av{display:grid;place-items:center;border-radius:50%;background:#e8edf6;color:var(--navy,#0f2747);font-weight:700}.sr2 .cl b{white-space:nowrap}
   .sr2 .cl b i{display:inline!important;margin-inline-start:3px}
+  .sx{display:inline-flex;gap:4px;align-items:center;border:0;background:transparent;color:#b42318;font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;font-family:inherit;white-space:nowrap}.sx i{font-style:normal;width:16px;height:16px;border:2px solid #d92d20;border-radius:4px;display:grid;place-items:center;color:#fff;font-size:11px;line-height:1;background:transparent}.sx.on i{background:#d92d20}
+  .sr.xr{background:#fdecea!important}.sr.xr .sb,.sr.xr .sn,.sr.xr .sd{opacity:.75}.sr.xr .cl.dr b{text-decoration:line-through;color:#b42318;opacity:.7}.sx-note{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:#fdecea;color:#912018;font-size:13px}
 </style>
 </head>
 <body>
@@ -1510,12 +1512,17 @@ const activeClients = () => Object.values(D.clients).filter(c => +c.active !== 0
 
 /* ====== الحسابات ====== */
 let _calc = null, _calcVer = -1;
+/* حركات مستبعدة من حساب العميل (مصروف مش بنحاسب العميل عليه): تفضل ضمن حساب العملية وأرباح وخسارة المكتب */
+let _exS = null, _exV = -1;
+function exclSet() { if (_exS && _exV === VER) return _exS; _exS = new Set(((D && D.lists && D.lists.excl) || []).filter(Boolean)); _exV = VER; return _exS; }
+const isExcl = t => !!t && (t.type === 'GOV_FEE' || t.type === 'OP_EXP') && exclSet().has(t.id);
+const exclTxs = cid => activeTx().filter(t => isExcl(t) && (!cid || resCid(t.clientId) === cid));
 function calc() {
   if (_calc && _calcVer === VER) return _calc;
   const acc = {}, cli = {}, usage = {};
   D.accounts.forEach(a => acc[a.id] = { bal: 0, inM: 0, outM: 0, n: 0, last: '' });
   const ms = monthStart(today());
-  const ca = id => cli[id] || (cli[id] = { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, n: 0, last: '' });
+  const ca = id => cli[id] || (cli[id] = { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, absorbed: 0, n: 0, last: '' });
   const A_ = id => acc[id] || (acc[id] = { bal: 0, inM: 0, outM: 0, n: 0, last: '' });
   for (const t of activeTx()) {
     const a = +t.amount || 0;
@@ -1526,8 +1533,8 @@ function calc() {
       case 'IN_CLIENT': inA(t.toAcc); if (t.clientId) cx(t.clientId).paid += a; break;
       case 'IN_OWNER': if (ownSrc(t)) outA(t.fromAcc); inA(t.toAcc); break;   // الوارد من أ. محمود يُخصم من الخزينة التي سُحب منها
       case 'TRANSFER': outA(t.fromAcc); inA(t.toAcc); break;
-      case 'GOV_FEE': outA(t.fromAcc); if (t.clientId) cx(t.clientId).fees += a; break;
-      case 'OP_EXP': outA(t.fromAcc); if (t.clientId) cx(t.clientId).ops += a; break;
+      case 'GOV_FEE': outA(t.fromAcc); if (t.clientId) { if (isExcl(t)) ca(t.clientId).absorbed += a; else cx(t.clientId).fees += a; } break;
+      case 'OP_EXP': outA(t.fromAcc); if (t.clientId) { if (isExcl(t)) ca(t.clientId).absorbed += a; else cx(t.clientId).ops += a; } break;
       case 'OFFICE_EXP': case 'OUT_OWNER': case 'PERSONAL': outA(t.fromAcc); break;
       case 'FEE': if (t.clientId) cx(t.clientId).chg += a; break;
       case 'TAXC': break;   // مطالبة ضرائب: تظهر في كشف الحساب وتُتابَع من التحصيل، ولا تغيّر الرصيد
@@ -1543,7 +1550,7 @@ function calc() {
   Object.keys(sab).forEach(id => { if (D.clients[id]) ca(id); });
   Object.values(cli).forEach(c => { c.appBal = r2(c.opening + c.paid - c.refund - c.fees - c.ops - c.chg); c.post = 0; });
   if (Object.keys(sab).length) for (const t of activeTx()) {
-    if (!t.clientId || t.date <= SA_CUTOFF || (isXL(t) && !xlInBal(t))) continue;
+    if (!t.clientId || t.date <= SA_CUTOFF || (isXL(t) && !xlInBal(t)) || isExcl(t)) continue;
     const a = +t.amount || 0, d = (t.type === 'IN_CLIENT' || t.type === 'OPENING') ? a : (['GOV_FEE', 'OP_EXP', 'FEE', 'CLIENT_REFUND'].includes(t.type) ? -a : 0);
     if (d && cli[t.clientId]) cli[t.clientId].post += d;
   }
@@ -1574,7 +1581,7 @@ const owingClients = () => activeClients().map(x => ({ c: x, b: cliStat(x.id).ba
 /* تنبيه الاعتماد: عملاء عليهم مستحقات ضمن حركات مصروفات على وشك الاعتماد */
 const owingWarn = arr => { const seen = {}; arr.forEach(t => { if (t.clientId && EXP_T.includes(t.type)) seen[t.clientId] = 1; }); return Object.keys(seen).map(id => ({ id, b: cliStat(id).bal })).filter(o => o.b < -0.004); };
 const owingMsg = list => list.map(o => `• ${clientName(o.id)}: مستحق عليه ${fmt(-o.b)} ج.م`).join('\n');
-const cliStat = id => calc().cli[id] || { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, n: 0, last: '', bal: 0 };
+const cliStat = id => calc().cli[id] || { opening: 0, paid: 0, refund: 0, fees: 0, ops: 0, chg: 0, absorbed: 0, n: 0, last: '', bal: 0 };
 
 /* ====== الأرشيف ====== */
 let _arch = null, _archVer = null;
@@ -1694,7 +1701,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-100000';
+const BUILD = '20261121-104500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3190,17 +3197,18 @@ function vClients(r, el) {
     ${arr.length > CJ.limit ? `<div class="totbar"><button class="btn sm" data-act="cj-more">عرض المزيد (${arr.length - CJ.limit})</button></div>` : ''}</div>`;
 }
 
-function clientStatement(id) {
+function clientStatement(id, incl) {
   const txs = activeTx().filter(t => t.clientId === id && !(t.type === 'TAXC' && (t.stage === TAX_OFF || !taxSeen(t)))).sort(byOld);
   let bal = 0;
   return txs.map(t => {
     const a = +t.amount || 0;
+    if (isExcl(t)) return incl ? { t, cr: 0, dr: a, bal, x: 1 } : null;
     let cr = 0, dr = 0;
     if (t.type === 'IN_CLIENT' || t.type === 'OPENING') cr = a; else if (t.type !== 'TAXC') dr = a;
     if (t.type === 'OPENING' && a < 0) { cr = 0; dr = -a; }
     if (!isXL(t) || xlInBal(t)) bal = r2(bal + cr - dr);
     return { t, cr, dr, bal };
-  });
+  }).filter(Boolean);
 }
 const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all', ord: 'desc', pord: 'asc', src: true, typ: true };   // ord = ترتيب العرض، pord = ترتيب الطباعة والإرسال
 const ST_KINDS = [['all', 'الكل'], ['pay', 'المدفوعات'], ['fee', 'الأتعاب'], ['tax', 'مطالبات الضرائب'], ['gov', 'الرسوم'], ['exp', 'المصروفات']];
@@ -3576,15 +3584,15 @@ function stBar(c, st, filtered) {
   </div>`;
 }
 const stDt = d => { const [y, m, dd] = String(d || '').split('-'); return y ? `${dd}/${m}/${y.slice(2)}` : ''; };
-function stList(rows, openBal, showBal, P, endBal) {
+function stList(rows, nInc, openBal, showBal, P, endBal) {
   const priv = isPriv(), cj = v => `${fmt(v)} <i>ج</i>`, cell = (l, cls, v) => `<div class="cl ${cls}"><small>${l}</small><b>${v}</b></div>`;
   const L = rows.map((x, i) => {
-    const { t, cr, dr, bal } = x, c = D.clients[t.clientId] || {}, d = t.category ? stDesc(t, c) : (t.description || ''), src = accName(t.fromAcc || t.toAcc).replace('عهدة ', '');
-    return `<div class="sr" data-act="tx" data-id="${t.id}"><div class="sr1"><span class="sn num">${i + 1}</span><span class="sd num">${stDt(t.date)}</span><span class="sb">${CST.typ ? `<span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ` : ''}<b>${esc(t.category || t.description || '')}</b>${d && d !== t.category ? ` <span class="muted">· ${esc(d)}</span>` : ''}${t.type === 'TAXC' ? ` <b class="num">${fmt(+t.amount || 0)}</b> <span class="muted">(مطالبة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="muted">إيصال ${esc(t.receiptNo)}</span>` : ''}</span>${CST.src ? `<span class="ss">${esc(src)}</span>` : ''}</div>
-      <div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', dr ? cj(dr) : '—')}${cell('له', 'cr', cr ? cj(cr) : '—')}${showBal ? cell('الرصيد', 'bl' + (bal < 0 ? ' neg' : ''), cj(bal)) : ''}${priv && t.type !== 'OPENING' ? `<button class="sed" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف" aria-label="تغيير التصنيف">${icon('edit', 12)}</button>` : '<span></span>'}</div></div>`;
+    const { t, cr, dr, bal } = x, ex = !!x.x, c = D.clients[t.clientId] || {}, d = t.category ? stDesc(t, c) : (t.description || ''), src = accName(t.fromAcc || t.toAcc).replace('عهدة ', '');
+    return `<div class="sr${ex ? ' xr' : ''}" data-act="tx" data-id="${t.id}"><div class="sr1"><span class="sn num">${i + 1}</span><span class="sd num">${stDt(t.date)}</span><span class="sb">${CST.typ ? `<span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ` : ''}<b>${esc(t.category || t.description || '')}</b>${d && d !== t.category ? ` <span class="muted">· ${esc(d)}</span>` : ''}${t.type === 'TAXC' ? ` <b class="num">${fmt(+t.amount || 0)}</b> <span class="muted">(مطالبة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="muted">إيصال ${esc(t.receiptNo)}</span>` : ''}</span>${CST.src ? `<span class="ss">${esc(src)}</span>` : ''}${priv && (t.type === 'GOV_FEE' || t.type === 'OP_EXP') ? `<button class="sx${ex ? ' on' : ''}" data-act="tx-excl" data-id="${t.id}" aria-pressed="${ex}" title="${ex ? 'رجّعها لحساب العميل' : 'استبعدها من حساب العميل (تتحمّلها المكتب)'}"><i>${ex ? '✓' : ''}</i>مستبعد</button>` : ''}</div>
+      <div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', dr ? cj(dr) : '—')}${cell('له', 'cr', cr ? cj(cr) : '—')}${showBal ? cell('الرصيد', 'bl' + (bal < 0 && !ex ? ' neg' : ''), ex ? '—' : cj(bal)) : ''}${priv && t.type !== 'OPENING' ? `<button class="sed" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف" aria-label="تغيير التصنيف">${icon('edit', 12)}</button>` : '<span></span>'}</div></div>`;
   });
   const open = openBal == null ? '' : `<div class="sr st-open"><div class="sr1"><span class="sb"><b>رصيد ما قبل الفترة</b></span><b class="${openBal < 0 ? 'neg' : ''}">${cj(openBal)}</b></div></div>`;
-  const tot = `<div class="sr st-tot"><div class="sr1"><span class="sb"><b>الإجمالي (${rows.length} حركة)</b></span></div><div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', cj(P.dr))}${cell('له', 'cr', cj(P.cr))}${showBal ? cell('الرصيد', 'bl' + (endBal < 0 ? ' neg' : ''), cj(endBal)) : ''}<span></span></div></div>`;
+  const tot = `<div class="sr st-tot"><div class="sr1"><span class="sb"><b>الإجمالي (${nInc} حركة)</b></span></div><div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', cj(P.dr))}${cell('له', 'cr', cj(P.cr))}${showBal ? cell('الرصيد', 'bl' + (endBal < 0 ? ' neg' : ''), cj(endBal)) : ''}<span></span></div></div>`;
   return (CST.ord === 'desc' ? L.reverse().join('') + open : open + L.join('')) + tot;
 }
 
@@ -3615,6 +3623,8 @@ function vClient(r, el) {
   let rows = st.filter(inR);
   if (kindOn) rows = rows.filter(x => stKind(x.t) === CST.kind);
   if (qk) rows = rows.filter(x => nkey([x.t.category, x.t.description, x.t.receiptNo, (TYPES[x.t.type] || {}).s].join(' ')).includes(qk));
+  const rowsX = !isPriv() ? rows : clientStatement(c.id, true).filter(inR).filter(x => !kindOn || stKind(x.t) === CST.kind).filter(x => !qk || nkey([x.t.category, x.t.description, x.t.receiptNo, (TYPES[x.t.type] || {}).s].join(' ')).includes(qk));
+  const exN = rowsX.filter(x => x.x), exSum = r2(exN.reduce((a, x) => a + (+x.t.amount || 0), 0));
   const showBal = !kindOn && !qk && !mineOnly;
   const before = st.filter(x => CST.from && x.t.date < CST.from), openBal = before.length ? before[before.length - 1].bal : 0;
   const openRow = showBal && !!CST.from && before.length > 0;
@@ -3667,7 +3677,7 @@ function vClient(r, el) {
     <h2 class="sec no-print" style="margin-bottom:6px">كشف الحساب ${filtered ? `<span class="small muted">— ${esc(fDesc)}</span>` : ''}</h2>
     ${stBar(c, st, filtered)}
     ${mineOnly ? `<div class="note info" style="margin-bottom:10px">${icon('info', 18)}<div>يعرض كشف الحساب حركاتك أنت فقط على هذا العميل.</div></div>` : ''}
-    <div class="card stl no-print">${rows.length || openRow ? stList(rows, openRow ? openBal : null, showBal, P, endBal) : `<div class="empty">${filtered ? 'لا توجد حركات تطابق الفلتر.' : 'لا توجد حركات لهذا العميل بعد.'}</div>`}</div>
+    <div class="card stl no-print">${exN.length ? `<div class="sx-note">🟥 مستبعد من حساب العميل (على حساب المكتب): <b>${exN.length}</b> حركة بإجمالي <b class="num">${fmt(exSum)}</b> ج</div>` : ''}${rowsX.length || openRow ? stList(rowsX, rows.length, openRow ? openBal : null, showBal, P, endBal) : `<div class="empty">${filtered ? 'لا توجد حركات تطابق الفلتر.' : 'لا توجد حركات لهذا العميل بعد.'}</div>`}</div>
     <div class="print-only tblwrap">${rows.length || openRow ? `<table class="tbl stmt"><thead><tr><th class="c">م</th><th>التاريخ</th><th>البيان</th><th class="src">المصدر</th><th class="n">عليه (مدين)</th><th class="n">له (دائن)</th>${showBal ? '<th class="n">الرصيد</th>' : ''}</tr></thead>
       ${stBody(true)}
       <tfoot><tr><td colspan="3">الإجمالي (${rows.length} حركة)</td><td class="src"></td><td class="n">${fmt(P.dr)}</td><td class="n">${fmt(P.cr)}</td>${showBal ? `<td class="n"><b>${fmt(endBal)}</b></td>` : ''}</tr></tfoot></table>` : ''}</div>
@@ -3785,13 +3795,13 @@ function colleaguesHtml() {
     <tbody>${rows.map(o => `<tr data-act="go" data-h="account/${o.a.id}" style="cursor:pointer"><td><b>${esc(o.a.name.replace(/^عهدة\s+/, ''))}</b></td><td class="n pos">${c(o.inC)}</td><td class="n">${c(o.trs)}</td><td class="n">${c(o.own)}</td><td class="n neg">${c(o.fee)}</td><td class="n neg">${c(o.op)}</td><td class="n neg">${c(o.off)}</td><td class="n">${o.tr ? fmt(o.tr) : '<span class="muted">—</span>'}</td><td class="n"><b class="${accBal(o.a.id) < 0 ? 'neg' : ''}">${fmt(accBal(o.a.id))}</b></td></tr>`).join('')}</tbody>
     <tfoot><tr><td>الإجمالي</td><td class="n">${fmt(sum('inC'))}</td><td class="n">${fmt(sum('trs'))}</td><td class="n">${fmt(sum('own'))}</td><td class="n">${fmt(sum('fee'))}</td><td class="n">${fmt(sum('op'))}</td><td class="n">${fmt(sum('off'))}</td><td class="n">${fmt(sum('tr'))}</td><td class="n">${fmt(rows.reduce((s, o) => s + accBal(o.a.id), 0))}</td></tr></tfoot></table></div>`;
 }
-const AS = { period: 'all', from: '', to: '', limit: 200, acc: '' };
+const AS = { period: 'all', from: '', to: '', limit: 200, acc: '', tab: 'mv' };
 function vAccount(r, el) {
   const a = accById(r.arg);
   if (!a) { el.innerHTML = '<div class="empty">الحساب غير موجود.</div>'; return; }
   if (!accVisible(a)) { el.innerHTML = '<div class="empty">الحساب غير موجود.</div>'; return; }
   if (!isPriv() && a.id !== myAcc()) return go('account/' + myAcc());
-  if (AS.acc !== a.id) { AS.acc = a.id; AS.limit = 200; }
+  if (AS.acc !== a.id) { AS.acc = a.id; AS.limit = 200; AS.tab = 'mv'; }
   const [from, to] = periodRange(AS.period, AS.from, AS.to);
   const all = activeTx().filter(t => t.fromAcc === a.id || t.toAcc === a.id).sort(byOld);
   let bal = 0, opening = 0;
@@ -3814,13 +3824,24 @@ function vAccount(r, el) {
       ${isPriv() ? `<div class="card kpi"><div class="l">رصيد أول الفترة</div><div class="v">${money(opening)}</div></div>
       <div class="card kpi"><div class="l">وارد الفترة</div><div class="v pos">${money(inT)}</div></div>
       <div class="card kpi"><div class="l">صادر الفترة</div><div class="v neg">${money(outT)}</div></div>` : ''}</div>
+    ${isPriv() && a.type === 'treasury' ? `<div class="chips no-print" style="margin-top:12px"><button class="chip ${AS.tab !== 'ex' ? 'on' : ''}" data-act="as-tab" data-v="mv">📒 الحركات</button><button class="chip ${AS.tab === 'ex' ? 'on' : ''}" data-act="as-tab" data-v="ex">🟥 مصروفات العملاء على المكتب (${exclTxs().length})</button></div>` : ''}
     <div class="card pad no-print" style="margin-top:12px"><div class="chips scroll">${PERIODS.map(([k, l]) => `<button class="chip ${AS.period === k ? 'on' : ''}" data-act="as-period" data-v="${k}">${l}</button>`).join('')}</div>
       ${AS.period === 'custom' ? `<div class="fbar" style="margin-top:8px"><span class="small">من</span><input type="date" class="inp" data-as="from" value="${AS.from}"><span class="small">إلى</span><input type="date" class="inp" data-as="to" value="${AS.to}"></div>` : ''}</div>
-    <div class="card tblwrap" style="margin-top:12px">${rows.length ? `<table class="tbl"><thead><tr><th>التاريخ</th><th>البيان / العميل</th><th class="n">وارد</th><th class="n">صادر</th><th class="n">الرصيد</th></tr></thead><tbody>
+    ${AS.tab === 'ex' && isPriv() && a.type === 'treasury' ? exclTab(from, to) : `<div class="card tblwrap" style="margin-top:12px">${rows.length ? `<table class="tbl"><thead><tr><th>التاريخ</th><th>البيان / العميل</th><th class="n">وارد</th><th class="n">صادر</th><th class="n">الرصيد</th></tr></thead><tbody>
       ${rows.slice(-AS.limit).reverse().map(({ t, v, bal, op }) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="num">${t.date}</td><td>${tBadge(t.type, t.type === 'TRANSFER' ? (v > 0 ? 'وارد' : 'صرف') : '')} ${esc(op ? 'مرحّل من يومية الإكسيل' : t.type === 'TRANSFER' ? (v > 0 ? 'من ' + accName(t.fromAcc) : 'إلى ' + accName(t.toAcc)) : t.type === 'IN_OWNER' && v < 0 ? 'سحب أ. محمود إلى ' + accName(t.toAcc) + (t.description ? ' — ' + t.description : '') : (t.category || t.description || ''))}${t.clientId ? `<div class="small"><a href="#client/${t.clientId}">${esc(clientName(t.clientId))}</a></div>` : ''}</td>
         <td class="n pos">${!op && v > 0 ? fmt(v) : ''}</td><td class="n neg">${!op && v < 0 ? fmt(-v) : ''}</td><td class="n"><b class="${bal < 0 ? 'neg' : ''}">${fmt(bal)}</b></td></tr>`).join('')}</tbody></table>
       ${rows.length > AS.limit ? `<div class="totbar no-print"><span class="small muted">يُعرض أحدث ${AS.limit} من ${rows.length.toLocaleString('en-US')} حركة (الطباعة تشمل الكل)</span><span class="sp"></span><button class="btn sm" data-act="as-more">عرض المزيد</button><button class="btn sm" data-act="as-all">عرض الكل</button></div>` : ''}`
-      : '<div class="empty">لا توجد حركات في هذه الفترة.</div>'}</div>${legacyAccountHtml(a)}`;
+      : '<div class="empty">لا توجد حركات في هذه الفترة.</div>'}</div>`}${AS.tab === 'ex' && a.type === 'treasury' ? '' : legacyAccountHtml(a)}`;
+}
+
+function exclTab(from, to) {
+  const L = exclTxs().filter(t => t.date >= from && t.date <= to).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const by = {}; L.forEach(t => { const k = resCid(t.clientId); (by[k] = by[k] || []).push(t); });
+  const tot = r2(L.reduce((n, t) => n + (+t.amount || 0), 0)), gs = Object.entries(by).map(([k, a]) => [k, a, r2(a.reduce((n, t) => n + (+t.amount || 0), 0))]).sort((x, y) => y[2] - x[2]);
+  return `<div class="note info" style="margin-top:12px">${icon('info', 18)}<div>مصروفات سجّلها الفريق على عملاء ولا بنحاسبهم عليها: خارج كشف حساب العميل وخارج الطباعة، لكنها داخلة في ربحية العملية وأرباح وخسارة المكتب.</div></div>
+    <div class="grid g4" style="margin-top:10px"><div class="card kpi hl"><div class="l">إجمالي المستبعد في الفترة</div><div class="v neg">${money(tot)} <small>ج.م</small></div></div><div class="card kpi"><div class="l">عدد الحركات</div><div class="v">${L.length}</div></div><div class="card kpi"><div class="l">عدد العملاء</div><div class="v">${gs.length}</div></div></div>
+    ${gs.length ? gs.map(([k, a, sm]) => `<div class="card" style="margin-top:10px"><div class="row" style="padding:10px 14px;align-items:center"><b class="grow"><a href="#client/${k}">${esc(clientName(k))}</a></b><b class="num neg">${fmt(sm)}</b></div>
+      ${a.map(t => `<div class="lrow" data-act="tx" data-id="${t.id}"><span class="num small muted" style="min-width:76px">${esc(t.date)}</span><div class="grow"><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}<div class="small muted">${esc(accName(t.fromAcc).replace('عهدة ', ''))}</div></div><b class="num">${fmt(+t.amount || 0)}</b><button class="btn sm ghost no-print" data-act="tx-excl" data-id="${t.id}">رجّعها للعميل</button></div>`).join('')}</div>`).join('') : '<div class="card pad empty" style="margin-top:10px">لا توجد مصروفات مستبعدة في هذه الفترة.</div>'}`;
 }
 /* حركات يومية الإكسيل القديمة لعضو الفريق (للاطلاع، رصيدها الختامي = الرصيد الافتتاحي المرحّل) */
 const AL = {};
@@ -6714,7 +6735,7 @@ function fuDone(c, F) {
 function fuMoney(c, F) {
   const P = F.st.reduce((o, { t, cr, dr }) => { const k = stKind(t); if (k === 'pay' || (k === 'open' && cr)) o.paid += cr; else if (k === 'open') o.open += dr; else if (k === 'fee') o.fee += dr; else if (k === 'gov') o.gov += dr; else if (k === 'exp') o.exp += dr; return o; }, { paid: 0, fee: 0, gov: 0, exp: 0, open: 0 });
   Object.keys(P).forEach(k => P[k] = r2(P[k]));
-  P.bal = cliStat(c.id).bal; P.chg = r2(P.fee + P.gov + P.exp + P.open);
+  P.bal = cliStat(c.id).bal; P.absorbed = r2(cliStat(c.id).absorbed); P.net = r2(P.fee - P.absorbed); P.chg = r2(P.fee + P.gov + P.exp + P.open);
   P.feeShare = P.chg ? Math.round(P.fee / P.chg * 100) : 0;
   P.coll = P.chg ? Math.min(100, Math.round(P.paid / P.chg * 100)) : (P.paid ? 100 : 0);
   P.feeColl = r2(Math.max(0, Math.min(P.fee, P.paid - P.gov - P.exp - P.open)));   // تقدير: المدفوع يغطي الرسوم والمصروفات الأول
@@ -6789,6 +6810,7 @@ function fuHtml(c) {
         <div class="fu-kv"><span>إجمالي المطالبة على العميل</span><b class="num">${fmt(P.chg)}</b></div>
         <div class="fu-kv"><span>منها أتعاب المكتب (الربح)</span><b class="num pos">${fmt(P.fee)} <small>(${P.feeShare}%)</small></b></div>
         <div class="fu-kv"><span>منها رسوم ومصروفات (بتتحمّل على العميل)</span><b class="num">${fmt(r2(P.gov + P.exp))}</b></div>
+        ${P.absorbed > 0.004 ? `<div class="fu-kv"><span>🟥 مصروفات مستبعدة (على المكتب)</span><b class="num neg">${fmt(P.absorbed)}</b></div><div class="fu-kv"><span>صافي ربح العملية (أتعاب − مستبعد)</span><b class="num ${P.net < 0 ? 'neg' : 'pos'}">${fmt(P.net)}</b></div>` : ''}
         <div class="fu-kv"><span>الأتعاب المحصّلة فعلًا (تقدير)</span><b class="num">${fmt(P.feeColl)}</b></div>
         <div class="fu-kv"><span>نسبة التحصيل</span><b>${P.coll}%</b></div><div class="fu-prog"><i style="width:${P.coll}%"></i></div>
         <div class="fu-kv"><span>متوسط الأتعاب في الشهر</span><b class="num">${fmt(P.avgFee)}</b></div>
@@ -6877,7 +6899,9 @@ function hcOpen() {
   const kd = e => { if (!document.getElementById('cc-e')) { document.removeEventListener('keydown', kd); return; } const k = e.key; if (/^[0-9.]$/.test(k) || /^[+%]$/.test(k)) hcKey(k); else if (k === '-') hcKey('−'); else if (k === '*') hcKey('×'); else if (k === '/') { e.preventDefault(); hcKey('÷'); } else if (k === 'Enter' || k === '=') { e.preventDefault(); hcKey('='); } else if (k === 'Backspace') hcKey('⌫'); else if (k === 'Escape') return; else return; };
   document.addEventListener('keydown', kd); hcPaint();
 }
-Object.assign(ACT, { 'calc-open': () => hcOpen(), 'st-pm': el => stPm(el.dataset.g, el.dataset.c), 'cs-tg': el => { CST[el.dataset.k] = !CST[el.dataset.k]; render(); }, 'ch-toggle': () => { LS.set('cliHdr', CHX() ? 0 : 1); render(); }, 'cs-ord2': el => { CST.ord = CST.pord = el.dataset.k; render(); } });
+Object.assign(ACT, { 'calc-open': () => hcOpen(), 'st-pm': el => stPm(el.dataset.g, el.dataset.c), 'tx-excl': el => { if (!isPriv()) return; const id = el.dataset.id, t = D.txs[id]; if (!t) return; D.lists = D.lists || {}; const L = (D.lists.excl || []).slice(), i = L.indexOf(id); i >= 0 ? L.splice(i, 1) : L.push(id); D.lists.excl = L; queue('saveLists', { lists: { excl: L } }); changed(); toast(i >= 0 ? 'رجعت لحساب العميل' : 'اتستبعدت من حساب العميل — على حساب المكتب'); render(); },
+  'as-tab': el => { AS.tab = el.dataset.v; render(); },
+  'cs-tg': el => { CST[el.dataset.k] = !CST[el.dataset.k]; render(); }, 'ch-toggle': () => { LS.set('cliHdr', CHX() ? 0 : 1); render(); }, 'cs-ord2': el => { CST.ord = CST.pord = el.dataset.k; render(); } });
 /* ====== تصحيحات بيانات لمرة واحدة (تتنفّذ عند الصلاحية الكاملة بعد المزامنة) ====== */
 function dataFixes() {
   if (!ME || !isFull() || !D || !D.clients || !D.lists) return;
@@ -6926,7 +6950,8 @@ function billCalc(cid) {
   ['paid', 'exp', 'fee'].forEach(k => o[k] = r2(o[k]));
   o.agBal = r2(o.tot - o.paid);          // الباقي من الاتفاق على العميل
   o.expBal = r2(o.paid - o.exp);         // المدفوع ناقص الرسوم والمصروفات
-  o.profit = r2(o.tot - o.exp);          // ربح الاتفاق المتوقع
+  o.absorbed = r2(cliStat(cid).absorbed);   // مصروفات مستبعدة يتحمّلها المكتب
+  o.profit = r2(o.tot - o.exp - o.absorbed);          // ربح الاتفاق المتوقع
   return o;
 }
 function billCard(c) {
@@ -6942,7 +6967,7 @@ function billCard(c) {
       <div class="bal ${o.agBal > 0.004 ? 'neg' : ''}"><small>رصيد الاتفاق — ${sg(o.agBal, 'باقي عليه', 'دافع زيادة')}</small><b class="num ${o.agBal > 0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(o.agBal))}</b></div>
       <div><small>الرسوم والمصروفات</small><b class="num">${fmt(o.exp)}</b></div>
       <div class="bal ${o.expBal < -0.004 ? 'neg' : ''}"><small>رصيد المصروفات من الإيرادات — ${o.expBal < -0.004 ? 'صارفين من جيبنا' : 'فايض'}</small><b class="num ${o.expBal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(o.expBal))}</b></div>
-      <div><small>ربح الاتفاق المتوقع</small><b class="num ${o.profit < 0 ? 'neg' : 'pos'}">${fmt(o.profit)}</b></div>
+${o.absorbed > 0.004 ? `<div><small>🟥 مستبعد (على المكتب)</small><b class="num neg">${fmt(o.absorbed)}</b></div>` : ''}      <div><small>ربح الاتفاق المتوقع</small><b class="num ${o.profit < 0 ? 'neg' : 'pos'}">${fmt(o.profit)}</b></div>
     </div></div>`;
 }
 function billForm(cid) {
