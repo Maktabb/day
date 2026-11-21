@@ -733,6 +733,7 @@ html{overflow-x:hidden}
   .tbl.stmt tr{page-break-inside:avoid}
   .stmt .src{display:none}
   body.print-src .stmt .src{display:table-cell}
+  body.print-notyp .stmt .stk{display:none}
 }
 .print-only{display:none}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
@@ -1129,6 +1130,22 @@ html{overscroll-behavior-y:none}
   .stl .stk{font-size:11px;padding:0 6px}
   .hc-ic{width:20px;height:20px;display:block}
   .hcbtn{color:#0f2747!important}body.dark .hcbtn,html.dark .hcbtn,[data-theme=dark] .hcbtn{color:#e8edf7!important}
+  .ch-card{padding:12px 14px}.ch-top{display:flex;gap:10px;align-items:center}.ch-av{width:42px;height:42px;font-size:15px;flex:none}.ch-nm{min-width:0}.ch-h{font-size:19px;font-weight:800;line-height:1.3;color:var(--navy,#0f2747);word-break:break-word}
+  .ch-tg{flex:none;display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line,#d5d9e2);background:var(--card,#fff);color:inherit;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}.ch-tg i{font-style:normal;font-size:13px}
+  .ch-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}.ch-chips .chip{font-size:13px;padding:5px 10px;min-height:0}.ch-bt{font-weight:600}
+  .ch-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.ch-acts .btn{justify-content:center;font-size:12.5px;padding:7px 6px;min-height:36px}
+  .ct-h{display:flex;align-items:center;gap:8px;margin:16px 0 8px}.ct-h h2{margin:0;flex:1;font-size:17px;white-space:nowrap}.ct-h .btn{flex:none}
+  .cs-tg{gap:6px;margin-top:8px;align-items:center}.cs-tg .chip{font-size:12.5px;padding:4px 10px;min-height:0}
+  .sr:nth-child(even){background:rgba(15,39,71,.035)}
+  .stl .stk{font-size:9.5px;padding:0 4px;border-radius:5px;font-weight:600}.sb b{font-weight:600}
+  .sr2{display:grid;grid-template-columns:1fr 1fr 1.25fr 26px;gap:0;margin-top:6px;padding-inline-start:0;align-items:stretch}.sr2.nb{grid-template-columns:1fr 1fr 26px}
+  .sr2 .cl{display:flex;flex-direction:column;gap:1px;padding:3px 8px;border-inline-start:1px solid var(--line,#e2e5ec)}.sr2 .cl:first-child{border-inline-start:0}
+  .sr2 .cl small{font-size:10px;color:var(--muted);margin:0}.sr2 .cl b{font-size:16.5px;font-weight:800;line-height:1.25}.sr2 .cl b i{font-style:normal;font-size:11px;font-weight:600;color:var(--muted)}
+  .sr2 .dr b{color:#b42318}.sr2 .cr b{color:#13734a}.sr2 .bl b{color:var(--navy,#0f2747)}.sr2 .bl.neg b{color:#b42318}
+  .sr2 .sed{align-self:center;justify-self:center;width:24px;height:24px;opacity:.5}.sr.st-tot .sr2{margin-top:4px}
+  .sr.st-open .sr1{justify-content:space-between}
+  .ch-av{display:grid;place-items:center;border-radius:50%;background:#e8edf6;color:var(--navy,#0f2747);font-weight:700}.sr2 .cl b{white-space:nowrap}
+  .sr2 .cl b i{display:inline!important;margin-inline-start:3px}
 </style>
 </head>
 <body>
@@ -1675,7 +1692,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-090500';
+const BUILD = '20261121-094500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3183,7 +3200,7 @@ function clientStatement(id) {
     return { t, cr, dr, bal };
   });
 }
-const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all', ord: 'desc', pord: 'asc' };   // ord = ترتيب العرض، pord = ترتيب الطباعة والإرسال
+const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all', ord: 'desc', pord: 'asc', src: true, typ: true };   // ord = ترتيب العرض، pord = ترتيب الطباعة والإرسال
 const ST_KINDS = [['all', 'الكل'], ['pay', 'المدفوعات'], ['fee', 'الأتعاب'], ['tax', 'مطالبات الضرائب'], ['gov', 'الرسوم'], ['exp', 'المصروفات']];
 const stKind = t => t.type === 'IN_CLIENT' ? 'pay' : t.type === 'OPENING' ? 'open' : t.type === 'FEE' ? 'fee' : t.type === 'TAXC' ? 'tax' : t.type === 'GOV_FEE' ? 'gov' : 'exp';
 function csPeriod(p) {
@@ -3524,9 +3541,9 @@ function clientTasksBlock(c) {
   const mineOnly = !isPriv(), vis = mineOnly ? all.filter(tkMine) : all;
   const open = vis.filter(tkOpen).sort(tkSort), fin = vis.filter(t => !tkOpen(t)).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
   if (!canTab('tasks') && !canAddTask()) return '';
-  return `<div class="row wrap no-print" style="align-items:center;margin:18px 0 8px"><h2 class="sec grow" style="margin:0">📋 مهام العميل <span class="cnt">${open.length}</span></h2>
-      ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 16)} إضافة مهمة</button>` : ''}
-      ${fin.length ? `<button class="btn sm" data-act="tk-cdone">${TK.cdone ? 'إخفاء' : 'عرض'} المهام المنتهية (${fin.length})</button>` : ''}</div>
+  return `<div class="ct-h no-print"><h2>📋 مهام العميل <span class="cnt">${open.length}</span></h2>
+      ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة</button>` : ''}
+      ${fin.length ? `<button class="btn sm ghost" data-act="tk-cdone">${TK.cdone ? 'إخفاء' : 'المنتهية'} (${fin.length})</button>` : ''}</div>
     <div class="card no-print">${open.length ? open.map(t => tkRow(t, { who: true })).join('') : `<div class="empty">لا توجد مهام مفتوحة لهذا العميل.</div>`}</div>
     ${TK.cdone && fin.length ? `<div class="small muted no-print" style="margin:10px 0 4px">المهام المنتهية</div><div class="card no-print">${fin.map(t => tkRow(t, { who: true, merge: true })).join('')}</div>` : ''}`;
 }
@@ -3552,21 +3569,23 @@ function stBar(c, st, filtered) {
       <span class="grow"></span>
       ${filtered ? `<button class="btn sm ghost" data-act="cs-clear">مسح الفلتر</button>` : ''}
       <div class="cs-ord" title="ترتيب العرض والطباعة"><button class="${CST.ord === 'asc' ? 'on' : ''}" data-act="cs-ord2" data-k="asc" aria-label="الأقدم أولًا" title="الأقدم أولًا">↑</button><button class="${CST.ord === 'desc' ? 'on' : ''}" data-act="cs-ord2" data-k="desc" aria-label="الأحدث أولًا" title="الأحدث أولًا">↓</button></div>
-      <label class="cs-src" title="يضيف عمود «المصدر» (مين صرف / من أي خزينة) في الورقة المطبوعة"><input type="checkbox" id="psrc"> مصدر</label>
       <button class="btn pri cs-p" data-act="print" aria-label="طباعة PDF" title="طباعة PDF">P</button></div>
+    <div class="row cs-tg"><span class="small muted">إظهار:</span><button class="chip ${CST.src ? 'on' : ''}" data-act="cs-tg" data-k="src" title="مين صرف / من أي خزينة — على الشاشة والطباعة">${CST.src ? '☑' : '☐'} المصدر</button><button class="chip ${CST.typ ? 'on' : ''}" data-act="cs-tg" data-k="typ" title="رسوم بإيصال / مصروف مباشر / وارد... — على الشاشة والطباعة">${CST.typ ? '☑' : '☐'} نوع الحركة</button></div>
   </div>`;
 }
 const stDt = d => { const [y, m, dd] = String(d || '').split('-'); return y ? `${dd}/${m}/${y.slice(2)}` : ''; };
 function stList(rows, openBal, showBal, P, endBal) {
-  const priv = isPriv(), L = rows.map((x, i) => {
+  const priv = isPriv(), cj = v => `${fmt(v)} <i>ج</i>`, cell = (l, cls, v) => `<div class="cl ${cls}"><small>${l}</small><b>${v}</b></div>`;
+  const L = rows.map((x, i) => {
     const { t, cr, dr, bal } = x, c = D.clients[t.clientId] || {}, d = t.category ? stDesc(t, c) : (t.description || ''), src = accName(t.fromAcc || t.toAcc).replace('عهدة ', '');
-    return `<div class="sr" data-act="tx" data-id="${t.id}"><div class="sr1"><span class="sn num">${i + 1}</span><span class="sd num">${stDt(t.date)}</span><span class="sb"><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}${d && d !== t.category ? ` <span class="muted">· ${esc(d)}</span>` : ''}${t.type === 'TAXC' ? ` <b class="num">${fmt(+t.amount || 0)}</b> <span class="muted">(مطالبة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="muted">إيصال ${esc(t.receiptNo)}</span>` : ''}</span><span class="ss">${esc(src)}</span></div>
-      <div class="sr2">${dr ? `<span class="neg"><small>عليه</small> ${fmt(dr)}</span>` : ''}${cr ? `<span class="pos"><small>له</small> ${fmt(cr)}</span>` : ''}${showBal ? `<span class="sbal ${bal < 0 ? 'neg' : ''}"><small>الرصيد</small> <b>${fmt(bal)}</b></span>` : ''}${priv && t.type !== 'OPENING' ? `<button class="sed" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف" aria-label="تغيير التصنيف">${icon('edit', 13)}</button>` : ''}</div></div>`;
+    return `<div class="sr" data-act="tx" data-id="${t.id}"><div class="sr1"><span class="sn num">${i + 1}</span><span class="sd num">${stDt(t.date)}</span><span class="sb">${CST.typ ? `<span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ` : ''}<b>${esc(t.category || t.description || '')}</b>${d && d !== t.category ? ` <span class="muted">· ${esc(d)}</span>` : ''}${t.type === 'TAXC' ? ` <b class="num">${fmt(+t.amount || 0)}</b> <span class="muted">(مطالبة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="muted">إيصال ${esc(t.receiptNo)}</span>` : ''}</span>${CST.src ? `<span class="ss">${esc(src)}</span>` : ''}</div>
+      <div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', dr ? cj(dr) : '—')}${cell('له', 'cr', cr ? cj(cr) : '—')}${showBal ? cell('الرصيد', 'bl' + (bal < 0 ? ' neg' : ''), cj(bal)) : ''}${priv && t.type !== 'OPENING' ? `<button class="sed" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف" aria-label="تغيير التصنيف">${icon('edit', 12)}</button>` : '<span></span>'}</div></div>`;
   });
-  const open = openBal == null ? '' : `<div class="sr st-open"><div class="sr1"><span class="sb"><b>رصيد ما قبل الفترة</b></span><span class="sbal ${openBal < 0 ? 'neg' : ''}"><b>${fmt(openBal)}</b></span></div></div>`;
-  const tot = `<div class="sr st-tot"><div class="sr1"><span class="sb"><b>الإجمالي (${rows.length} حركة)</b></span></div><div class="sr2"><span class="neg"><small>عليه</small> ${fmt(P.dr)}</span><span class="pos"><small>له</small> ${fmt(P.cr)}</span>${showBal ? `<span class="sbal ${endBal < 0 ? 'neg' : ''}"><small>الرصيد</small> <b>${fmt(endBal)}</b></span>` : ''}</div></div>`;
+  const open = openBal == null ? '' : `<div class="sr st-open"><div class="sr1"><span class="sb"><b>رصيد ما قبل الفترة</b></span><b class="${openBal < 0 ? 'neg' : ''}">${cj(openBal)}</b></div></div>`;
+  const tot = `<div class="sr st-tot"><div class="sr1"><span class="sb"><b>الإجمالي (${rows.length} حركة)</b></span></div><div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', cj(P.dr))}${cell('له', 'cr', cj(P.cr))}${showBal ? cell('الرصيد', 'bl' + (endBal < 0 ? ' neg' : ''), cj(endBal)) : ''}<span></span></div></div>`;
   return (CST.ord === 'desc' ? L.reverse().join('') + open : open + L.join('')) + tot;
 }
+
 function stPm(g, cid) {
   const types = roleTypes(ME.role).filter(k => TYPES[k].client), L = (g === 'add' ? ST_ADD : ST_SPEND).filter(k => types.includes(k));
   const go2 = k => go(`entry/${k}?client=${cid}&back=client/${cid}`);
@@ -3574,6 +3593,7 @@ function stPm(g, cid) {
   const m = modal(`<h3>${g === 'add' ? '＋ إضافة للعميل' : '－ صرف للعميل'}</h3><div class="stack" style="display:grid;gap:8px">${L.map(k => `<button class="btn" data-pk="${k}" style="justify-content:flex-start"><i class="tdot" style="background:${TYPES[k].c}"></i> ${TYPES[k].n}<span class="small muted" style="margin-inline-start:8px">${esc(TYPES[k].hint || '')}</span></button>`).join('')}</div><div class="acts"><button class="btn" data-act="mclose">إلغاء</button></div>`);
   m.addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (b) { closeModal(); go2(b.dataset.pk); } });
 }
+const CHX = () => !!LS.get('cliHdr', 0);
 function vClient(r, el) {
   const c = D.clients[r.arg];
   if (!c) { el.innerHTML = '<div class="empty">العميل غير موجود.</div>'; return; }
@@ -3614,23 +3634,22 @@ function vClient(r, el) {
         <tr><th>تاريخ فتح الحساب</th><td class="num">${st.length ? st[0].t.date : '—'}</td><th>آخر حركة</th><td class="num">${st.length ? st[st.length - 1].t.date : '—'}</td></tr>
         <tr><th>عدد الحركات</th><td>${rows.length}</td><th>${c.address ? 'العنوان' : 'نوع العميل'}</th><td>${esc(c.address || c.kind || '—')}</td></tr>${filtered ? `<tr><th>الفلتر</th><td colspan="3">${esc(fDesc)}</td></tr>` : ''}</table></div>
     <div class="row no-print" style="margin-bottom:8px"><a href="#clients" class="btn ghost sm">${icon('back', 16)} العملاء</a></div>
-    <div class="card pad no-print">
-      <div class="row wrap" style="align-items:flex-start">
-        <div class="lrow" style="padding:0;border:0;cursor:default"><div class="av" style="width:52px;height:52px;font-size:18px">${esc(initials(c.name))}</div></div>
-        <div class="grow"><h1 class="pg" style="margin:0">${esc(c.name)}</h1>
-          <div class="small muted">${c.kind || ''}${c.service ? ' · ' + esc(c.service) : ''}${c.contact ? ' · المسؤول: ' + esc(c.contact) : ''}</div>
-          <div class="row wrap" style="margin-top:6px">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${icon('phone', 15)} <span class="num">${esc(c.phone)}</span></a>` : `<span class="badge warn">بدون رقم موبايل</span>`}
-          ${c.phone2 ? `<a class="chip" href="tel:${esc(c.phone2)}"><span class="num">${esc(c.phone2)}</span></a>` : ''}
-          ${c.aliases ? `<span class="small muted">أسماء أخرى: ${esc(c.aliases.split('|').join('، '))}</span>` : ''}</div>
-        </div>
-        <div class="row wrap no-print">
-          <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 16)} تعديل</button>
-          ${canTab('collect') ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 16)} ${collHas(c.id) ? 'في التحصيل ✓' : 'علّم للتحصيل'}</button>` : ''}
-          ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">${icon('archive', 16)} مستندات للتسليم</button>` : ''}
-          ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 16)} كشف واتساب</button>` : ''}
-          ${isAdmin() ? `<button class="btn sm" data-act="client-merge" data-id="${c.id}">${icon('merge', 16)} دمج</button><button class="btn sm" data-act="client-del" data-id="${c.id}">${icon('trash', 16)} حذف</button>` : ''}
-        </div>
-      </div>
+    <div class="card pad no-print ch-card">
+      <div class="ch-top"><div class="av ch-av">${esc(initials(c.name))}</div>
+        <div class="grow ch-nm"><div class="ch-h">${esc(c.name)}</div>
+          <div class="small muted">${c.kind || ''}${c.service ? ' · ' + esc(c.service) : ''}${c.contact ? ' · المسؤول: ' + esc(c.contact) : ''}</div></div>
+        <button class="ch-tg" data-act="ch-toggle" aria-expanded="${CHX() ? 'true' : 'false'}" title="${CHX() ? 'تقليل' : 'تمديد'}"><span>${CHX() ? 'تقليل' : 'تمديد'}</span><i>${CHX() ? '▴' : '▾'}</i></button></div>
+      <div class="ch-chips">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${icon('phone', 14)} <span class="num">${esc(c.phone)}</span></a>` : `<span class="badge warn">بدون رقم موبايل</span>`}
+        ${c.phone2 ? `<a class="chip" href="tel:${esc(c.phone2)}"><span class="num">${esc(c.phone2)}</span></a>` : ''}
+        <button class="chip ch-bt" ${isPriv() ? `data-act="bill-edit" data-id="${c.id}"` : 'disabled'}>${billGet(c.id).m === 'agree' ? '🤝 اتفاق إجمالي' : '💼 رسوم + أتعاب'}${isPriv() ? ' ✎' : ''}</button></div>
+      ${CHX() ? `${c.aliases ? `<div class="small muted" style="margin-top:6px">أسماء أخرى: ${esc(c.aliases.split('|').join('، '))}</div>` : ''}
+      <div class="ch-acts">
+        <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
+        ${canTab('collect') ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 15)} ${collHas(c.id) ? 'في التحصيل ✓' : 'للتحصيل'}</button>` : ''}
+        ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">${icon('archive', 15)} مستندات</button>` : ''}
+        ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} واتساب</button>` : ''}
+        ${isAdmin() ? `<button class="btn sm" data-act="client-merge" data-id="${c.id}">${icon('merge', 15)} دمج</button><button class="btn sm" data-act="client-del" data-id="${c.id}">${icon('trash', 15)} حذف</button>` : ''}
+      </div>` : ''}
     </div>
     ${billCard(c)}
     ${cvSwitch(c)}
@@ -4785,7 +4804,7 @@ const ACT = {
   'client-merge': el => openMergeModal(el.dataset.id),
   'client-del': el => deleteClient(el.dataset.id),
   print: () => { if (route().name === 'account' && AS.limit < 1e9) { AS.limit = 1e9; render(); }
-    const cb = document.getElementById('psrc'); document.body.classList.toggle('print-src', !!(cb && cb.checked)); return window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(); },
+    const onCl = route().name === 'client'; document.body.classList.toggle('print-src', onCl && !!CST.src); document.body.classList.toggle('print-notyp', onCl && !CST.typ); return window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(); },
   'dup-keep': el => mergeClients(el.dataset.k, el.dataset.d),
   'dup-no': el => {
     const { a, b } = el.dataset;
@@ -6857,7 +6876,7 @@ function hcOpen() {
   const kd = e => { if (!document.getElementById('cc-e')) { document.removeEventListener('keydown', kd); return; } const k = e.key; if (/^[0-9.]$/.test(k) || /^[+%]$/.test(k)) hcKey(k); else if (k === '-') hcKey('−'); else if (k === '*') hcKey('×'); else if (k === '/') { e.preventDefault(); hcKey('÷'); } else if (k === 'Enter' || k === '=') { e.preventDefault(); hcKey('='); } else if (k === 'Backspace') hcKey('⌫'); else if (k === 'Escape') return; else return; };
   document.addEventListener('keydown', kd); hcPaint();
 }
-Object.assign(ACT, { 'calc-open': () => hcOpen(), 'st-pm': el => stPm(el.dataset.g, el.dataset.c), 'cs-ord2': el => { CST.ord = CST.pord = el.dataset.k; render(); } });
+Object.assign(ACT, { 'calc-open': () => hcOpen(), 'st-pm': el => stPm(el.dataset.g, el.dataset.c), 'cs-tg': el => { CST[el.dataset.k] = !CST[el.dataset.k]; render(); }, 'ch-toggle': () => { LS.set('cliHdr', CHX() ? 0 : 1); render(); }, 'cs-ord2': el => { CST.ord = CST.pord = el.dataset.k; render(); } });
 /* ====== تصحيحات بيانات لمرة واحدة (تتنفّذ عند الصلاحية الكاملة بعد المزامنة) ====== */
 function dataFixes() {
   if (!ME || !isFull() || !D || !D.clients || !D.lists) return;
@@ -6911,7 +6930,7 @@ function billCalc(cid) {
 }
 function billCard(c) {
   const o = billCalc(c.id), priv = isPriv();
-  if (!o.agree) return priv ? `<div class="row no-print" style="margin:8px 0 0;gap:6px;align-items:center"><span class="small muted">نوع المحاسبة: <b>رسوم + أتعاب</b></span><button class="btn sm ghost" data-act="bill-edit" data-id="${c.id}">🤝 تغيير</button></div>` : '';
+  if (!o.agree) return '';
   const sg = (v, a, b) => v < -0.004 ? b : v > 0.004 ? a : 'مسدَّد';
   return `<div class="card pad bill-c" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:6px"><b class="grow">🤝 محاسبة باتفاق إجمالي</b>${priv ? `<button class="btn sm no-print" data-act="bill-edit" data-id="${c.id}">${icon('edit', 15)} الاتفاق</button>` : ''}</div>
     ${(o.b.items || []).length ? `<div class="small" style="margin-top:6px">${o.b.items.map(x => `• ${esc(x.t || 'اتفاق')}: <b class="num">${fmt(+x.amt || 0)}</b>${x.d ? ` <span class="muted num">(${esc(x.d)})</span>` : ''}`).join('<br>')}</div>` : ''}
