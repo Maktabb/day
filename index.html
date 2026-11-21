@@ -1142,7 +1142,7 @@ html{overscroll-behavior-y:none}
 
 .stmt tbody.st-p{display:none}
 @media print{.stmt tbody.st-p{display:table-row-group!important}.stmt tbody.st-v{display:none!important}}
-  .fu-k{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:620px){.fu-k{grid-template-columns:repeat(2,minmax(0,1fr))}.fu-k .bal{grid-column:1/-1}}
+  .fu-k{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:620px){.fu-k{grid-template-columns:repeat(4,minmax(0,1fr))}.fu-k .bal{grid-column:1/-1}.fu-k>div:not(.bal){padding:9px 2px}.fu-k small{white-space:normal;font-size:10.5px;line-height:1.25}.fu-k b{font-size:clamp(12px,3.6vw,16px)}.fu-k b .small{display:block;font-size:9.5px;white-space:normal}}
   .fu-prog{height:6px;background:var(--line,#e4dfd2);border-radius:3px;margin:6px 0 2px;overflow:hidden}.fu-prog i{display:block;height:6px;background:var(--gold,#c9a24a);border-radius:3px}
   .fu-mh{font-weight:700;font-size:13px;color:var(--navy,#0f2747);margin:10px 0 4px;padding-bottom:3px;border-bottom:1px dashed var(--line,#d5d9e2)}.fu-mh:first-child{margin-top:0}
   .fu-tl{display:flex;gap:10px;align-items:flex-start;padding:6px 0}.fu-ic{font-size:18px;min-width:24px;text-align:center}
@@ -1168,7 +1168,7 @@ html{overscroll-behavior-y:none}
   .ch-card{padding:12px 14px}.ch-top{display:flex;gap:10px;align-items:center}.ch-av{width:42px;height:42px;font-size:15px;flex:none}.ch-nm{min-width:0}.ch-h{font-size:19px;font-weight:800;line-height:1.3;color:var(--navy,#0f2747);word-break:break-word}
   .ch-tg{flex:none;display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line,#d5d9e2);background:var(--card,#fff);color:inherit;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}.ch-tg i{font-style:normal;font-size:13px}
   .ch-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}.ch-chips .chip{font-size:13px;padding:5px 10px;min-height:0}.ch-bt{font-weight:600}
-  .ch-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.ch-acts .btn{justify-content:center;font-size:12.5px;padding:7px 6px;min-height:36px}
+  .ch-acts{display:flex;gap:6px;margin-top:10px}.ch-acts .ib{flex:1 1 0;min-width:0;max-width:64px;height:42px;min-height:42px;padding:0;justify-content:center;border-radius:12px}.ch-acts .ib.wa{color:#1f9d55}.ch-acts .ib.dng{color:#c0392b}.ch-acts .ib.pri{color:#fff}
   .ct-h{display:flex;align-items:center;gap:8px;margin:16px 0 8px}.ct-h h2{margin:0;flex:1;font-size:17px;white-space:nowrap}.ct-h .btn{flex:none}
   .cs-tg{gap:6px;margin-top:8px;align-items:center}.cs-tg .chip{font-size:12.5px;padding:4px 10px;min-height:0}
   .sr:nth-child(even){background:rgba(15,39,71,.035)}
@@ -1734,7 +1734,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-033000';
+const BUILD = '20261122-040000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3824,6 +3824,8 @@ function stPm(g, cid) {
   m.addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (b) { closeModal(); go2(b.dataset.pk); } });
 }
 const CHX = () => !!LS.get('cliHdr', 0);
+const IC_WA = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 8.5c0 3.4 3.1 6.5 6.5 6.5l1-1.6-2-1-.9.8c-.8-.3-1.9-1.4-2.2-2.2l.8-.9-1-2L9 8.5z" fill="currentColor" stroke="none"/></svg>';
+const IC_CAL = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17.2h2" /></svg>';
 function vClient(r, el) {
   const c = D.clients[r.arg];
   if (!c) { el.innerHTML = '<div class="empty">العميل غير موجود.</div>'; return; }
@@ -3879,12 +3881,12 @@ function vClient(r, el) {
         <button class="chip ch-bt" ${isPriv() ? `data-act="bill-edit" data-id="${c.id}"` : 'disabled'}>${billGet(c.id).m === 'agree' ? '🤝 اتفاق إجمالي' : '💼 رسوم + أتعاب'}${isPriv() ? ' ✎' : ''}</button></div>
       ${CHX() ? `${c.aliases ? `<div class="small muted" style="margin-top:6px">أسماء أخرى: ${esc(c.aliases.split('|').join('، '))}</div>` : ''}
       <div class="ch-acts">
-        <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
-        <button class="btn sm" data-act="ap-add" data-c="${c.id}">📅 موعد</button>
-        ${canTab('collect') ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 15)} ${collHas(c.id) ? 'في التحصيل ✓' : 'للتحصيل'}</button>` : ''}
-        ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">${icon('archive', 15)} مستندات</button>` : ''}
-        ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} واتساب</button>` : ''}
-        ${isAdmin() ? `<button class="btn sm" data-act="client-merge" data-id="${c.id}">${icon('merge', 15)} دمج</button><button class="btn sm" data-act="client-del" data-id="${c.id}">${icon('trash', 15)} حذف</button>` : ''}
+        <button class="btn ib" data-act="client-edit" data-id="${c.id}" title="تعديل" aria-label="تعديل">${icon('edit', 20)}</button>
+        <button class="btn ib" data-act="ap-add" data-c="${c.id}" title="موعد" aria-label="موعد">${IC_CAL}</button>
+        ${canTab('collect') ? `<button class="btn ib ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}" title="${collHas(c.id) ? 'في التحصيل (اضغطي للتعديل أو الإزالة)' : 'للتحصيل'}" aria-label="للتحصيل">${icon('wallet', 20)}</button>` : ''}
+        ${canTab('deliver') ? `<button class="btn ib" data-act="dl-add" data-id="${c.id}" title="مستندات" aria-label="مستندات">${icon('archive', 20)}</button>` : ''}
+        ${wa ? `<button class="btn ib wa" data-act="client-wa" data-id="${c.id}" title="واتساب" aria-label="واتساب">${IC_WA}</button>` : ''}
+        ${isAdmin() ? `<button class="btn ib" data-act="client-merge" data-id="${c.id}" title="دمج" aria-label="دمج">${icon('merge', 20)}</button><button class="btn ib dng" data-act="client-del" data-id="${c.id}" title="حذف" aria-label="حذف">${icon('trash', 20)}</button>` : ''}
       </div>` : ''}
     </div>
     ${billCard(c)}
@@ -7087,7 +7089,6 @@ function fuHtml(c) {
     ${clientApBlock(c)}
     <div class="row wrap no-print" style="gap:6px;margin:8px 0">
       ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة جديدة</button>` : ''}
-      <button class="btn sm" data-act="ap-add" data-c="${c.id}">📅 موعد</button>
       ${canTab('work') ? `<button class="btn sm" data-act="wk-addc" data-c="${c.id}">📂 ملف شغال</button>` : ''}
       ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">📦 مستندات</button>` : ''}
       <span class="sp"></span><button class="btn sm" data-act="fu-print" data-id="${c.id}">${icon('print', 15)} تقرير المتابعة PDF</button></div>
