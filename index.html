@@ -1716,7 +1716,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-153000';
+const BUILD = '20261121-155000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3377,7 +3377,7 @@ function apForm(id, pre = {}) {
     ${fld('النوع', `<select id="ap-k" class="inp">${Object.entries(AP_K).map(([k, l]) => `<option value="${k}" ${(cur.k || pre.k || 'other') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
     ${fld('العنوان', `<input id="ap-t" class="inp" placeholder="مثال: اجتماع مع العميل" value="${esc(cur.t || '')}">`, { req: 1 })}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('التاريخ', `<input id="ap-d" type="date" class="inp" value="${esc(cur.d || pre.d || today())}">`, { req: 1 })}${fld('الوقت (اختياري)', `<input id="ap-tm" type="time" class="inp" value="${esc(cur.tm || '')}">`)}</div>
-    ${fld('العميل (اختياري)', `<div class="search">${icon('search', 18)}<input id="ap-q" class="inp" placeholder="ابحث عن العميل"></div><div id="ap-l" class="card" style="margin-top:8px;max-height:170px;overflow:auto;${pick ? 'display:none' : ''}"></div><div id="ap-p" class="small" style="margin-top:6px">${pick ? 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">إزالة</a>' : ''}</div>`)}
+    ${fld('العميل', `<div class="search">${icon('search', 18)}<input id="ap-q" class="inp" placeholder="ابحث عن العميل"></div><div id="ap-l" class="card" style="margin-top:8px;max-height:170px;overflow:auto;${pick ? 'display:none' : ''}"></div><div id="ap-p" class="small" style="margin-top:6px">${pick ? 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">تغيير</a>' : ''}</div>`, { req: 1 })}
     ${fld('لمين الموعد؟', `<select id="ap-w" class="inp"><option value="">الكل (الفريق كله)</option>${users.map(u => `<option value="${u.id}" ${w0 === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
     ${fld('فكّروني قبلها بـ', `<div class="chips" id="ap-rm">${AP_RM.map(([d, l]) => `<label class="chip" style="cursor:pointer;gap:6px"><input type="checkbox" value="${d}" ${(id ? apRm(cur) : (AP_RM_DEF[cur.k || pre.k] || [1])).includes(d) ? 'checked' : ''}> ${l}</label>`).join('')}<span class="small muted" style="align-self:center">+ يوم الموعد نفسه دايمًا</span></div>`)}
     ${fld('ملاحظة (اختياري)', `<input id="ap-n" class="inp" value="${esc(cur.n || '')}">`)}
@@ -3387,15 +3387,16 @@ function apForm(id, pre = {}) {
   m.addEventListener('change', e => { if (e.target.id === 'ap-k' && !id) { const df = AP_RM_DEF[e.target.value] || [1]; m.querySelectorAll('#ap-rm input').forEach(x => { x.checked = df.includes(+x.value); }); } });
   m.addEventListener('click', e => {
     if (e.target.closest('[data-apx]')) { e.preventDefault(); pick = ''; $('#ap-p').innerHTML = ''; return; }
-    const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#ap-q').value = ''; paint(); $('#ap-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">إزالة</a>';
+    const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#ap-q').value = ''; paint(); $('#ap-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">تغيير</a>';
   });
   m.querySelector('#ap-ok').onclick = () => {
     const k = $('#ap-k').value, d = $('#ap-d').value;
     const t = ($('#ap-t').value || '').trim() || (k === 'collect' && pick ? 'تحصيل من ' + clientName(pick) : '');
+    if (!pick) return toast('اختاري العميل الأول — الموعد لازم يتربط بعميل', 'err');
     if (!t) return toast('اكتبي عنوان الموعد', 'err');
     if (!d) return toast('اختاري التاريخ', 'err');
     const aid = id || uid('AP');
-    hrPut({ ['ap_' + aid]: { id: aid, d, tm: $('#ap-tm').value || '', t, c: pick || '', k, who: $('#ap-w').value, n: ($('#ap-n').value || '').trim(), rm: [...m.querySelectorAll('#ap-rm input:checked')].map(x => +x.value), ok: cur.ok || 0, by: cur.by || ME.id, at: cur.at || nowIso() } });
+    hrPut({ ['ap_' + aid]: { id: aid, d, tm: $('#ap-tm').value || '', t, c: pick, k, who: $('#ap-w').value, n: ($('#ap-n').value || '').trim(), rm: [...m.querySelectorAll('#ap-rm input:checked')].map(x => +x.value), ok: cur.ok || 0, by: cur.by || ME.id, at: cur.at || nowIso() } });
     closeModal(); toast('اتحفظ الموعد'); apRe();
   };
 }
