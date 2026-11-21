@@ -1113,6 +1113,8 @@ html{overscroll-behavior-y:none}
   .fu-an{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:10px}.fu-kv{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:14px;border-bottom:1px solid var(--line,#eee)}.fu-kv span{color:var(--muted,#667)}
   .fu-bars{display:flex;gap:4px;align-items:flex-end;margin-top:10px;overflow-x:auto}.fu-bm{flex:1;min-width:26px;text-align:center}.fu-bb{display:flex;gap:1px;align-items:flex-end;justify-content:center;height:112px}.fu-bb i{display:block;width:7px;border-radius:2px 2px 0 0}.fu-bm span{font-size:10px;color:var(--muted,#667)}
   .b1{background:#0f766e}.b2{background:var(--gold,#c9a24a)}.b3{background:#94a3b8}.fu-lg{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle}
+  .cc-d{direction:ltr;text-align:right;background:var(--card2,#f4f1e8);border-radius:10px;padding:8px 12px;margin-bottom:8px}.cc-e{min-height:20px;font-size:13px;color:var(--muted,#667);word-break:break-all}.cc-r{font-size:30px;font-weight:700;min-height:40px;word-break:break-all}
+  .cc-k{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;direction:ltr}.cc-k button{height:50px;font-size:20px;border-radius:10px;border:1px solid var(--line,#d5d9e2);background:var(--card,#fff);color:inherit;cursor:pointer;font-family:inherit}.cc-k button:active{filter:brightness(.92)}.cc-k .op{background:#eef1f7;font-weight:700}.cc-k .eq{background:var(--navy,#0f2747);color:#fff}.cc-k .cl{color:#b42318}
 </style>
 </head>
 <body>
@@ -1659,7 +1661,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261120-073000';
+const BUILD = '20261121-072500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2013,6 +2015,7 @@ function renderShell() {
       <div class="brand">${monoHtml()}<div class="grow"><b>يومية المكتب</b><small>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</small></div></div>
       <div class="sp"></div>
       <div id="sync" class="sync"></div>
+      <button class="themebtn" data-act="calc-open" title="آلة حاسبة" aria-label="آلة حاسبة">🧮</button>
       <button class="themebtn" data-act="theme-toggle" title="الوضع الداكن / الفاتح" aria-label="تبديل الوضع الداكن">${themeIsDark() ? '☀️' : '🌙'}</button>
       <button class="me" data-act="go" data-h="settings" title="${esc(ME.name)}"><span class="hide-sm">${esc(ME.name)}</span><span class="av">${esc(initials(ME.name))}</span></button>
     </header>
@@ -6776,6 +6779,40 @@ Object.assign(ACT, {
   'fu-print': el => fuPrint(el.dataset.id),
   'wk-addc': el => wkForm(null, 'found', el.dataset.c)
 });
+/* ====== الآلة الحاسبة ====== */
+const CALC = { e: '', r: '', h: [] };
+function calcEval(x) {
+  const t = String(x).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/,/g, '').replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/٫/g, '.').replace(/(\d+(?:\.\d+)?)\s*([+\-])\s*(\d+(?:\.\d+)?)%/g, '$1$2($1*$3/100)').replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+  if (!t.trim() || /[^0-9+\-*/().\s]/.test(t)) return null;
+  try { const v = Function('"use strict";return (' + t + ')')(); return typeof v === 'number' && isFinite(v) ? Math.round(v * 1e8) / 1e8 : null; } catch (e) { return null; }
+}
+const calcFmt = v => v == null ? '' : v.toLocaleString('en-US', { maximumFractionDigits: 8 });
+function calcPaint() {
+  const e = document.getElementById('cc-e'), r = document.getElementById('cc-r'), h = document.getElementById('cc-h'); if (!e) return;
+  const v = calcEval(CALC.e); e.textContent = CALC.e || ' '; r.textContent = CALC.r !== '' ? CALC.r : (v != null && /[+\-×÷*/%]/.test(CALC.e.replace(/^-/, '')) ? '= ' + calcFmt(v) : (CALC.e ? '' : '0'));
+  if (h) h.innerHTML = CALC.h.slice(0, 4).map(x => `<div class="small muted" style="direction:ltr;text-align:left" data-cc-use="${esc(x.v)}">${esc(x.e)} = <b>${esc(calcFmt(x.v))}</b></div>`).join('');
+}
+function calcKey(k) {
+  if (CALC.r !== '' && !['=', 'C', '⌫'].includes(k)) { if (/^[0-9.]$/.test(k)) CALC.e = ''; else CALC.e = String(calcEval(CALC.e)); CALC.r = ''; }
+  if (k === 'C') { CALC.e = ''; CALC.r = ''; }
+  else if (k === '⌫') { CALC.e = CALC.e.slice(0, -1); CALC.r = ''; }
+  else if (k === '=') { const v = calcEval(CALC.e); if (v == null) { if (CALC.e) toast('العملية غير صحيحة', 'err'); } else { CALC.h.unshift({ e: CALC.e, v }); CALC.r = calcFmt(v); } }
+  else if (k === '±') { CALC.e = CALC.e.startsWith('-') ? CALC.e.slice(1) : (CALC.e ? '-' + CALC.e : ''); }
+  else { if (/^[+\-×÷]$/.test(k) && /[+\-×÷]$/.test(CALC.e)) CALC.e = CALC.e.slice(0, -1); CALC.e += k; }
+  calcPaint();
+}
+function calcOpen() {
+  const keys = [['C', 'cl'], ['⌫', 'op'], ['%', 'op'], ['÷', 'op'], '7', '8', '9', ['×', 'op'], '4', '5', '6', ['−', 'op'], '1', '2', '3', ['+', 'op'], ['±', 'op'], '0', '.', ['=', 'eq']];
+  const m = modal(`<h3>🧮 آلة حاسبة</h3><div class="cc-d"><div class="cc-e" id="cc-e"></div><div class="cc-r" id="cc-r">0</div></div>
+    <div class="cc-k">${keys.map(k => Array.isArray(k) ? `<button class="${k[1]}" data-cc="${k[0]}">${k[0]}</button>` : `<button data-cc="${k}">${k}</button>`).join('')}</div>
+    <div id="cc-h" style="margin-top:8px"></div>
+    <div class="acts"><button class="btn" id="cc-cp">📋 نسخ النتيجة</button><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  m.addEventListener('click', e => { const b = e.target.closest('[data-cc]'); if (b) return calcKey(b.dataset.cc); const u = e.target.closest('[data-cc-use]'); if (u) { CALC.e = u.dataset.ccUse; CALC.r = ''; calcPaint(); } });
+  m.querySelector('#cc-cp').onclick = () => { const v = calcEval(CALC.e); if (v == null) return toast('مفيش نتيجة للنسخ', 'err'); (navigator.clipboard ? navigator.clipboard.writeText(String(v)) : Promise.reject()).then(() => toast('تم النسخ'), () => toast('تعذّر النسخ', 'err')); };
+  const kd = e => { if (!document.getElementById('cc-e')) { document.removeEventListener('keydown', kd); return; } const k = e.key; if (/^[0-9.]$/.test(k) || /^[+%]$/.test(k)) calcKey(k); else if (k === '-') calcKey('−'); else if (k === '*') calcKey('×'); else if (k === '/') { e.preventDefault(); calcKey('÷'); } else if (k === 'Enter' || k === '=') { e.preventDefault(); calcKey('='); } else if (k === 'Backspace') calcKey('⌫'); else if (k === 'Escape') return; else return; };
+  document.addEventListener('keydown', kd); calcPaint();
+}
+Object.assign(ACT, { 'calc-open': () => calcOpen() });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
