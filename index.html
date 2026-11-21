@@ -1115,6 +1115,7 @@ html{overscroll-behavior-y:none}
   .b1{background:#0f766e}.b2{background:var(--gold,#c9a24a)}.b3{background:#94a3b8}.fu-lg{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle}
   .cc-d{direction:ltr;text-align:right;background:var(--card2,#f4f1e8);border-radius:10px;padding:8px 12px;margin-bottom:8px}.cc-e{min-height:20px;font-size:13px;color:var(--muted,#667);word-break:break-all}.cc-r{font-size:30px;font-weight:700;min-height:40px;word-break:break-all}
   .cc-k{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;direction:ltr}.cc-k button{height:50px;font-size:20px;border-radius:10px;border:1px solid var(--line,#d5d9e2);background:var(--card,#fff);color:inherit;cursor:pointer;font-family:inherit}.cc-k button:active{filter:brightness(.92)}.cc-k .op{background:#eef1f7;font-weight:700}.cc-k .eq{background:var(--navy,#0f2747);color:#fff}.cc-k .cl{color:#b42318}
+  .bill-g{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:620px){.bill-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -1661,7 +1662,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-072500';
+const BUILD = '20261121-081500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -1893,6 +1894,7 @@ async function syncNow(full) {
     if (had) setSync(Q.length ? 'pending' : 'ok');     // الإشارة تخضر فور وصول عملياتك للشيت، ثم يُجلب جديد الزملاء في الخلفية
     const dirty = await pull(full);
     SYNC.last = nowIso(); LS.set('lastSyncLocal', SYNC.last);
+    try { dataFixes(); } catch (e) { console.warn('fix', e); }
     setSync(Q.length ? 'pending' : 'ok');
     if (dirty || had) softRefresh();
   } catch (e) {
@@ -3571,6 +3573,7 @@ function vClient(r, el) {
         </div>
       </div>
     </div>
+    ${billCard(c)}
     ${cvSwitch(c)}
     <div class="card sumrow">
       <div><small>💰 المدفوع</small><b class="pos">${fmt(P.paid)}</b></div>
@@ -4989,14 +4992,14 @@ const ACT = {
   },
   'own-src': el => openOwnSrc(el.dataset.id),
   'own-src-set': el => setOwnSrc(el.dataset.id, el.dataset.v),
-  'tx-approve': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; if (isFull() && t.type === 'IN_OWNER' && !t.fromAcc && !isXL(t)) return openOwnSrc(t.id); approveTx(t); queueApprove([t]); changed(); closeModal(); toast('تم اعتماد الحركة'); render(); const w = owingWarn([t]); if (w.length) alertOwing(w); },
+  'tx-approve': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; if (isFull() && t.type === 'IN_OWNER' && !t.fromAcc && !isXL(t)) return openOwnSrc(t.id); approveTx(t); queueApprove([t]); changed(); closeModal(); toast('تم اعتماد الحركة'); render(); const w = owingWarn([t]); sjOffer([t], () => { if (w.length) alertOwing(w); }); },
   'tx-reject': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 2, approvedBy: ME.id, approvedAt: nowIso(), updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('تم تعليمها غير معتمدة'); render(); },
   'xl-bal': async el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv() || !isXL(t)) return; if (!(await editGate(t))) return; const on = xlInBal(t); t.batchId = on ? String(t.batchId).replace(/\+C$/, '') : t.batchId + '+C'; t.updatedAt = nowIso(); t.updatedBy = ME.id; queue('saveTx', { txs: [t] }); changed(); closeModal(); toast(on ? 'اتشالت من رصيد العميل' : 'اتحسبت في رصيد العميل'); render(); },
   'rv-tab': el => { RV.tab = el.dataset.v; RV.who = ''; render(); },
   'rv-who': el => { RV.who = el.dataset.v; render(); },
   'tx-unapprove': el => { const t = D.txs[el.dataset.id]; if (!t || !isPriv()) return; Object.assign(t, { approved: 0, approvedBy: '', approvedAt: '', updatedAt: nowIso(), updatedBy: ME.id }); queueApprove([t]); changed(); closeModal(); toast('رجعت الحركة لبانتظار الاعتماد'); render(); },
   'approve-many': async el => { const arr = queueTxs().filter(t => t.userId === el.dataset.u); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد ${arr.length} حركة؟`, 'اعتماد'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم الاعتماد'); render(); const w = owingWarn(arr); if (w.length) alertOwing(w); },
-  'approve-all': async () => { const arr = RV.tab === 'q' ? rvByWho(queueTxs()) : queueTxs(); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد كل الحركات (${arr.length})؟`, 'اعتماد الكل'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم اعتماد الكل'); render(); const w = owingWarn(arr); if (w.length) alertOwing(w); },
+  'approve-all': async () => { const arr = RV.tab === 'q' ? rvByWho(queueTxs()) : queueTxs(); if (!arr.length || !isPriv()) return; if (!(await ask(`اعتماد كل الحركات (${arr.length})؟`, 'اعتماد الكل'))) return; arr.forEach(approveTx); queueApprove(arr); changed(); toast('تم اعتماد الكل'); render(); const w = owingWarn(arr); sjOffer(arr, () => { if (w.length) alertOwing(w); }); },
   'inperm-save': () => {
     if (!isFull()) return;
     const old = ((D.lists || {}).inAllow || []).filter(x => /^(staff|sup):/.test(x)), users = [...new Set([...document.querySelectorAll('[data-inp]')].map(x => x.dataset.inp.split(':')[1]))];
@@ -6720,7 +6723,7 @@ function fuHtml(c) {
       <div class="totbar"><button class="btn sm pri" data-act="cv-set" data-v="st">🧾 كشف الحساب الكامل (${F.st.length} حركة)</button></div></div>
     <h2 class="sec">📈 الربحية والتحليلات</h2>
     <div class="grid fu-an">
-      <div class="card pad"><b>الربحية</b>
+      <div class="card pad"><b>الربحية</b>${(B => B.agree ? `<div class="fu-kv"><span>🤝 قيمة الاتفاق الإجمالي</span><b class="num">${fmt(B.tot)}</b></div><div class="fu-kv"><span>ربح الاتفاق (الاتفاق − المصروفات)</span><b class="num ${B.profit < 0 ? 'neg' : 'pos'}">${fmt(B.profit)}</b></div><div class="fu-kv"><span>رصيد الاتفاق (باقي عليه)</span><b class="num">${fmt(B.agBal)}</b></div>` : '')(billCalc(c.id))}
         <div class="fu-kv"><span>إجمالي المطالبة على العميل</span><b class="num">${fmt(P.chg)}</b></div>
         <div class="fu-kv"><span>منها أتعاب المكتب (الربح)</span><b class="num pos">${fmt(P.fee)} <small>(${P.feeShare}%)</small></b></div>
         <div class="fu-kv"><span>منها رسوم ومصروفات (بتتحمّل على العميل)</span><b class="num">${fmt(r2(P.gov + P.exp))}</b></div>
@@ -6813,6 +6816,134 @@ function calcOpen() {
   document.addEventListener('keydown', kd); calcPaint();
 }
 Object.assign(ACT, { 'calc-open': () => calcOpen() });
+/* ====== تصحيحات بيانات لمرة واحدة (تتنفّذ عند الصلاحية الكاملة بعد المزامنة) ====== */
+function dataFixes() {
+  if (!ME || !isFull() || !D || !D.clients || !D.lists) return;
+  const done = D.lists.fixes || [];
+  if (done.includes('brt1')) return;
+  const K0 = resCid('C0346'), K = D.clients[K0];
+  if (!K || +K.active === 0) return;
+  const bk = nkey('بي ار تي'), drops = new Set(['C0363']);
+  Object.values(D.clients).forEach(c => { if (c.id !== K0 && !c.mergedInto && [c.name, ...String(c.aliases || '').split('|')].some(n => nkey(n) === bk)) drops.add(c.id); });
+  const now = nowIso(), moved = [];
+  drops.forEach(id => {
+    if (id === K0) return;
+    const c = D.clients[id];
+    if (c && !c.mergedInto) { mergeClientsCore(K0, id); return; }
+    if (c) return;   // اتدمج قبل كده
+    Object.values(D.txs).forEach(t => { if (t.clientId === id) { const b = t.updatedAt; t.clientId = K0; t.updatedAt = now; t.updatedBy = ME.id; moved.push({ ...t, __base: b }); } });
+    const { ci } = archIndex(); let ch = 0; A.rows.forEach(r => { if (r[ci.clientId] === id) { r[ci.clientId] = K0; ch++; } });
+    if (ch) { A = { ...A }; persistArchive(); }
+    if (!K.aliases || !String(K.aliases).split('|').includes('بى ار تى')) { K.aliases = String(K.aliases || '').split('|').filter(Boolean).concat('بى ار تى').join('|'); K.updatedAt = now; queue('saveClient', { client: K }); }
+    queue('mergeClients', { keepId: K0, dropId: id });
+  });
+  // «مستشار قانوني بي ار تي» كان مسجّل مصروف مكتب عام → يتحمّل على العميل
+  Object.values(D.txs).filter(t => !+t.deleted && !t.clientId && /مستشار\s*قانون[ىي]\s*ب[ىي]\s*ار\s*ت[ىي]/.test((t.category || '') + ' ' + (t.description || ''))).forEach(t => {
+    const b = t.updatedAt; t.clientId = K0; if (t.type === 'OFFICE_EXP') t.type = 'OP_EXP'; t.updatedAt = now; t.updatedBy = ME.id; moved.push({ ...t, __base: b });
+  });
+  const { ci } = archIndex(); A.rows.forEach(r => { if (!r[ci.clientId] && /مستشار\s*قانون[ىي]\s*ب[ىي]\s*ار\s*ت[ىي]/.test(r[ci.desc] || '')) { r[ci.clientId] = K0; A = { ...A }; persistArchive(); } });
+  if (moved.length) queue('saveTx', { txs: moved });
+  D.lists.fixes = done.concat('brt1'); queue('saveLists', { lists: { fixes: D.lists.fixes } }); changed();
+  toast('اتدمجت حركات «بي ار تي» كلها في «' + K.name + '»');
+  if (route().name === 'client') render();
+}
+
+/* ====== نوع المحاسبة للعميل: رسوم + أتعاب / مبلغ إجمالي اتفاقي ====== */
+const billGet = cid => { try { const v = ((D.lists || {})['bill_' + cid] || [])[0]; const o = v ? JSON.parse(v) : null; return o && o.m ? o : { m: 'fee', items: [], note: '' }; } catch (e) { return { m: 'fee', items: [], note: '' }; } };
+const billSave = (cid, o) => { D.lists = D.lists || {}; o.at = nowIso(); o.by = ME ? ME.id : ''; D.lists['bill_' + cid] = [JSON.stringify(o)]; queue('saveLists', { lists: { ['bill_' + cid]: D.lists['bill_' + cid] } }); changed(); };
+const billTotal = b => r2((b.items || []).reduce((s, x) => s + (+x.amt || 0), 0));
+function billCalc(cid) {
+  const b = billGet(cid), o = { b, agree: b.m === 'agree', tot: billTotal(b), paid: 0, exp: 0, fee: 0 };
+  clientStatement(cid).forEach(({ t, cr, dr }) => {
+    const k = stKind(t);
+    if (k === 'pay' || (k === 'open' && cr)) o.paid += cr;
+    else if (t.type === 'CLIENT_REFUND') o.paid -= dr;
+    else if (k === 'fee') o.fee += dr;
+    else if (k === 'gov' || k === 'exp' || k === 'open') o.exp += dr;
+  });
+  ['paid', 'exp', 'fee'].forEach(k => o[k] = r2(o[k]));
+  o.agBal = r2(o.tot - o.paid);          // الباقي من الاتفاق على العميل
+  o.expBal = r2(o.paid - o.exp);         // المدفوع ناقص الرسوم والمصروفات
+  o.profit = r2(o.tot - o.exp);          // ربح الاتفاق المتوقع
+  return o;
+}
+function billCard(c) {
+  const o = billCalc(c.id), priv = isPriv();
+  if (!o.agree) return priv ? `<div class="row no-print" style="margin:8px 0 0;gap:6px;align-items:center"><span class="small muted">نوع المحاسبة: <b>رسوم + أتعاب</b></span><button class="btn sm ghost" data-act="bill-edit" data-id="${c.id}">🤝 تغيير</button></div>` : '';
+  const sg = (v, a, b) => v < -0.004 ? b : v > 0.004 ? a : 'مسدَّد';
+  return `<div class="card pad bill-c" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:6px"><b class="grow">🤝 محاسبة باتفاق إجمالي</b>${priv ? `<button class="btn sm no-print" data-act="bill-edit" data-id="${c.id}">${icon('edit', 15)} الاتفاق</button>` : ''}</div>
+    ${(o.b.items || []).length ? `<div class="small" style="margin-top:6px">${o.b.items.map(x => `• ${esc(x.t || 'اتفاق')}: <b class="num">${fmt(+x.amt || 0)}</b>${x.d ? ` <span class="muted num">(${esc(x.d)})</span>` : ''}`).join('<br>')}</div>` : ''}
+    ${o.b.note ? `<div class="small muted" style="margin-top:4px">📝 ${esc(o.b.note)}</div>` : ''}
+    <div class="sumrow bill-g" style="margin-top:8px">
+      <div><small>قيمة الاتفاق</small><b class="num">${fmt(o.tot)}</b></div>
+      <div><small>المدفوع</small><b class="num pos">${fmt(o.paid)}</b></div>
+      <div class="bal ${o.agBal > 0.004 ? 'neg' : ''}"><small>رصيد الاتفاق — ${sg(o.agBal, 'باقي عليه', 'دافع زيادة')}</small><b class="num ${o.agBal > 0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(o.agBal))}</b></div>
+      <div><small>الرسوم والمصروفات</small><b class="num">${fmt(o.exp)}</b></div>
+      <div class="bal ${o.expBal < -0.004 ? 'neg' : ''}"><small>رصيد المصروفات من الإيرادات — ${o.expBal < -0.004 ? 'صارفين من جيبنا' : 'فايض'}</small><b class="num ${o.expBal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(o.expBal))}</b></div>
+      <div><small>ربح الاتفاق المتوقع</small><b class="num ${o.profit < 0 ? 'neg' : 'pos'}">${fmt(o.profit)}</b></div>
+    </div></div>`;
+}
+function billForm(cid) {
+  const c = D.clients[cid]; if (!c || !isPriv()) return;
+  const b = JSON.parse(JSON.stringify(billGet(cid))); if (!b.items.length) b.items = [{ t: '', amt: '', d: today() }];
+  const m = modal(`<h3>🤝 نوع المحاسبة — ${esc(c.name)}</h3>
+    <div class="chips" id="bl-m" style="margin-bottom:10px"><button class="chip" data-bm="fee">💼 رسوم + أتعاب</button><button class="chip" data-bm="agree">🤝 مبلغ إجمالي اتفاقي</button></div>
+    <p class="small muted" id="bl-h" style="margin:0 0 8px"></p>
+    <div id="bl-ag"><div id="bl-it"></div><button class="btn sm" id="bl-add" style="margin:6px 0">➕ بند اتفاق</button>
+      ${fld('ملاحظات الاتفاق', `<textarea id="bl-n" class="inp" rows="2" placeholder="مثال: شامل الرسوم الحكومية — يُدفع على 3 دفعات">${esc(b.note || '')}</textarea>`)}
+      <div class="small" id="bl-t"></div></div>
+    <div class="acts"><button class="btn pri" id="bl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const read = () => { b.items = [...m.querySelectorAll('.bl-r')].map(r => ({ t: r.querySelector('[data-k=t]').value.trim(), amt: r.querySelector('[data-k=amt]').value, d: r.querySelector('[data-k=d]').value })); };
+  const paint = () => {
+    m.querySelectorAll('[data-bm]').forEach(x => x.classList.toggle('on', x.dataset.bm === b.m));
+    m.querySelector('#bl-ag').style.display = b.m === 'agree' ? '' : 'none';
+    m.querySelector('#bl-h').textContent = b.m === 'agree' ? 'العميل متفق معاه على مبلغ إجمالي. البرنامج هيطلع رصيد الاتفاق (الاتفاق − المدفوع) ورصيد المصروفات (المدفوع − الرسوم والمصروفات).' : 'المحاسبة العادية: الرسوم والمصروفات + الأتعاب بتتسجل حركات على العميل.';
+    m.querySelector('#bl-it').innerHTML = b.items.map((x, i) => `<div class="row bl-r" style="gap:6px;margin-bottom:6px"><input class="inp grow" data-k="t" value="${esc(x.t || '')}" placeholder="البند (تأسيس، تعديل…)"><input class="inp num" data-k="amt" type="number" inputmode="decimal" style="width:110px" value="${esc(x.amt)}" placeholder="المبلغ"><input class="inp" data-k="d" type="date" style="width:auto" value="${esc(x.d || '')}"><button class="btn sm ghost" data-bx="${i}">✕</button></div>`).join('');
+    m.querySelector('#bl-t').innerHTML = 'إجمالي الاتفاق: <b class="num">' + fmt(billTotal(b)) + '</b>';
+  };
+  paint();
+  m.addEventListener('click', e => {
+    const bm = e.target.closest('[data-bm]'); if (bm) { read(); b.m = bm.dataset.bm; paint(); return; }
+    const bx = e.target.closest('[data-bx]'); if (bx) { read(); b.items.splice(+bx.dataset.bx, 1); if (!b.items.length) b.items.push({ t: '', amt: '', d: today() }); paint(); }
+  });
+  m.addEventListener('input', () => { read(); m.querySelector('#bl-t').innerHTML = 'إجمالي الاتفاق: <b class="num">' + fmt(billTotal(b)) + '</b>'; });
+  m.querySelector('#bl-add').onclick = () => { read(); b.items.push({ t: '', amt: '', d: today() }); paint(); };
+  m.querySelector('#bl-ok').onclick = () => {
+    read(); b.note = m.querySelector('#bl-n').value.trim();
+    b.items = b.items.filter(x => x.t || +x.amt).map(x => ({ t: x.t, amt: r2(+x.amt || 0), d: x.d }));
+    if (b.m === 'agree' && !billTotal(b)) return toast('اكتبي مبلغ الاتفاق', 'err');
+    billSave(cid, b); closeModal(); toast('اتحفظ نوع المحاسبة'); render();
+  };
+}
+
+/* ====== مستخرج السجل التجاري: أتعاب السجل = سعر السجل − الرسوم ====== */
+const SJ_PRICE = () => +(((D.lists || {}).sjPrice || [])[0]) || 500;
+const isSJ = t => t && t.type === 'GOV_FEE' && t.clientId && !isXL(t) && !+t.deleted && /مستخرج/.test((t.category || '') + ' ' + (t.description || '')) && /سجل/.test((t.category || '') + ' ' + (t.description || '')) && !D.txs['SJF-' + t.id];
+function sjOffer(arr, then) {
+  const L = (arr || []).filter(isSJ);
+  if (!L.length) { then && then(); return; }
+  const P = SJ_PRICE(), cnt0 = t => Math.max(1, Math.round((+t.amount || 0) / 400));
+  const m = modal(`<h3>🧾 أتعاب مستخرج السجل التجاري</h3>
+    <p class="small muted" style="margin:0 0 8px">سعر السجل للعميل <b class="num">${fmt(P)}</b> ج.م، والباقي بعد الرسوم بيتسجل «أتعاب سجل» على العميل.</p>
+    ${L.map((t, i) => `<div class="card pad" style="margin-top:6px"><label class="row" style="gap:8px;align-items:center;cursor:pointer"><input type="checkbox" data-sj="${i}" checked><b class="grow">${esc(clientName(t.clientId))}</b><span class="small muted num">${esc(t.date)}</span></label>
+      <div class="row wrap small" style="gap:8px;margin-top:6px;align-items:center">الرسوم <b class="num">${fmt(+t.amount || 0)}</b> · عدد المستخرجات <input type="number" min="1" class="inp num" data-sjn="${i}" value="${cnt0(t)}" style="width:64px"> · الأتعاب <input type="number" class="inp num" data-sjf="${i}" value="${r2(cnt0(t) * P - (+t.amount || 0))}" style="width:96px"></div></div>`).join('')}
+    <div class="acts"><button class="btn pri" id="sj-ok">إضافة الأتعاب</button><button class="btn" id="sj-no">من غير أتعاب</button></div>`);
+  m.addEventListener('input', e => { const n = e.target.closest('[data-sjn]'); if (!n) return; const i = +n.dataset.sjn, t = L[i]; m.querySelector(`[data-sjf="${i}"]`).value = r2(Math.max(1, +n.value || 1) * P - (+t.amount || 0)); });
+  const end = () => { closeModal(); render(); then && then(); };
+  m.querySelector('#sj-no').onclick = end;
+  m.querySelector('#sj-ok').onclick = () => {
+    const now = nowIso(), out = [];
+    L.forEach((t, i) => {
+      if (!m.querySelector(`[data-sj="${i}"]`).checked) return;
+      const a = r2(+m.querySelector(`[data-sjf="${i}"]`).value || 0), n = Math.max(1, +m.querySelector(`[data-sjn="${i}"]`).value || 1); if (a <= 0) return;
+      const x = { id: 'SJF-' + t.id, date: t.date, type: 'FEE', amount: a, fromAcc: '', toAcc: '', clientId: t.clientId, category: 'أتعاب مستخرج سجل تجاري', description: `أتعاب ${n > 1 ? n + ' مستخرجات' : 'مستخرج'} سجل (سعر ${fmt(P)} − رسوم ${fmt(+t.amount || 0)})`, payMethod: '', place: '', stage: '', service: '', projectRef: '', receiptNo: '', batchId: 'SJF', userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0, approved: 1, approvedBy: ME.id, approvedAt: now };
+      D.txs[x.id] = x; out.push(x);
+    });
+    if (out.length) { queue('saveTx', { txs: out }); changed(); toast(`اتضافت أتعاب سجل على ${out.length} عميل`); }
+    end();
+  };
+}
+Object.assign(ACT, { 'bill-edit': el => billForm(el.dataset.id) });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
