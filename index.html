@@ -1733,7 +1733,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-014000';
+const BUILD = '20261122-023000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3745,6 +3745,11 @@ function clTasks() {
   _clTk = k; return _clT;
 }
 function clTaskSet(id, patch) { if (!('done' in patch) || !patch.done) return; collSave(collList().filter(q => q.c !== id.slice(3))); toast('اتشال من التحصيل'); }
+function clientApBlock(c) {
+  const L = apAll().filter(a => a.c && resCid(a.c) === c.id && !a.ok).sort((a, b) => String(a.d).localeCompare(String(b.d)));
+  if (!L.length) return '';
+  return `<div class="ct-h no-print"><h2>📅 مواعيد العميل <span class="cnt">${L.length}</span></h2><button class="btn sm pri" data-act="ap-add" data-c="${c.id}">${icon('plus', 15)} موعد</button></div><div class="card no-print">${L.map(a => apRow(a, { date: true })).join('')}</div>`;
+}
 function clientTasksBlock(c) {
   const all = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name)));
   const mineOnly = !isPriv(), vis = mineOnly ? all.filter(tkMine) : all;
@@ -3874,6 +3879,7 @@ function vClient(r, el) {
       ${CHX() ? `${c.aliases ? `<div class="small muted" style="margin-top:6px">أسماء أخرى: ${esc(c.aliases.split('|').join('، '))}</div>` : ''}
       <div class="ch-acts">
         <button class="btn sm" data-act="client-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
+        <button class="btn sm" data-act="ap-add" data-c="${c.id}">📅 موعد</button>
         ${canTab('collect') ? `<button class="btn sm ${collHas(c.id) ? 'pri' : ''}" data-act="coll-toggle" data-id="${c.id}">${icon('wallet', 15)} ${collHas(c.id) ? 'في التحصيل ✓' : 'للتحصيل'}</button>` : ''}
         ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">${icon('archive', 15)} مستندات</button>` : ''}
         ${wa ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} واتساب</button>` : ''}
@@ -3891,6 +3897,7 @@ function vClient(r, el) {
     </div>
     ${exN.length ? `<div class="card sx-sum no-print"><div><small>🟥 مجموع المستبعد (${exN.length} حركة)</small><b class="num">${fmt(exSum)}</b></div><div><small>الرصيد قبل الاستبعاد</small><b class="num ${endBal - exSum < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(r2(endBal - exSum)))}${endBal - exSum < -0.004 ? ' عليه' : ' له'}</b></div><div class="bal"><small>الرصيد بعد الاستبعاد</small><b class="num ${endBal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(endBal))}${endBal < -0.004 ? ' عليه' : ' له'}</b></div><p class="small muted">المستبعد بيتحمّله المكتب: بيتحسب مصروف عمومي على المكتب ويتخصم من الأرباح، ومش بيظهر في كشف العميل ولا الطباعة.</p></div>` : ''}
     ${stAddBar(c, types)}
+    ${clientApBlock(c)}
     ${clientTasksBlock(c)}
     <h2 class="sec no-print" style="margin-bottom:6px">كشف الحساب ${filtered ? `<span class="small muted">— ${esc(fDesc)}</span>` : ''}</h2>
     ${stBar(c, st, filtered)}
@@ -5662,7 +5669,10 @@ const tkAuto = linked => { const from = (D.meta || {}).cutover || '0000'; return
   return { id: 'AX-' + t.id, local: true, auto: true, cid: c.id, clientName: c.name, text: t.category || TYPES[t.type].n, cat: '', note: t.description || '', who: u ? u.name : '', due: t.date, d: t.date, status: 'done', why: '', doneAt: t.createdAt || t.date, txId: t.id, by: t.userId };
 }); };
 const tkLocal = () => { if (_tkl && _tklV === VER) return _tkl; const L = Object.values(tkRecs()).map(tkFromRec), linked = new Set(Object.values(OPS.tasks).map(t => t.txId).concat(L.map(t => t.txId)).filter(Boolean)); _tkl = L.concat(tkAuto(linked)); _tklV = VER; return _tkl; };
-const tkAll = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks(), apTasks(), clTasks());
+const tkArchSet = () => new Set(list('tkArch'));
+const tkArchSave = st => { D.lists = D.lists || {}; D.lists.tkArch = [...st]; queue('saveLists', { lists: { tkArch: D.lists.tkArch } }); changed(); };
+const tkAllRaw = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks(), apTasks(), clTasks());
+const tkAll = () => { const ar = tkArchSet(); return ar.size ? tkAllRaw().filter(t => !(/^(TF|RN)-/.test(t.id) && ar.has(t.id))) : tkAllRaw(); };
 const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id) || crmTasks().find(t => t.id === id) || apTasks().find(t => t.id === id) || clTasks().find(t => t.id === id);
 function tkRecSave(r) { D.lists = D.lists || {}; D.lists[TKL + r.id] = [JSON.stringify(r)]; queue('saveLists', { lists: { [TKL + r.id]: D.lists[TKL + r.id] } }); changed(); }
 function tkLocalSet(id, p) {
@@ -5831,7 +5841,7 @@ function tkRow(t, o = {}) {
   }
   return `<div class="tk ${late ? 'late' : ''}"><button class="tk-c" data-act="tk-done" data-id="${esc(t.id)}" aria-label="إتمام المهمة: ${esc(t.text)}"></button>
     <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}</div></div>
-    <button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
+    ${o.arch ? `<button class="tk-x" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="أرشفة" title="أرشفة">🗄️</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
 }
 function opsSetupCard() {
   const c = opsCfg();
@@ -5852,6 +5862,7 @@ function vTasks(r, el) {
   const inScope = t => inScope0(t) && (!TK.cat || t.cat === TK.cat);
   const open = all.filter(t => tkOpen(t) && inScope(t)).sort(tkSort);
   const td = today();
+  const arS = tkArchSet(), archL = tkAllRaw().filter(t => arS.has(t.id) && /^(TF|RN)-/.test(t.id) && tkOpen(t)), archN = archL.length;
   const isSys = t => /^(TF|RN)-/.test(t.id), man = open.filter(t => !isSys(t)), sys = open.filter(isSys), sysOn = !!LS.get('tkSys', 0), sysLate = sys.filter(tkLate).length;
   const late = man.filter(tkLate), now = man.filter(t => t.due === td), later = man.filter(t => !t.due || t.due > td);
   const showWho = who === 'all';
@@ -5884,7 +5895,8 @@ function vTasks(r, el) {
     + (OPS_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">تعذّر تحديث المهام (${esc(OPS_ST.msg)}). المعروض آخر نسخة محفوظة على هذا الجهاز${OPS.q.length ? `، و${OPS.q.length} تعديل بانتظار الرفع` : ''}.</div></div>` : '')
     + (man.length ? grp('متأخرة', late, 'late') + grp('اليوم', now) + grp('قادمة', later)
       : (sys.length ? `<div class="small muted" style="margin:6px 0">لا توجد مهام مضافة يدويًا.</div>` : `<div class="card"><div class="empty">${who === 'me' ? 'لا توجد مهام مفتوحة عليك.' : 'لا توجد مهام مفتوحة.'}</div></div>`))
-    + (sys.length ? `<div class="tk-g tk-sys" data-act="tk-sys" role="button" aria-expanded="${sysOn}">⚙️ مهام النظام <small>(${sys.length})</small>${sysLate ? ` <small class="neg">· ${sysLate} متأخرة</small>` : ''}<span class="sp"></span><i>${sysOn ? '▴' : '▾'}</i></div>${sysOn ? `<div class="card">${sys.sort(tkSort).map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
+    + (sys.length ? `<div class="tk-g tk-sys" data-act="tk-sys" role="button" aria-expanded="${sysOn}">⚙️ مهام النظام <small>(${sys.length})</small>${sysLate ? ` <small class="neg">· ${sysLate} متأخرة</small>` : ''}<span class="sp"></span><i>${sysOn ? '▴' : '▾'}</i></div>${sysOn ? `<div class="row wrap" style="margin:8px 0">${sysLate ? `<button class="btn sm" data-act="tk-arch-late">🗄️ أرشفة كل المتأخرة (${sysLate})</button>` : ''}</div><div class="card">${sys.sort(tkSort).map(t => tkRow(t, { who: showWho, arch: true })).join('')}</div>` : ''}` : '')
+    + (archN ? `<button class="btn sm ghost" data-act="tk-arch-view" style="margin-top:10px">🗄️ أرشيف مهام النظام (${archN})</button>${LS.get('tkArchOn', 0) ? `<div class="card" style="margin-top:8px">${archL.map(t => `<div class="tk"><div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m"><b>${esc(t.clientName)}</b>${t.due ? ' · ' + dShort(t.due) : ''}</div></div><button class="btn sm" data-act="tk-unarch" data-id="${esc(t.id)}">استرجاع</button></div>`).join('')}</div>` : ''}` : '')
     + (closed.length ? `<button class="btn sm ghost" data-act="tk-toggle-done" style="margin-top:14px">${TK.done ? 'إخفاء' : 'عرض'} ما أُغلق خلال 7 أيام (${closed.length})</button>${TK.done ? `<div class="card" style="margin-top:8px">${closed.map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
     + prod
     + `<div class="small muted" style="margin-top:16px">تُضاف المهام من هنا (➕ إضافة مهمة) أو من برنامج «إدارة المكتب» وتظهر هنا خلال دقيقة. إغلاق المهمة أو إعادة توزيعها من علامة ⋯.</div>`
@@ -7071,8 +7083,10 @@ function fuHtml(c) {
   return `<div class="card sumrow fu-k">
       ${kp('📥 طلبات مفتوحة', req.length)}${kp('✅ مراحل تمت', done.filter(x => x.ic !== '✕').length)}${kp('🗓️ مهام مخططة', plan.length + nxt.length + (S.late ? ` <span class="small neg">(${S.late} متأخرة)</span>` : ''))}
       ${kp('💼 الأتعاب', fmt(P.fee), 'pos')}<div class="bal ${P.bal < -0.004 ? 'neg' : ''}"><small>${P.bal < -0.004 ? '⚠️ عليه' : '✅ له'}</small><b class="${P.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(P.bal))}</b></div></div>
+    ${clientApBlock(c)}
     <div class="row wrap no-print" style="gap:6px;margin:8px 0">
       ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة جديدة</button>` : ''}
+      <button class="btn sm" data-act="ap-add" data-c="${c.id}">📅 موعد</button>
       ${canTab('work') ? `<button class="btn sm" data-act="wk-addc" data-c="${c.id}">📂 ملف شغال</button>` : ''}
       ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">📦 مستندات</button>` : ''}
       <span class="sp"></span><button class="btn sm" data-act="fu-print" data-id="${c.id}">${icon('print', 15)} تقرير المتابعة PDF</button></div>
@@ -7425,6 +7439,10 @@ Object.assign(ACT, {
   'um-go': el => { closeModal(); go(el.dataset.h); },
   'um-out': () => { closeModal(); ACT.logout(); },
   'co-w': el => { CO.w = el.dataset.k; stRe(); },
+  'tk-arch': el => { const st = tkArchSet(); st.add(el.dataset.id); tkArchSave(st); toast('اتأرشفت'); stRe(); },
+  'tk-arch-late': async () => { const L = tkAll().filter(t => /^(TF|RN)-/.test(t.id) && tkOpen(t) && tkLate(t)); if (!L.length) return; if (!(await ask('أرشفة ' + L.length + ' مهمة نظام متأخرة؟ تقدري ترجعيهم من الأرشيف.', 'أرشفة'))) return; const st = tkArchSet(); L.forEach(t => st.add(t.id)); tkArchSave(st); toast('اتأرشفوا ' + L.length); stRe(); },
+  'tk-arch-view': () => { LS.set('tkArchOn', LS.get('tkArchOn', 0) ? 0 : 1); stRe(); },
+  'tk-unarch': el => { const st = tkArchSet(); st.delete(el.dataset.id); tkArchSave(st); toast('اترجعت'); stRe(); },
   'tk-sys': () => { LS.set('tkSys', LS.get('tkSys', 0) ? 0 : 1); stRe(); },
   'sel-toggle': () => { CST.selOn = !CST.selOn; if (!CST.selOn) CST.sel = new Set(); stRe(); },
   'st-pick': el => { const ids = String(el.dataset.id).split(','), on = !CST.sel.has(ids[0]); ids.forEach(i => on ? CST.sel.add(i) : CST.sel.delete(i)); stRe(); },
