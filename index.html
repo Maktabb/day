@@ -1010,6 +1010,10 @@ html{overscroll-behavior-y:none}
 .cal-b{font-style:normal;font-size:10.5px;min-width:17px;height:17px;border-radius:9px;background:#e8eefb;color:var(--navy);display:grid;place-items:center;padding:0 4px}.cal-b.late{background:#c0392b;color:#fff}.cal-b.ok{background:#dff3e6;color:#1f8a4c}
 .sr-mg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:2px 10px 4px;padding:4px 10px;background:var(--bg2,#f6f7fb);border-radius:8px;font-size:12.5px;color:var(--muted)}.sr-mg b{color:var(--ink)}.sr-mg .t{margin-inline-start:auto;font-weight:700;color:var(--navy)}
 .st-mg{font-size:12px;color:var(--muted);margin-top:2px}.st-mg .t{font-weight:700;color:var(--ink);border-top:1px solid var(--line);display:inline-block;padding-top:1px;margin-top:1px}
+.sr.selr{cursor:pointer}.sr.sel{background:#eaf1ff;box-shadow:inset 3px 0 0 var(--navy)}.sck{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);background:#fff;color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px;line-height:1}.sck.on{background:var(--navy);border-color:var(--navy)}
+.sel-bar{position:fixed;inset-inline:10px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:40;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 28px #0f274733;padding:8px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.pd-sum{margin:12px 0 0 auto;width:min(360px,100%);border:1px solid #cfd6e4;border-radius:8px;overflow:hidden}.pd-sum>div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;padding:6px 10px;border-bottom:1px solid #e6eaf2}.pd-sum small{width:100%;color:#667;font-size:11px}.pd-sum .big{background:#f3f6fc;font-size:15px;font-weight:700;border-bottom:0}.pd-sum .big.neg b{color:#c0392b}
+.pd-note{margin-top:10px;font-size:12px;color:#556}.rcp{border:2px solid #0f2747;border-radius:10px;padding:14px 18px;margin:6px 0 14px;font-size:15px;line-height:2}.rcp-a{font-size:22px}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
@@ -1718,7 +1722,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-162000';
+const BUILD = '20261121-200000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3228,7 +3232,7 @@ function clientStatement(id, incl) {
     return { t, cr, dr, bal };
   }).filter(Boolean);
 }
-const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all', ord: 'desc', pord: 'asc', src: true, typ: true };   // ord = ترتيب العرض، pord = ترتيب الطباعة والإرسال
+const CST = { id: '', from: '', to: '', kind: 'all', q: '', per: 'all', ord: 'desc', pord: 'asc', src: true, typ: true, sel: new Set(), selOn: false, vis: [] };   // ord = ترتيب العرض، pord = ترتيب الطباعة والإرسال
 const ST_KINDS = [['all', 'الكل'], ['pay', 'المدفوعات'], ['fee', 'الأتعاب'], ['tax', 'مطالبات الضرائب'], ['gov', 'الرسوم'], ['exp', 'المصروفات']];
 const stKind = t => t.type === 'IN_CLIENT' ? 'pay' : t.type === 'OPENING' ? 'open' : t.type === 'FEE' ? 'fee' : t.type === 'TAXC' ? 'tax' : t.type === 'GOV_FEE' ? 'gov' : 'exp';
 function csPeriod(p) {
@@ -3724,7 +3728,8 @@ function stBar(c, st, filtered) {
       ${filtered ? `<button class="btn sm ghost" data-act="cs-clear">مسح الفلتر</button>` : ''}
       <div class="cs-ord" title="ترتيب العرض والطباعة"><button class="${CST.ord === 'asc' ? 'on' : ''}" data-act="cs-ord2" data-k="asc" aria-label="الأقدم أولًا" title="الأقدم أولًا">↑</button><button class="${CST.ord === 'desc' ? 'on' : ''}" data-act="cs-ord2" data-k="desc" aria-label="الأحدث أولًا" title="الأحدث أولًا">↓</button></div>
       <button class="btn pri cs-p" data-act="print" aria-label="طباعة PDF" title="طباعة PDF">P</button></div>
-    <div class="row cs-tg"><span class="small muted">إظهار:</span><button class="chip ${CST.src ? 'on' : ''}" data-act="cs-tg" data-k="src" title="مين صرف / من أي خزينة — على الشاشة والطباعة">${CST.src ? '☑' : '☐'} المصدر</button><button class="chip ${CST.typ ? 'on' : ''}" data-act="cs-tg" data-k="typ" title="رسوم بإيصال / مصروف مباشر / وارد... — على الشاشة والطباعة">${CST.typ ? '☑' : '☐'} نوع الحركة</button></div>
+    <div class="row cs-tg"><span class="small muted">إظهار:</span><button class="chip ${CST.src ? 'on' : ''}" data-act="cs-tg" data-k="src" title="مين صرف / من أي خزينة — على الشاشة والطباعة">${CST.src ? '☑' : '☐'} المصدر</button><button class="chip ${CST.typ ? 'on' : ''}" data-act="cs-tg" data-k="typ" title="رسوم بإيصال / مصروف مباشر / وارد... — على الشاشة والطباعة">${CST.typ ? '☑' : '☐'} نوع الحركة</button>${isPriv() ? `<span class="grow"></span><button class="chip ${CST.selOn ? 'on' : ''}" data-act="sel-toggle" title="حدّدي حركات معينة وأصدري منها فاتورة أو مطالبة أو كشف جزئي أو إيصال">${CST.selOn ? '☑' : '☐'} تحديد حركات</button>` : ''}</div>
+    ${CST.selOn ? `<div class="row cs-sel small" style="gap:8px;margin-top:6px;align-items:center"><span class="muted">دوسي على الحركات اللي عايزاها في المستند.</span><span class="grow"></span><button class="btn sm ghost" data-act="sel-all">تحديد الكل</button><button class="btn sm ghost" data-act="sel-clear">مسح</button></div>` : ''}
   </div>`;
 }
 const stDt = d => { const [y, m, dd] = String(d || '').split('-'); return y ? `${dd}/${m}/${y.slice(2)}` : ''; };
@@ -3744,7 +3749,8 @@ function stList(rows, nInc, openBal, showBal, P, endBal) {
   const priv = isPriv(), cj = v => `${fmt(v)} <i>ج</i>`, cell = (l, cls, v) => `<div class="cl ${cls}"><small>${l}</small><b>${v}</b></div>`;
   const L = rows.map((x, i) => {
     const { t, cr, dr, bal, mg } = x, ex = !!x.x, c = D.clients[t.clientId] || {}, d = t.category ? stDesc(t, c) : (t.description || ''), src = accName(t.fromAcc || t.toAcc).replace('عهدة ', '');
-    return `<div class="sr${ex ? ' xr' : ''}" data-act="tx" data-id="${t.id}"><div class="sr1"><span class="sn num">${i + 1}</span><span class="sd num">${stDt(t.date)}</span><span class="sb">${CST.typ ? `<span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ` : ''}<b>${esc(t.category || t.description || '')}</b>${d && d !== t.category ? ` <span class="muted">· ${esc(d)}</span>` : ''}${t.type === 'TAXC' ? ` <b class="num">${fmt(+t.amount || 0)}</b> <span class="muted">(مطالبة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="muted">إيصال ${esc(t.receiptNo)}</span>` : ''}</span>${CST.src ? `<span class="ss">${esc(src)}</span>` : ''}${priv && (t.type === 'GOV_FEE' || t.type === 'OP_EXP') ? `<button class="sx${ex ? ' on' : ''}" data-act="tx-excl" data-id="${t.id}" aria-pressed="${ex}" title="${ex ? 'رجّعها لحساب العميل' : 'استبعدها من حساب العميل (تتحمّلها المكتب)'}"><i>${ex ? '✓' : ''}</i>مستبعد</button>` : ''}</div>
+    const sl = CST.selOn && priv && !ex, ids = mg ? [t.id, 'SJF-' + t.id] : [t.id], on = sl && CST.sel.has(t.id);
+    return `<div class="sr${ex ? ' xr' : ''}${sl ? ' selr' : ''}${on ? ' sel' : ''}" data-act="${sl ? 'st-pick' : 'tx'}" data-id="${sl ? ids.join(',') : t.id}"><div class="sr1">${sl ? `<span class="sck${on ? ' on' : ''}">${on ? '✓' : ''}</span>` : ''}<span class="sn num">${i + 1}</span><span class="sd num">${stDt(t.date)}</span><span class="sb">${CST.typ ? `<span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ` : ''}<b>${esc(t.category || t.description || '')}</b>${d && d !== t.category ? ` <span class="muted">· ${esc(d)}</span>` : ''}${t.type === 'TAXC' ? ` <b class="num">${fmt(+t.amount || 0)}</b> <span class="muted">(مطالبة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="muted">إيصال ${esc(t.receiptNo)}</span>` : ''}</span>${CST.src ? `<span class="ss">${esc(src)}</span>` : ''}${priv && (t.type === 'GOV_FEE' || t.type === 'OP_EXP') ? `<button class="sx${ex ? ' on' : ''}" data-act="tx-excl" data-id="${t.id}" aria-pressed="${ex}" title="${ex ? 'رجّعها لحساب العميل' : 'استبعدها من حساب العميل (تتحمّلها المكتب)'}"><i>${ex ? '✓' : ''}</i>مستبعد</button>` : ''}</div>
       ${mg ? `<div class="sr-mg"><span>رسوم <b class="num">${fmt(mg.g)}</b></span><span>أتعاب <b class="num">${fmt(mg.f)}</b></span><span class="t">إجمالي <b class="num">${fmt(mg.g + mg.f)}</b></span></div>` : ''}
       <div class="sr2 ${showBal ? '' : 'nb'}">${cell('عليه', 'dr', dr ? cj(dr) : '—')}${cell('له', 'cr', cr ? cj(cr) : '—')}${showBal ? cell('الرصيد', 'bl' + (bal < 0 && !ex ? ' neg' : ''), ex ? '—' : cj(bal)) : ''}${priv && t.type !== 'OPENING' ? `<button class="sed" data-act="tx-retype" data-id="${t.id}" title="تغيير التصنيف" aria-label="تغيير التصنيف">${icon('edit', 12)}</button>` : '<span></span>'}</div></div>`;
   });
@@ -3774,7 +3780,7 @@ function vClient(r, el) {
   const wa = waNumber(c.phone);
   const saAll = mineOnly ? [] : saFor(c.id), sa = saAll, old = mineOnly ? [] : oldFor(c.id).slice().reverse();
   const types = roleTypes(ME.role).filter(k => TYPES[k].client);
-  if (CST.id !== c.id) Object.assign(CST, { id: c.id, from: '', to: '', kind: 'all', q: '', per: 'all' });
+  if (CST.id !== c.id) Object.assign(CST, { id: c.id, from: '', to: '', kind: 'all', q: '', per: 'all', sel: new Set(), selOn: false, vis: [] });
   const qk = nkey(CST.q), kindOn = CST.kind !== 'all';
   const inR = x => (!CST.from || x.t.date >= CST.from) && (!CST.to || x.t.date <= CST.to);
   let rows = st.filter(inR);
@@ -3792,6 +3798,8 @@ function vClient(r, el) {
   const balTxt = s.bal < -0.004 ? 'مستحق على العميل' : s.bal > 0.004 ? 'رصيد دائن للعميل (تحت الحساب)' : 'الحساب مسدَّد';
   const openR = openRow ? `<tr class="st-open"><td class="c">—</td><td class="num">${esc(CST.from)}</td><td><b>رصيد ما قبل الفترة</b></td><td class="src"></td><td class="n">${openBal < 0 ? fmt(-openBal) : '<span class="z">—</span>'}</td><td class="n">${openBal > 0 ? fmt(openBal) : '<span class="z">—</span>'}</td><td class="n"><b class="${openBal < 0 ? 'neg' : ''}">${fmt(openBal)}</b></td>${isPriv() ? '<td class="no-print"></td>' : ''}</tr>` : '';
   const rowsM = stMerge(rows), rowsXM = stMerge(rowsX);
+  CST.vis = rowsXM.filter(x => !x.x).flatMap(x => x.mg ? [x.t.id, 'SJF-' + x.t.id] : [x.t.id]);
+  const selRows = CST.selOn ? stAll.filter(x => CST.sel.has(x.t.id) && !x.x) : [], selBar = CST.selOn && isPriv() ? `<div class="sel-bar no-print"><div class="grow"><b>${selRows.length}</b> محددة${selRows.length ? ` · عليه <b class="num">${fmt(r2(selRows.reduce((a, x) => a + x.dr, 0)))}</b> · له <b class="num">${fmt(r2(selRows.reduce((a, x) => a + x.cr, 0)))}</b>` : ''}</div><button class="btn sm" data-act="sel-fee" data-id="${c.id}">＋ أتعاب</button><button class="btn sm pri" data-act="sel-doc" data-id="${c.id}" ${selRows.length ? '' : 'disabled'}>📄 إصدار مستند</button><button class="btn sm ghost" data-act="sel-toggle" aria-label="إنهاء">✕</button></div>` : '';
   const rowH = ({ t, cr, dr, bal, mg }, i) => `<tr data-act="tx" data-id="${t.id}" style="cursor:pointer"><td class="c">${i + 1}</td><td class="num">${t.date}</td>
         <td><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}${mg ? `<div class="st-mg"><div>رسوم: <b class="num">${fmt(mg.g)}</b></div><div>أتعاب: <b class="num">${fmt(mg.f)}</b></div><div class="t">إجمالي: <b class="num">${fmt(mg.g + mg.f)}</b></div></div>` : ''}${t.type === 'TAXC' ? ` — <b class="num">${fmt(+t.amount || 0)}</b> <span class="small muted">(مطالبة للمتابعة — لا تؤثر على الرصيد)</span>` : ''}${t.receiptNo ? ` <span class="small muted">إيصال ${esc(t.receiptNo)}</span>` : ''}${(d => d && d !== t.category ? `<div class="small muted">${esc(d)}</div>` : '')(t.category ? stDesc(t, c) : '')}</td>
         <td class="small src">${esc(accName(t.fromAcc || t.toAcc).replace('عهدة ', ''))}</td>
@@ -3856,6 +3864,7 @@ function vClient(r, el) {
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>المحاسب</th><th>البيان</th><th>المكان</th><th class="n">وارد</th><th class="n">نثرية</th><th class="n">رسوم</th></tr></thead>
       <tbody>${arch.map(x => `<tr><td class="num">${x[ci.date]}</td><td>${esc(x[ci.member])}</td><td>${esc(x[ci.desc])}</td><td>${esc(x[ci.place])}</td>
         <td class="n">${+x[ci.inc] ? fmt(x[ci.inc]) : ''}</td><td class="n">${+x[ci.misc] ? fmt(x[ci.misc]) : ''}</td><td class="n">${+x[ci.fee] ? fmt(x[ci.fee]) : ''}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
+  if (selBar && cliView() !== 'fu') el.insertAdjacentHTML('beforeend', selBar);
   if (cliView() === 'fu') fuApply(el, c);
 }
 function clientWhatsApp(id) {
@@ -7247,6 +7256,107 @@ function sjOffer(arr, then) {
     end();
   };
 }
+/* ====== مستند جزئي: فاتورة / مطالبة / كشف جزئي / إيصال من حركات محددة ====== */
+const DOC_T = { inv: ['فاتورة', 'INV'], clm: ['مطالبة مالية', 'CLM'], st: ['كشف حساب جزئي', 'PST'], rcp: ['إيصال', 'RCP'] };
+const docSeq = () => { try { return JSON.parse(((D.lists || {}).docSeq || [])[0] || '{}'); } catch (e) { return {}; } };
+const docNum = (k, n) => DOC_T[k][1] + '-' + today().slice(0, 4) + '-' + String(n).padStart(4, '0');
+function docBump(k) { const q = docSeq(); q[k] = (+q[k] || 0) + 1; D.lists = D.lists || {}; D.lists.docSeq = [JSON.stringify(q)]; queue('saveLists', { lists: { docSeq: D.lists.docSeq } }); changed(); }
+function docData(cid, withOpen) {
+  const all = clientStatement(cid), sel = all.filter(r => CST.sel.has(r.t.id) && !r.x), op = withOpen ? all.filter(r => r.t.type === 'OPENING' && !CST.sel.has(r.t.id)) : [];
+  const rows = stMerge(sel), dr = r2(rows.reduce((a, r) => a + r.dr, 0)), cr = r2(rows.reduce((a, r) => a + r.cr, 0)), opn = r2(op.reduce((a, r) => a + r.cr - r.dr, 0));
+  return { rows, op, dr, cr, opn, net: r2(cr - dr + opn) };
+}
+const docDesc = r => { const t = r.t; let d = t.type === 'OPENING' ? 'رصيد مرحّل' : (pdDesc(t) || t.category || (TYPES[t.type] || {}).n || ''); if (r.mg) d += ` (رسوم ${fmt(r.mg.g)} + أتعاب ${fmt(r.mg.f)})`; return d; };
+function docBuild(cid, k, o) {
+  const c = D.clients[cid], D0 = docData(cid, o.open), { rows, op, dr, cr, opn, net } = D0, due = net < -0.004, nm = (v) => `<span class="num">${fmt(v)}</span>`;
+  const info = [['العميل', `<b>${esc(c.name)}</b>`], ['رقم المستند', `<span class="num">${esc(o.num)}</span>`], ['التاريخ', dLong(today())]];
+  if (c.phone) info.push(['الموبايل', `<span class="num">${esc(c.phone)}</span>`]);
+  if (k === 'clm' && o.due) info.push(['آخر موعد للسداد', `<span class="num">${esc(o.due)}</span>`]);
+  const note = o.note ? `<div class="pd-note">📝 ${esc(o.note)}</div>` : '';
+  const opRow = (cols) => op.length && o.open ? `<tr class="tot"><td class="c">—</td>${cols}</tr>` : '';
+  let body = '';
+  if (k === 'rcp') {
+    const items = rows.filter(r => o.rk === 'fee' ? r.t.type === 'FEE' || r.mg : (r.cr > 0 || r.dr > 0));
+    body = `<div class="rcp"><p>استلمنا من السادة / <b>${esc(c.name)}</b></p><p>مبلغ وقدره: <b class="num rcp-a">${fmt(o.amt)}</b> جنيه مصري</p>
+      <p>وذلك ${o.rk === 'fee' ? 'أتعاب عن' : 'سدادًا عن'}: ${items.length ? items.map(r => esc(docDesc(r))).join('، ') : '—'}</p>${note}</div>
+      ${items.length ? `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th style="width:90px">التاريخ</th><th>البيان</th><th style="width:100px">المبلغ</th></tr></thead><tbody>${items.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${esc(r.t.date)}</td><td>${esc(docDesc(r))}</td><td class="n">${nm(r.cr || r.dr)}</td></tr>`).join('')}</tbody></table>` : ''}`;
+  } else if (k === 'st') {
+    body = `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th style="width:90px">التاريخ</th><th>البيان</th><th style="width:96px">عليه</th><th style="width:96px">له</th></tr></thead><tbody>
+      ${op.length ? `<tr class="tot"><td class="c">—</td><td></td><td>رصيد مرحّل</td><td class="n">${opn < 0 ? nm(-opn) : ''}</td><td class="n">${opn > 0 ? nm(opn) : ''}</td></tr>` : ''}
+      ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${esc(r.t.date)}</td><td>${esc(docDesc(r))}</td><td class="n">${r.dr ? nm(r.dr) : ''}</td><td class="n">${r.cr ? nm(r.cr) : ''}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="3">الإجمالي (${rows.length} حركة)</td><td class="n">${nm(r2(dr + (opn < 0 ? -opn : 0)))}</td><td class="n">${nm(r2(cr + (opn > 0 ? opn : 0)))}</td></tr></tfoot></table>
+      <div class="pd-sum"><div class="big ${due ? 'neg' : ''}"><span>${due ? 'المستحق على العميل' : net > 0.004 ? 'رصيد دائن للعميل' : 'الصافي'}</span><b class="num">${fmt(Math.abs(net))}</b></div></div>${note}
+      <div class="pd-note" style="margin-top:6px">كشف جزئي: يشمل الحركات المذكورة فقط، وليس الرصيد الكلي للحساب.</div>`;
+  } else {
+    const it = rows.filter(r => r.dr > 0), pd = rows.filter(r => r.cr > 0), tot = r2(it.reduce((a, r) => a + r.dr, 0)), paid = r2(pd.reduce((a, r) => a + r.cr, 0));
+    body = `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th>البيان</th><th style="width:90px">التاريخ</th><th style="width:110px">المبلغ</th></tr></thead><tbody>
+      ${it.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(docDesc(r))}</td><td class="c">${esc(r.t.date)}</td><td class="n">${nm(r.dr)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="3">إجمالي ${k === 'inv' ? 'الفاتورة' : 'المطالبة'}</td><td class="n">${nm(tot)}</td></tr></tfoot></table>
+      <div class="pd-sum">${op.length && o.open ? `<div><span>رصيد سابق مرحّل ${opn < 0 ? '(عليه)' : '(له)'}</span><b class="num">${fmt(Math.abs(opn))}</b></div>` : ''}${paid ? `<div><span>المسدّد</span><b class="num">${fmt(paid)}</b>${pd.map(r => `<small>${esc(r.t.date)} — ${esc(docDesc(r))}: ${fmt(r.cr)}</small>`).join('')}</div>` : ''}
+        <div class="big ${due ? 'neg' : ''}"><span>${due ? (k === 'clm' ? 'المطلوب سداده' : 'المتبقي') : net > 0.004 ? 'رصيد دائن للعميل' : 'الحساب مسدَّد'}</span><b class="num">${fmt(Math.abs(net))}</b></div></div>${note}
+      ${k === 'clm' && due ? `<div class="pd-note" style="margin-top:6px">برجاء التكرم بسداد المبلغ المستحق${o.due ? ' في موعد أقصاه ' + esc(o.due) : ''}. شاكرين تعاونكم.</div>` : ''}`;
+  }
+  return { title: DOC_T[k][0] + (k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : ''), file: `${DOC_T[k][0]} ${c.name} ${o.num}`, info, body };
+}
+function docText(cid, k, o) {
+  const c = D.clients[cid], { rows, dr, cr, opn, net } = docData(cid, o.open), t = DOC_T[k][0] + (k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : '');
+  const L = rows.map(r => `• ${r.t.date} — ${docDesc(r)}: ${r.cr ? '+' + fmt(r.cr) : '−' + fmt(r.dr)}`);
+  return [`السادة / ${c.name}`, `نرسل لكم ${t} رقم ${o.num}:`, '', ...(k === 'rcp' ? [`استلمنا مبلغ ${fmt(o.amt)} جنيه`] : L), '',
+    ...(o.open && opn ? [`رصيد مرحّل: ${fmt(Math.abs(opn))} ${opn < 0 ? '(عليكم)' : '(لكم)'}`] : []),
+    ...(k === 'rcp' ? [] : [net < -0.004 ? `المستحق على حضراتكم: ${fmt(-net)} ج.م` : net > 0.004 ? `رصيد دائن لكم: ${fmt(net)} ج.م` : 'الحساب مسدَّد'])
+    , ...(o.note ? ['', o.note] : []), '', 'مع خالص الشكر — مكتب محمود سالم للمحاسبة والمراجعة.'].join('\n');
+}
+function docForm(cid) {
+  const c = D.clients[cid]; if (!c) return;
+  let k = LS.get('docK', 'inv'), rk = 'pay', open = !!LS.get('docOpen', 0);
+  const base = () => docData(cid, open), seq = () => (+docSeq()[k] || 0) + 1;
+  const m = modal(`<h3>📄 مستند من الحركات المحددة</h3><div class="small muted" id="df-sum"></div>
+    ${fld('نوع المستند', `<div class="chips" id="df-k">${Object.entries(DOC_T).map(([x, v]) => `<button class="chip" data-k="${x}">${v[0]}</button>`).join('')}</div>`)}
+    <div id="df-rk" style="display:none">${fld('الإيصال عن', `<div class="chips"><button class="chip" data-rk="pay">سداد (استلام مبلغ)</button><button class="chip" data-rk="fee">أتعاب</button></div>`)}</div>
+    <div id="df-amt" style="display:none">${fld('مبلغ الإيصال', `<input id="df-a" type="number" step="0.01" class="inp num">`)}</div>
+    <div id="df-op">${fld('الرصيد القديم المرحّل', `<label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="df-o" ${open ? 'checked' : ''}> إظهاره في المستند وحسابه ضمن الإجمالي</label>`)}</div>
+    <div id="df-du" style="display:none">${fld('آخر موعد للسداد (اختياري)', `<input id="df-d" type="date" class="inp">`)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('رقم المستند', `<input id="df-n" class="inp ltr">`)}${fld('ملاحظة (اختياري)', `<input id="df-t" class="inp">`)}</div>
+    <div class="acts"><button class="btn pri" id="df-p">${icon('print', 17)} طباعة / PDF</button><button class="btn" id="df-w">واتساب</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  let auto = '';
+  const paint = () => {
+    const D0 = base(); LS.set('docK', k); LS.set('docOpen', open ? 1 : 0);
+    m.querySelectorAll('#df-k [data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+    m.querySelectorAll('[data-rk]').forEach(b => b.classList.toggle('on', b.dataset.rk === rk));
+    m.querySelector('#df-rk').style.display = m.querySelector('#df-amt').style.display = k === 'rcp' ? '' : 'none';
+    m.querySelector('#df-du').style.display = k === 'clm' ? '' : 'none'; m.querySelector('#df-op').style.display = k === 'rcp' ? 'none' : '';
+    m.querySelector('#df-sum').innerHTML = `<b>${esc(c.name)}</b> — ${D0.rows.length} حركة · عليه <b class="num">${fmt(D0.dr)}</b> · له <b class="num">${fmt(D0.cr)}</b>`;
+    if (k === 'rcp') { const v = rk === 'fee' ? D0.rows.filter(r => r.t.type === 'FEE' || r.mg).reduce((a, r) => a + (r.mg ? r.mg.f : r.dr), 0) : (D0.cr || Math.max(-D0.net, 0)); m.querySelector('#df-a').value = r2(v); }
+    const nn = m.querySelector('#df-n'); if (!nn.value || nn.value === auto) { auto = docNum(k, seq()); nn.value = auto; }
+  };
+  m.addEventListener('click', e => { const a = e.target.closest('[data-k]'), b = e.target.closest('[data-rk]'); if (a) { k = a.dataset.k; auto = ''; m.querySelector('#df-n').value = ''; paint(); } if (b) { rk = b.dataset.rk; paint(); } });
+  m.querySelector('#df-o').onchange = e => { open = e.target.checked; paint(); };
+  const get = () => ({ open: k !== 'rcp' && open, rk, amt: +m.querySelector('#df-a').value || 0, due: m.querySelector('#df-d').value, num: m.querySelector('#df-n').value.trim() || auto, note: m.querySelector('#df-t').value.trim() });
+  const used = o => { if (o.num === auto) docBump(k); };
+  m.querySelector('#df-p').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); used(o); closeModal(); printDoc(docBuild(cid, k, o)); };
+  m.querySelector('#df-w').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); used(o); waGo(c.phone, docText(cid, k, o)); closeModal(); };
+  paint();
+}
+function docFee(cid) {
+  const m = modal(`<h3>＋ أتعاب جديدة</h3><div class="small muted" style="margin-bottom:8px">${esc(clientName(cid))}</div>
+    ${fld('المبلغ', `<input id="fe-a" type="number" step="0.01" class="inp num" inputmode="decimal">`, { req: 1 })}${fld('البيان', `<input id="fe-d" class="inp" placeholder="مثال: أتعاب تعديل عقد" value="أتعاب">`)}${fld('التاريخ', `<input id="fe-t" type="date" class="inp" value="${today()}">`)}
+    <div class="acts"><button class="btn pri" id="fe-ok">إضافة وتحديدها</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  m.querySelector('#fe-ok').onclick = () => {
+    const a = r2(+m.querySelector('#fe-a').value || 0); if (a <= 0) return toast('اكتبي المبلغ', 'err');
+    const now = nowIso(), d = m.querySelector('#fe-d').value.trim() || 'أتعاب';
+    const x = { id: uid('T'), date: m.querySelector('#fe-t').value || today(), type: 'FEE', amount: a, fromAcc: '', toAcc: '', clientId: cid, category: d, description: '', payMethod: '', place: '', stage: '', service: '', projectRef: '', receiptNo: '', batchId: '', userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0, approved: 1, approvedBy: ME.id, approvedAt: now };
+    D.txs[x.id] = x; queue('saveTx', { txs: [x] }); CST.sel.add(x.id); changed(); closeModal(); toast('اتضافت الأتعاب واتحددت'); stRe();
+  };
+}
+const stRe = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
+Object.assign(ACT, {
+  'sel-toggle': () => { CST.selOn = !CST.selOn; if (!CST.selOn) CST.sel = new Set(); stRe(); },
+  'st-pick': el => { const ids = String(el.dataset.id).split(','), on = !CST.sel.has(ids[0]); ids.forEach(i => on ? CST.sel.add(i) : CST.sel.delete(i)); stRe(); },
+  'sel-all': () => { CST.vis.forEach(i => CST.sel.add(i)); stRe(); },
+  'sel-clear': () => { CST.sel = new Set(); stRe(); },
+  'sel-fee': el => docFee(el.dataset.id),
+  'sel-doc': el => docForm(el.dataset.id),
+});
 Object.assign(ACT, { 'bill-edit': el => billForm(el.dataset.id) });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
