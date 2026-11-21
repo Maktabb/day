@@ -1764,7 +1764,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-055000';
+const BUILD = '20261122-060000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3853,6 +3853,7 @@ function stPm(g, cid) {
   m.addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (b) { closeModal(); go2(b.dataset.pk); } });
 }
 const CHX = () => !!LS.get('cliHdr', 0);
+const IC_WALLET = '<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="19" rx="3.5" fill="#8a5a2b"/><rect x="3" y="7" width="26" height="6" rx="3" fill="#a56d36"/><path d="M3.5 13h25" stroke="#6b4320" stroke-width="1"/><rect x="18" y="15.5" width="11" height="7" rx="2.5" fill="#6b4320"/><circle cx="22" cy="19" r="1.6" fill="#f4c542"/><path d="M6 9.5h13" stroke="#c98d4d" stroke-width="1.2" stroke-linecap="round"/></svg>';
 const IC_WA = '<svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#25D366"/><path d="M9.2 23l1.2-4.2A7.6 7.6 0 1 1 13.3 21.9L9.2 23z" fill="#fff"/><path d="M13.2 11.3c-.3-.6-.6-.6-.9-.6-.2 0-.5 0-.7.3-.3.3-1 1-1 2.3s1 2.7 1.2 2.9c.1.2 2 3.2 5 4.3 2.5.9 3 .7 3.5.7.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.7-.4l-1.9-.9c-.3-.1-.5-.1-.7.2-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1z" fill="#25D366"/></svg>';
 const IC_CAL = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17.2h2" /></svg>';
 function vClient(r, el) {
@@ -3912,8 +3913,8 @@ function vClient(r, el) {
       <div class="ch-acts">
         <button class="btn ib c-ed" data-act="client-edit" data-id="${c.id}" title="تعديل" aria-label="تعديل"><i>✏️</i></button>
         <button class="btn ib c-ap" data-act="ap-add" data-c="${c.id}" title="موعد" aria-label="موعد"><i>📅</i></button>
-        ${canTab('collect') ? `<button class="btn ib c-co ${collHas(c.id) ? 'on' : ''}" data-act="coll-toggle" data-id="${c.id}" title="${collHas(c.id) ? 'في التحصيل (اضغطي للتعديل أو الإزالة)' : 'للتحصيل'}" aria-label="للتحصيل"><i>👛</i></button>` : ''}
-        ${canTab('deliver') ? `<button class="btn ib c-dl" data-act="dl-add" data-id="${c.id}" title="مستندات" aria-label="مستندات"><i>🗂️</i></button>` : ''}
+        ${canTab('collect') ? `<button class="btn ib c-co ${collHas(c.id) ? 'on' : ''}" data-act="coll-toggle" data-id="${c.id}" title="${collHas(c.id) ? 'في التحصيل (اضغطي للتعديل أو الإزالة)' : 'للتحصيل'}" aria-label="للتحصيل">${IC_WALLET}</button>` : ''}
+        ${canTab('deliver') ? `<button class="btn ib c-dl" data-act="dl-add" data-id="${c.id}" title="تسليم الملفات" aria-label="تسليم الملفات"><i>🛵</i></button>` : ''}
         ${wa ? `<button class="btn ib c-wa" data-act="client-wa" data-id="${c.id}" title="واتساب" aria-label="واتساب">${IC_WA}</button>` : ''}
         ${isAdmin() ? `<button class="btn ib c-mg" data-act="client-merge" data-id="${c.id}" title="دمج" aria-label="دمج"><i>🔗</i></button><button class="btn ib c-dx" data-act="client-del" data-id="${c.id}" title="حذف" aria-label="حذف"><i>🗑️</i></button>` : ''}
       </div>` : ''}
@@ -7648,7 +7649,7 @@ const TIPS = {
   'coll-add': ['إضافة للتحصيل', 'اختاري عميل وحدّدي هتحصّلي منه إيه ومين المسؤول.'],
   'coll-edit': ['تعديل التحصيل', 'تغيير المبلغ المطلوب أو المحاسب المكلَّف أو الملاحظة.'],
   'coll-del': ['إزالة من التحصيل', 'تشيل العميل من القايمة بعد ما يتحصّل أو لو اتلغى الطلب.'],
-  'dl-add': ['مستندات', 'تسجيل مستندات ورقية أو أصول تخص العميل ومتابعة تسليمها.'],
+  'dl-add': ['تسليم الملفات', 'تسجيل مستندات أو ملفات للعميل ومتابعة تسليمها له.'],
   'client-wa': ['واتساب', 'فتح محادثة واتساب مع العميل برسالة جاهزة (ملخص حسابه).'],
   'client-merge': ['دمج العميل', 'دمج عميلين مكرّرين في واحد، وتنتقل كل حركاتهم للعميل المختار.'],
   'client-del': ['حذف العميل', 'حذف العميل من البرنامج (للمدير فقط). اتأكدي قبلها.'],
