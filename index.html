@@ -993,6 +993,14 @@ html{overscroll-behavior-y:none}
 .sumrow>div:first-child{border-inline-start:0}
 .sumrow small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
 .sumrow b{display:block;font-size:clamp(12.5px,3.7vw,19px);font-variant-numeric:tabular-nums;white-space:nowrap;direction:ltr;letter-spacing:-.2px}
+.co-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}.co-t{min-width:0}.co-top-acts{display:flex;gap:8px;flex-wrap:wrap}
+.sumrow.co-sum{grid-template-columns:repeat(4,minmax(0,1fr))}.sumrow.co3{grid-template-columns:repeat(3,minmax(0,1fr))}.co-sum small{white-space:normal;font-size:11.5px;line-height:1.3}
+.co-c{margin-top:10px;padding:13px 14px;border-inline-start:4px solid var(--line)}.co-c.late{border-inline-start-color:#c0392b}
+.co-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.co-n{font-weight:700;font-size:16.5px;color:var(--navy);min-width:0;overflow-wrap:anywhere}
+.co-amt{text-align:left;flex:none}.co-amt small{display:block;color:var(--muted);font-size:11px}.co-amt b{font-size:20px;font-variant-numeric:tabular-nums;direction:ltr;display:block}
+.co-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.co-note{margin-top:8px;font-size:13px;background:var(--bg2,#f6f7fb);border-radius:8px;padding:6px 10px}
+.co-acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;margin-top:10px}.co-acts .btn{justify-content:center;padding-inline:4px;white-space:nowrap}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
@@ -1701,7 +1709,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-123000';
+const BUILD = '20261121-130000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3282,26 +3290,24 @@ function vCollect(r, el) {
   const rows = collRows(), td = today();
   const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
   const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
-  el.innerHTML = `<div class="row wrap" style="align-items:center;margin-bottom:10px"><h1 class="pg grow" style="margin:0">💰 التحصيل <small>تحصيل العملاء + متابعة مطالبات الضرائب</small></h1>
-      <button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل للتحصيل</button>
-      ${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
-    <div class="card sumrow">
-      <div><small>عملاء في قائمة التحصيل</small><b>${rows.length}</b></div>
-      <div><small>عليهم رصيد مستحق</small><b>${n0}</b></div>
+  el.innerHTML = `<div class="co-h"><div class="co-t"><h1 class="pg" style="margin:0">💰 التحصيل</h1><div class="small muted">تحصيل العملاء ومتابعة مطالبات الضرائب</div></div>
+      <div class="co-top-acts"><button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل</button>${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} PDF</button>` : ''}</div></div>
+    <div class="card sumrow co-sum">
+      <div><small>في القائمة</small><b>${rows.length}</b></div>
+      <div><small>عليهم رصيد</small><b>${n0}</b></div>
       <div><small>تأخر موعدهم</small><b class="${late ? 'neg' : ''}">${late}</b></div>
-      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>إجمالي المتوقع تحصيله</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
+      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>المتوقع تحصيله</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
     </div>
-    ${rows.length ? rows.map(({ x, s, owe }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td;
-      return `<div class="card pad" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:10px">
-        <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
-          <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}آخر نشاط: <span class="num">${esc(s.last || '—')}</span>${x.d ? ` · الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : ''}</div>
-          ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
-        <div style="text-align:left"><small class="muted">${owe > 0.004 ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد')}</small><div class="${owe > 0.004 ? 'neg' : 'pos'}" style="font-size:20px;font-weight:700">${fmt(owe > 0.004 ? owe : Math.max(s.bal || 0, 0))}</div></div></div>
-        <div class="row wrap no-print" style="margin-top:8px;gap:6px">
-          ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 16)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 16)} كشف واتساب</button>` : ''}
-          <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 16)} ملاحظة / موعد</button>
-          <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 16)} إزالة من التحصيل</button></div></div>`; }).join('')
-    : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل للتحصيل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
+    ${rows.length ? rows.map(({ x, s, owe }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td, has = owe > 0.004;
+      return `<div class="card co-c${isLate ? ' late' : ''}"><div class="co-top"><a class="co-n" href="#client/${c.id}">${esc(c.name)}</a>
+          <div class="co-amt"><small>${has ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد')}</small><b class="${has ? 'neg' : 'pos'}">${fmt(has ? owe : Math.max(s.bal || 0, 0))}</b></div></div>
+        <div class="co-meta">${c.phone ? `<span class="num">📞 ${esc(c.phone)}</span>` : ''}<span>آخر نشاط <span class="num">${esc(s.last || '—')}</span></span>${x.d ? `<span class="${isLate ? 'neg' : ''}">الموعد <span class="num">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}</span>` : ''}</div>
+        ${x.n ? `<div class="co-note">📝 ${esc(x.n)}</div>` : ''}
+        <div class="co-acts no-print">
+          ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 15)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} كشف</button>` : ''}
+          <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 15)} ملاحظة</button>
+          <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 15)} إزالة</button></div></div>`; }).join('')
+    : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
     ${canTab('tax') ? taxSection() : ''}
     <p class="small muted" style="margin-top:12px">المبلغ المعروض هو رصيد العميل الحالي (المستحق عليه) ويتحدّث تلقائيًا مع كل دفعة تسجّلينها. العميل اللي رصيده مسدَّد يفضل في القائمة لحد ما تشيليه.</p>`;
 }
@@ -3504,12 +3510,12 @@ const taxRows = () => { if (!canTab('tax')) return []; const dn = taxDoneSet(); 
 function taxSection() {
   const L = taxRows(), open = L.filter(x => !x.done), tot = r2(open.reduce((n, x) => n + (+x.t.amount || 0), 0));
   const bk = {}; open.forEach(x => { const k = x.t.category || 'أخرى'; bk[k] = r2((bk[k] || 0) + (+x.t.amount || 0)); });
-  return `<div class="row wrap" style="align-items:center;margin:26px 0 10px"><h2 class="sec grow" style="margin:0">🏛️ متابعة مطالبات الضرائب</h2>
-      ${L.length ? `<button class="btn" data-act="pd-taxc">${icon('print', 17)} طباعة PDF</button>` : ''}</div>
-    <div class="card sumrow">
+  return `<div class="co-h" style="margin-top:26px"><div class="co-t"><h2 class="sec" style="margin:0">🏛️ متابعة مطالبات الضرائب</h2></div>
+      ${L.length ? `<div class="co-top-acts"><button class="btn" data-act="pd-taxc">${icon('print', 17)} PDF</button></div>` : ''}</div>
+    <div class="card sumrow co-sum co3">
       <div><small>مطالبات مفتوحة</small><b>${open.length}</b></div>
       <div><small>تمت متابعتها</small><b class="pos">${L.length - open.length}</b></div>
-      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>إجمالي المطالبات المفتوحة</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
+      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>إجمالي المفتوح</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
     </div>
     ${Object.keys(bk).length ? `<div class="chips" style="margin-top:8px">${Object.entries(bk).map(([k, v]) => `<span class="chip">${esc(k)}: <b>${fmt(v)}</b></span>`).join('')}</div>` : ''}
     ${L.length ? `<div class="card tblwrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>العميل</th><th>الموبايل</th><th class="n">المطالبة</th><th>النوع</th><th>التاريخ</th><th class="no-print"></th></tr></thead><tbody>
