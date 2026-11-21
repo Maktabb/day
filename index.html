@@ -1001,6 +1001,13 @@ html{overscroll-behavior-y:none}
 .co-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12.5px;color:var(--muted)}
 .co-note{margin-top:8px;font-size:13px;background:var(--bg2,#f6f7fb);border-radius:8px;padding:6px 10px}
 .co-acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;margin-top:10px}.co-acts .btn{justify-content:center;padding-inline:4px;white-space:nowrap}
+.ap-r.late{background:color-mix(in srgb,#c0392b 6%,transparent)}.ap-r.dn b{text-decoration:line-through;opacity:.55}.ap-dot{flex:none;width:26px;text-align:center}
+.ap-ck{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:#fff;color:#fff;font-weight:700;line-height:1;display:grid;place-items:center;padding:0;margin-top:2px}.ap-ck.on{background:#1f8a4c;border-color:#1f8a4c}
+.cal-box{margin-top:10px}.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:8px}.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-h{text-align:center;color:var(--muted);font-size:11px;padding:2px 0}.cal-e{display:block}
+.cal-d{position:relative;aspect-ratio:1/1;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:600;padding:0;color:var(--ink)}
+.cal-d.tdy{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}.cal-d.sel{background:var(--navy);color:#fff}
+.cal-b{font-style:normal;font-size:10.5px;min-width:17px;height:17px;border-radius:9px;background:#e8eefb;color:var(--navy);display:grid;place-items:center;padding:0 4px}.cal-b.late{background:#c0392b;color:#fff}.cal-b.ok{background:#dff3e6;color:#1f8a4c}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
@@ -1292,7 +1299,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { work: '📂', formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { calendar: '📅', work: '📂', formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1709,7 +1716,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-130000';
+const BUILD = '20261121-150000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2046,6 +2053,7 @@ function navItems() {
   const priv = isPriv();
   return [
     ['home', 'الرئيسية', 'home'],
+    ['calendar', 'التقويم', 'calendar'],
     ...(canTab('tasks') ? [['tasks', 'المهام', 'check']] : []),
     ...(priv ? [['clients', 'العملاء', 'users']] : []),
     ...(canTab('collect') ? [['collect', 'التحصيل', 'wallet']] : []),
@@ -2117,14 +2125,14 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation, work: vWork };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, calendar: vCalendar, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation, work: vWork };
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   if ((r.name === 'collect' || r.name === 'deliver' || r.name === 'tasks') && !canTab(r.name)) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn === vHome) { setTimeout(notePop, 350); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
+  try { fn(r, vw); if (fn !== vHome) setTimeout(apPop, 250); if (fn === vHome) { setTimeout(apPop, 200); setTimeout(apHomeTick, 0); setTimeout(notePop, 350); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -3284,9 +3292,10 @@ function collSave(arr) { D.lists = D.lists || {}; D.lists.collect = arr.map(x =>
 const collHas = id => collList().some(x => x.c === resCid(id));
 function collRows() {
   const cs = calc().cli;
-  return collList().map(x => { const s = cs[x.c] || { bal: 0, last: '' }; return { x, s, owe: Math.max(r2(-(s.bal || 0)), 0) }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
+  return collList().map(x => { const s = cs[x.c] || { bal: 0, last: '' }; return { x: { ...x, d: nextColl(x.c) }, s, owe: Math.max(r2(-(s.bal || 0)), 0) }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
 }
 function vCollect(r, el) {
+  apMigrate();
   const rows = collRows(), td = today();
   const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
   const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
@@ -3306,10 +3315,120 @@ function vCollect(r, el) {
         <div class="co-acts no-print">
           ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 15)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} كشف</button>` : ''}
           <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 15)} ملاحظة</button>
+          <button class="btn sm" data-act="ap-add" data-c="${c.id}" data-k="collect">📅 موعد</button>
           <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 15)} إزالة</button></div></div>`; }).join('')
     : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
     ${canTab('tax') ? taxSection() : ''}
     <p class="small muted" style="margin-top:12px">المبلغ المعروض هو رصيد العميل الحالي (المستحق عليه) ويتحدّث تلقائيًا مع كل دفعة تسجّلينها. العميل اللي رصيده مسدَّد يفضل في القائمة لحد ما تشيليه.</p>`;
+}
+/* ====== المواعيد والتقويم (مشتركة بين الفريق، كل موعد بمفتاح مستقل ap_<id>) ====== */
+const AP_K = { collect: '💰 تحصيل', meet: '🤝 اجتماع / زيارة', deliver: '📦 تسليم', tax: '🏛️ ضرائب', close: '⏳ تسكير / آخر موعد', other: '📌 أخرى' };
+const AP_RM = [[7, 'أسبوع'], [2, 'يومين'], [1, 'يوم']], AP_RM_DEF = { tax: [7, 2, 1], close: [7, 2, 1] };
+const apRm = a => Array.isArray(a.rm) ? a.rm : [1];
+const apFrom = a => addDays(a.d, -Math.max(0, ...apRm(a)));
+const apLeft = a => Math.round((new Date(a.d + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5);
+const apWin = (B, td = today()) => B.next.filter(a => td >= apFrom(a));   // مواعيد دخلت فترة التذكير (أسبوع / يومين / يوم قبلها)
+const apLeftTxt = n => n === 1 ? 'بكرة' : n === 2 ? 'بعد يومين' : n <= 10 ? 'بعد ' + n + ' أيام' : 'بعد ' + n + ' يوم';
+const apRaw = () => Object.keys((D && D.lists) || {}).filter(k => k.indexOf('ap_') === 0).map(k => hrGet(k)).filter(a => a && a.id && a.d);
+const apAll = () => apRaw().filter(a => isPriv() || !a.who || a.who === ME.id);
+const apCmp = (a, b) => (a.d + (a.tm || '')).localeCompare(b.d + (b.tm || ''));
+const apBuckets = (L, td = today()) => { const o = L.filter(a => !a.ok).sort(apCmp); return { late: o.filter(a => a.d < td), now: o.filter(a => a.d === td), next: o.filter(a => a.d > td) }; };
+const nextColl = c => { const L = apRaw().filter(a => !a.ok && a.k === 'collect' && resCid(a.c) === c).sort(apCmp); return L[0] ? L[0].d : ''; };
+const apRe = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
+let _apMig = 0;
+function apMigrate() {   // مواعيد التحصيل القديمة (حقل الموعد جوه التحصيل) تتحوّل لمواعيد مستقلة مرة واحدة
+  if (_apMig || !ME || !D || !D.lists || !canTab('collect')) return;
+  const L = collList().filter(q => q.d); _apMig = 1; if (!L.length) return;
+  const put = {}, now = nowIso();
+  L.forEach(q => { if (!hrGet('ap_cd_' + q.c)) put['ap_cd_' + q.c] = { id: 'cd_' + q.c, d: q.d, tm: '', t: 'تحصيل من ' + clientName(q.c), c: q.c, k: 'collect', who: '', n: q.n || '', ok: 0, by: q.by || ME.id, at: now }; });
+  if (Object.keys(put).length) hrPut(put);
+  collSave(collList().map(q => ({ ...q, d: '' })));
+}
+function apRow(a, o = {}) {
+  const td = today(), late = !a.ok && a.d < td, cid = a.c && resCid(a.c), c = cid && D.clients[cid];
+  const who = a.who ? hrName(a.who) : '', can = isPriv() || a.by === ME.id;
+  const meta = [AP_K[a.k] || AP_K.other, o.date ? `<span class="${late ? 'neg' : ''}">${esc(dShort(a.d))}${a.d === td ? ' (النهارده)' : (a.d > td ? ' · ' + apLeftTxt(apLeft(a)) : '')}</span>` : '', a.tm ? `<span class="num">${esc(a.tm)}</span>` : '', c ? `<a href="#client/${c.id}">${esc(c.name)}</a>` : '', who ? '👤 ' + esc(who) : ''].filter(Boolean).join(' · ');
+  return `<div class="lrow ap-r${a.ok ? ' dn' : ''}${late ? ' late' : ''}" style="align-items:flex-start;cursor:default">
+    ${o.ro ? `<span class="ap-dot">${late ? '⚠️' : '📅'}</span>` : `<button class="ap-ck${a.ok ? ' on' : ''}" data-act="ap-done" data-id="${esc(a.id)}" aria-label="تم">${a.ok ? '✓' : ''}</button>`}
+    <div class="grow" style="min-width:0"><b>${esc(a.t)}</b><div class="small muted">${meta}</div>${a.n ? `<div class="small" style="margin-top:2px">📝 ${esc(a.n)}</div>` : ''}</div>
+    ${!o.ro && can ? `<button class="btn sm ghost" data-act="ap-edit" data-id="${esc(a.id)}" aria-label="تعديل">${icon('edit', 15)}</button>` : ''}</div>`;
+}
+function apForm(id, pre = {}) {
+  const cur = id ? (hrGet('ap_' + id) || {}) : {};
+  let pick = cur.c || pre.c || '';
+  const users = liveUsers().filter(u => +u.active !== 0), w0 = id ? (cur.who || '') : (isPriv() ? '' : ME.id);
+  const m = modal(`<h3>${id ? '✏️ تعديل موعد' : '📅 موعد جديد'}</h3>
+    ${fld('النوع', `<select id="ap-k" class="inp">${Object.entries(AP_K).map(([k, l]) => `<option value="${k}" ${(cur.k || pre.k || 'other') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
+    ${fld('العنوان', `<input id="ap-t" class="inp" placeholder="مثال: اجتماع مع العميل" value="${esc(cur.t || '')}">`, { req: 1 })}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('التاريخ', `<input id="ap-d" type="date" class="inp" value="${esc(cur.d || pre.d || today())}">`, { req: 1 })}${fld('الوقت (اختياري)', `<input id="ap-tm" type="time" class="inp" value="${esc(cur.tm || '')}">`)}</div>
+    ${fld('العميل (اختياري)', `<div class="search">${icon('search', 18)}<input id="ap-q" class="inp" placeholder="ابحث عن العميل"></div><div id="ap-l" class="card" style="margin-top:8px;max-height:170px;overflow:auto;${pick ? 'display:none' : ''}"></div><div id="ap-p" class="small" style="margin-top:6px">${pick ? 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">إزالة</a>' : ''}</div>`)}
+    ${fld('لمين الموعد؟', `<select id="ap-w" class="inp"><option value="">الكل (الفريق كله)</option>${users.map(u => `<option value="${u.id}" ${w0 === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+    ${fld('فكّروني قبلها بـ', `<div class="chips" id="ap-rm">${AP_RM.map(([d, l]) => `<label class="chip" style="cursor:pointer;gap:6px"><input type="checkbox" value="${d}" ${(id ? apRm(cur) : (AP_RM_DEF[cur.k || pre.k] || [1])).includes(d) ? 'checked' : ''}> ${l}</label>`).join('')}<span class="small muted" style="align-self:center">+ يوم الموعد نفسه دايمًا</span></div>`)}
+    ${fld('ملاحظة (اختياري)', `<input id="ap-n" class="inp" value="${esc(cur.n || '')}">`)}
+    <div class="acts"><button class="btn pri" id="ap-ok">حفظ</button>${id ? `<button class="btn danger" data-act="ap-del" data-id="${esc(id)}">حذف</button>` : ''}<button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const paint = () => { const l = $('#ap-l'); if (!l) return; const q = $('#ap-q').value; l.style.display = q ? '' : 'none'; l.innerHTML = q ? (clientSearch(q, 8).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || '')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>') : ''; };
+  m.addEventListener('input', e => { if (e.target.id === 'ap-q') paint(); });
+  m.addEventListener('change', e => { if (e.target.id === 'ap-k' && !id) { const df = AP_RM_DEF[e.target.value] || [1]; m.querySelectorAll('#ap-rm input').forEach(x => { x.checked = df.includes(+x.value); }); } });
+  m.addEventListener('click', e => {
+    if (e.target.closest('[data-apx]')) { e.preventDefault(); pick = ''; $('#ap-p').innerHTML = ''; return; }
+    const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#ap-q').value = ''; paint(); $('#ap-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">إزالة</a>';
+  });
+  m.querySelector('#ap-ok').onclick = () => {
+    const k = $('#ap-k').value, d = $('#ap-d').value;
+    const t = ($('#ap-t').value || '').trim() || (k === 'collect' && pick ? 'تحصيل من ' + clientName(pick) : '');
+    if (!t) return toast('اكتبي عنوان الموعد', 'err');
+    if (!d) return toast('اختاري التاريخ', 'err');
+    const aid = id || uid('AP');
+    hrPut({ ['ap_' + aid]: { id: aid, d, tm: $('#ap-tm').value || '', t, c: pick || '', k, who: $('#ap-w').value, n: ($('#ap-n').value || '').trim(), rm: [...m.querySelectorAll('#ap-rm input:checked')].map(x => +x.value), ok: cur.ok || 0, by: cur.by || ME.id, at: cur.at || nowIso() } });
+    closeModal(); toast('اتحفظ الموعد'); apRe();
+  };
+}
+function apHomeCard(view) {
+  if (!ME) return; apMigrate();
+  const td = today(), B = apBuckets(apAll(), td), n = B.late.length + B.now.length + B.next.length;
+  const sec = (t, L, cls, max) => L.length ? `<div class="small ${cls || 'muted'}" style="padding:6px 14px 0;font-weight:600">${t}</div>${L.slice(0, max).map(a => apRow(a, { date: 1 })).join('')}${L.length > max ? `<div class="small muted" style="padding:0 14px 4px">و${L.length - max} كمان…</div>` : ''}` : '';
+  const d = document.createElement('div'); d.className = 'card';
+  d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>📅 المواعيد</b><span class="sp"></span><button class="btn sm" data-act="ap-add">${icon('plus', 15)} موعد</button><a href="#calendar" class="small" style="margin-inline-start:8px">التقويم ←</a></div>
+    <div class="tks"><div class="tks-i ${B.late.length ? 'late' : ''}"><b>${B.late.length}</b><small>فائتة</small></div><div class="tks-i"><b>${B.now.length}</b><small>النهارده</small></div><div class="tks-i"><b>${B.next.length}</b><small>لاحقة</small></div></div>
+    ${n ? sec('⚠️ فائتة', B.late, 'neg', 4) + sec('📍 النهارده', B.now, '', 6) + sec('🔔 قرّب موعدها', apWin(B, td), '', 6) + sec('⏭️ لاحقة', B.next.filter(a => !apWin(B, td).includes(a)), '', 4) : '<div class="small muted" style="padding:6px 14px 12px">مفيش مواعيد مسجّلة. دوسي «موعد» عشان تضيفي.</div>'}`;
+  (view.querySelector('.hops') || view).prepend(d);
+}
+const apHomeTick = () => {};
+let _apPopFor = '';
+function apPop() {   // أول ما البرنامج يفتح: لازم تأكيد «تمام» قبل ما يكمّل
+  if (!ME || _apPopFor === ME.id || modalOpen()) return;
+  const td = today(), B = apBuckets(apAll(), td), soon = apWin(B, td);
+  if (!B.late.length && !B.now.length && !soon.length) { _apPopFor = ME.id; return; }
+  _apPopFor = ME.id;
+  const blk = (t, L, cls) => L.length ? `<div class="small ${cls || 'muted'}" style="margin:10px 0 2px;font-weight:600">${t} (${L.length})</div><div class="card">${L.slice(0, 8).map(a => apRow(a, { date: 1, ro: 1 })).join('')}</div>${L.length > 8 ? `<div class="small muted">و${L.length - 8} كمان…</div>` : ''}` : '';
+  const m = modal(`<h3>📅 مواعيدك</h3>${blk('⚠️ فائتة لسه ماتمتش', B.late, 'neg')}${blk('📍 النهارده', B.now)}${blk('🔔 قرّب موعدها', soon)}
+    <div class="acts"><button class="btn pri" id="ap-pok">تمام ✓ اطّلعت عليها</button><button class="btn" id="ap-pcal">فتح التقويم</button></div>`, 'apop');
+  const after = () => { closeModal(); setTimeout(() => { if (typeof notePop === 'function') notePop(); if (ME && canTab('tasks')) tkMorningPop(); }, 150); };
+  m.querySelector('#ap-pok').onclick = after;
+  m.querySelector('#ap-pcal').onclick = () => { after(); go('calendar'); };
+}
+const CAL = { m: '', sel: '', mine: 0 };
+function vCalendar(r, el) {
+  const td = today(); if (!CAL.m) CAL.m = td.slice(0, 7); if (!CAL.sel) CAL.sel = td; apMigrate();
+  let L = apAll(); if (CAL.mine) L = L.filter(a => !a.who || a.who === ME.id);
+  const by = {}; L.forEach(a => (by[a.d] = by[a.d] || []).push(a));
+  const [Y, M] = CAL.m.split('-').map(Number), dim = new Date(Y, M, 0).getDate(), off = (new Date(Y, M - 1, 1).getDay() + 1) % 7;
+  const B = apBuckets(L, td);
+  const hd = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
+  let cells = ''; for (let i = 0; i < off; i++) cells += '<i class="cal-e"></i>';
+  for (let d = 1; d <= dim; d++) {
+    const ds = CAL.m + '-' + String(d).padStart(2, '0'), a = by[ds] || [], open = a.filter(x => !x.ok).length, lt = open && ds < td;
+    cells += `<button class="cal-d${ds === CAL.sel ? ' sel' : ''}${ds === td ? ' tdy' : ''}" data-act="cal-sel" data-d="${ds}"><span>${d}</span>${a.length ? `<i class="cal-b ${lt ? 'late' : (open ? '' : 'ok')}">${open || a.length}</i>` : ''}</button>`;
+  }
+  const dayL = (by[CAL.sel] || []).slice().sort(apCmp);
+  el.innerHTML = `<div class="co-h"><div class="co-t"><h1 class="pg" style="margin:0">📅 التقويم</h1><div class="small muted">مواعيد المكتب والفريق</div></div>
+      <div class="co-top-acts"><button class="btn pri" data-act="ap-add" data-d="${CAL.sel}">${icon('plus', 17)} موعد</button>${isPriv() ? `<button class="btn ${CAL.mine ? 'pri' : ''}" data-act="cal-mine">${CAL.mine ? 'مواعيدي' : 'الكل'}</button>` : ''}</div></div>
+    <div class="card sumrow co-sum co3"><div class="${B.late.length ? 'bal neg' : ''}"><small>فائتة</small><b class="${B.late.length ? 'neg' : ''}">${B.late.length}</b></div><div><small>النهارده</small><b>${B.now.length}</b></div><div><small>لاحقة</small><b>${B.next.length}</b></div></div>
+    <div class="card pad cal-box"><div class="cal-nav"><button class="btn sm" data-act="cal-m" data-d="-1" aria-label="السابق">›</button><b class="grow" style="text-align:center">${AR_MONTHS[M - 1]} ${Y}</b><button class="btn sm" data-act="cal-today">اليوم</button><button class="btn sm" data-act="cal-m" data-d="1" aria-label="التالي">‹</button></div>
+      <div class="cal-g">${hd.map(h => `<small class="cal-h">${h}</small>`).join('')}${cells}</div></div>
+    <h2 class="sec" style="margin-top:14px">${esc(dLong(CAL.sel))}</h2>
+    <div class="card">${dayL.length ? dayL.map(a => apRow(a, {})).join('') : '<div class="empty">مفيش مواعيد في اليوم ده.</div>'}</div>
+    ${B.late.length ? `<h2 class="sec" style="margin-top:14px;color:#c0392b">⚠️ فائتة لسه ماتمتش</h2><div class="card">${B.late.slice(0, 15).map(a => apRow(a, { date: 1 })).join('')}</div>` : ''}`;
 }
 /* ====== التسليم: مستندات لازم تتسلّم للعملاء ====== */
 const dlList = () => list('deliver').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.id && x.c && Array.isArray(x.docs)).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c]);
@@ -3479,6 +3598,7 @@ function dlForm(id, clientId) {
   };
 }
 function collHomeCard(view) {
+  apMigrate();
   const rows = collRows(), td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
   const d = document.createElement('div'); d.className = 'card';
   const tx0 = taxRows().filter(x => !x.done);
@@ -3536,9 +3656,8 @@ function printTaxc() {
 }
 function collForm(id) {
   const cur = collList().find(q => q.c === id) || {}; let pick = id || '';
-  const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'ملاحظة وموعد التحصيل' : 'إضافة عميل للتحصيل'}</h3>
+  const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'ملاحظة التحصيل' : 'إضافة عميل للتحصيل'}</h3>
     ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:240px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
-    ${fld('الموعد المتوقع للتحصيل (اختياري)', `<input id="cl-d" type="date" class="inp" value="${esc(cur.d || '')}">`)}
     ${fld('ملاحظة (اختياري)', `<input id="cl-n" class="inp" placeholder="مثال: وعد يدفع نهاية الشهر" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
   const paint = () => { const l = $('#cl-l'); if (l) l.innerHTML = clientSearch($('#cl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
@@ -3548,7 +3667,7 @@ function collForm(id) {
   m.querySelector('#cl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
     const arr = collList().filter(q => q.c !== pick);
-    arr.push({ c: pick, n: $('#cl-n').value.trim(), d: $('#cl-d').value, by: ME.id, at: cur.at || today() });
+    arr.push({ c: pick, n: $('#cl-n').value.trim(), d: cur.d || '', by: ME.id, at: cur.at || today() });
     collSave(arr); closeModal(); toast('تم الحفظ في التحصيل'); render();
   };
 }
@@ -4765,6 +4884,14 @@ const ACT = {
   'log-more': () => { LOGV.limit = Math.min(LOGV.limit + 300, 1000); logLoad(); },
   'coll-add': () => collForm(''),
   'coll-edit': el => collForm(el.dataset.id),
+  'ap-add': el => apForm('', { c: el.dataset.c || '', k: el.dataset.k || '', d: el.dataset.d || '' }),
+  'ap-edit': el => apForm(el.dataset.id),
+  'ap-done': el => { const a = hrGet('ap_' + el.dataset.id); if (!a) return; hrPut({ ['ap_' + a.id]: { ...a, ok: a.ok ? 0 : 1, okBy: ME.id, okAt: nowIso() } }); apRe(); },
+  'ap-del': async el => { const a = hrGet('ap_' + el.dataset.id); if (!a) return; if (!(await ask('حذف الموعد «' + esc(a.t) + '»؟', 'حذف', true))) return; hrPut({ ['ap_' + a.id]: { ...a, del: 1 } }); closeModal(); toast('اتحذف الموعد'); apRe(); },
+  'cal-m': el => { const [Y, M] = CAL.m.split('-').map(Number), x = new Date(Y, M - 1 + (+el.dataset.d), 1); CAL.m = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); render(); },
+  'cal-sel': el => { CAL.sel = el.dataset.d; apRe(); },
+  'cal-today': () => { CAL.m = today().slice(0, 7); CAL.sel = today(); render(); },
+  'cal-mine': () => { CAL.mine = CAL.mine ? 0 : 1; apRe(); },
   'coll-del': async el => { if (!(await ask(`إزالة <b>${esc(clientName(el.dataset.id))}</b> من قائمة التحصيل؟ (حسابه ما بيتأثرش)`, 'إزالة'))) return; collSave(collList().filter(q => q.c !== el.dataset.id)); toast('تمت الإزالة'); render(); },
   'coll-toggle': el => { const id = el.dataset.id; if (collHas(id)) { collSave(collList().filter(q => q.c !== resCid(id))); toast('اتشالت من التحصيل'); render(); } else collForm(id); },
   'pd-collect': () => printCollect(),
@@ -4795,7 +4922,7 @@ const ACT = {
     };
   },
   mclose: () => closeModal(),
-  'mclose-bg': (el, e) => { if (e.target === el) closeModal(); },
+  'mclose-bg': (el, e) => { if (e.target === el && !el.querySelector('.apop')) closeModal(); },
   'j-period': el => { J.period = el.dataset.v; J.limit = 150; render(); },
   'j-more': () => { const y = window.scrollY; J.limit += 300; render(); window.scrollTo(0, y); },
   'j-export': () => exportJournal(),
@@ -5232,7 +5359,7 @@ function bindEvents() {
         items.forEach((x, i) => x.classList.toggle('act', i === _cpAct));
         items[_cpAct].scrollIntoView({ block: 'nearest' });
       } else if (e.key === 'Enter') { e.preventDefault(); const it = items[_cpAct >= 0 ? _cpAct : 0]; it && ACT[it.dataset.act](it, e); }
-    } else if (e.key === 'Escape' && modalOpen()) closeModal();
+    } else if (e.key === 'Escape' && modalOpen() && !document.querySelector('.apop')) closeModal();
   });
 }
 function importBackup(file) {
@@ -5326,6 +5453,36 @@ function syncReminders() {
     });
   } catch (e) { }
 }
+const nowNote = async (title, msg, tag) => {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
+    const opt = { body: msg, icon: 'icon-192.png', badge: 'icon-192.png', tag: tag || 'yawmia-ap', renotify: true, lang: 'ar', dir: 'rtl' };
+    if (reg && reg.showNotification) await reg.showNotification(title, opt); else new Notification(title, opt);
+  } catch (e) { }
+};
+function apNotify() {   // إشعار يومي بالمواعيد (فائتة / النهارده / قرّبت) مرة في اليوم لكل جهاز بعد الساعة 8
+  try {
+    if (!ME || !D || !D.lists) return;
+    const n = new Date(); if (n.getHours() < 8) return;
+    const td = today(), k = 'apn:' + ME.id + ':' + td; if (LS.get(k, '')) return;
+    const B = apBuckets(apAll(), td), W = apWin(B, td);
+    if (!B.late.length && !B.now.length && !W.length) return;
+    LS.set(k, '1');
+    const parts = []; if (B.now.length) parts.push(B.now.length + ' النهارده: ' + B.now.slice(0, 3).map(a => a.t).join('، ')); if (W.length) parts.push(W.length + ' قرّبت: ' + W.slice(0, 3).map(a => a.t + ' (' + apLeftTxt(apLeft(a)) + ')').join('، ')); if (B.late.length) parts.push(B.late.length + ' فائتة');
+    nowNote('📅 مواعيدك', parts.join(' · '), 'yawmia-ap-' + td);
+  } catch (e) { }
+}
+let _autoPerm = 0;
+function autoNotif() {   // تفعيل الإشعارات تلقائيًا: أول لمسة على الجهاز تطلب الإذن (المتصفحات بتشترط لمسة)
+  try {
+    if (_autoPerm || !ME) return; _autoPerm = 1;
+    if (window.AndroidBridge) { try { AndroidBridge.setReminders(reminderCfg().times.join(','), true); } catch (e) { } return; }
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    const go1 = () => { document.removeEventListener('pointerdown', go1, true); Notification.requestPermission().then(() => { try { render(); } catch (e) { } }).catch(() => { }); };
+    document.addEventListener('pointerdown', go1, true);
+  } catch (e) { }
+}
 function notifState() {
   try {
     if (window.AndroidBridge) return AndroidBridge.reminderInfo ? (AndroidBridge.reminderInfo() === 'denied' ? 'off' : 'ok') : 'ok';
@@ -5350,8 +5507,8 @@ function startIdleWatch() {
   const touch = () => { const n = Date.now(); if (n - last > 15000) { last = n; if (ME) LS.set('lastActive', String(n)); } };
   ['pointerdown', 'keydown', 'touchstart', 'scroll', 'wheel'].forEach(ev => window.addEventListener(ev, touch, { passive: true, capture: true }));
   const check = () => { if (ME && idleExceeded()) { try { syncNow(); } catch (e) { } ACT.logout('force'); AUTO_NOTE = 0; setTimeout(() => toast('خرج البرنامج تلقائيًا لعدم الاستخدام. ادخلي برمز الدخول.'), 100); } };
-  setInterval(() => { check(); syncReminders(); }, 30000);
-  setTimeout(syncReminders, 1500);
+  setInterval(() => { check(); syncReminders(); apNotify(); autoNotif(); }, 30000);
+  setTimeout(syncReminders, 1500); setTimeout(() => { autoNotif(); apNotify(); }, 2500);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   if (ME) LS.set('lastActive', String(Date.now()));
 }
