@@ -475,6 +475,7 @@ button,.btn,.chip,.tx,.lrow,.bnav a,.tabs a,.tile,.bigbtn,.setcat,.cp-item{-webk
 .sync{background:var(--fill);border:0;color:var(--ink-2);font-size:12px}
 .tl{background:#1c1c1e;box-shadow:none}
 .me{background:var(--fill);border:0;color:var(--ink)}
+.me.meh{background:transparent;color:#8ea0bf}
 .me .av{background:var(--tint);color:#fff}
 
 /* الشريط السفلي */
@@ -1016,6 +1017,9 @@ html{overscroll-behavior-y:none}
 .pd-note{margin-top:10px;font-size:12px;color:#556}.rcp{border:2px solid #0f2747;border-radius:10px;padding:14px 18px;margin:6px 0 14px;font-size:15px;line-height:2}.rcp-a{font-size:22px}
 .tk-sys{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg2,#f6f7fb);border-radius:10px;padding:8px 12px;margin-top:14px}.tk-sys i{font-style:normal;color:var(--muted)}
 .sx-sum{margin-top:10px;padding:10px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-inline-start:4px solid #c0392b}.sx-sum small{display:block;color:var(--muted);font-size:11.5px}.sx-sum b{font-size:16px}.sx-sum p{grid-column:1/-1;margin:2px 0 0}.sx-sum .bal b{font-size:18px}
+.me.meh{padding:0;border:0;background:transparent;width:38px;height:38px;border-radius:50%;color:#c7d2e6;display:grid;place-items:center;flex:none}.me.meh svg{display:block}.me.meh:active{opacity:.7}
+.um-h{display:flex;align-items:center;gap:12px;margin-bottom:12px}.um-h svg{color:#9aa6bd;flex:none}.um-h small{display:block;color:var(--muted)}
+.um-b{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:12px 6px;border:0;border-top:1px solid var(--line);background:none;font:inherit;color:var(--ink)}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
@@ -1724,7 +1728,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-233000';
+const BUILD = '20261122-000500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2077,12 +2081,12 @@ function navItems() {
 function renderShell() {
   $('#app').innerHTML = `<div class="shell">
     <header class="top">
-      <div class="brand">${monoHtml()}<div class="grow"><b>يومية المكتب</b><small>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</small></div></div>
+      <div class="brand">${monoHtml()}<div class="grow"><b>يومية المكتب</b><small>${esc(ME.name)}</small></div></div>
       <div class="sp"></div>
       <div id="sync" class="sync"></div>
       <button class="themebtn hcbtn" data-act="calc-open" title="آلة حاسبة" aria-label="آلة حاسبة"><svg class="hc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="2.5" width="15" height="19" rx="2.5"/><rect x="7.5" y="5.5" width="9" height="4" rx="1" fill="currentColor" stroke="none" opacity=".85"/><g fill="currentColor" stroke="none"><circle cx="8.5" cy="13" r="1.05"/><circle cx="12" cy="13" r="1.05"/><circle cx="15.5" cy="13" r="1.05"/><circle cx="8.5" cy="16.5" r="1.05"/><circle cx="12" cy="16.5" r="1.05"/><circle cx="15.5" cy="16.5" r="1.05"/><circle cx="8.5" cy="19.5" r=".01"/></g></svg></button>
       <button class="themebtn" data-act="theme-toggle" title="الوضع الداكن / الفاتح" aria-label="تبديل الوضع الداكن">${themeIsDark() ? '☀️' : '🌙'}</button>
-      <button class="me" data-act="go" data-h="settings" title="${esc(ME.name)}"><span class="hide-sm">${esc(ME.name)}</span><span class="av">${esc(initials(ME.name))}</span></button>
+      <button class="me meh" data-act="user-menu" title="${esc(ME.name)}" aria-label="حسابي"><svg viewBox="0 0 40 40" width="38" height="38" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="currentColor" opacity=".16"/><circle cx="20" cy="15.5" r="6.6" fill="currentColor"/><path d="M6.8 33.2c1.6-6.5 7-9.9 13.2-9.9s11.6 3.4 13.2 9.9A19.9 19.9 0 0 1 20 40a19.9 19.9 0 0 1-13.2-6.8z" fill="currentColor"/></svg></button>
     </header>
     <nav class="side" id="side"></nav>
     <main id="view"></main>
@@ -7357,6 +7361,12 @@ function docFee(cid) {
 }
 const stRe = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 Object.assign(ACT, {
+  'user-menu': () => { const m = modal(`<div class="um-h"><svg viewBox="0 0 40 40" width="52" height="52"><circle cx="20" cy="20" r="20" fill="currentColor" opacity=".16"/><circle cx="20" cy="15.5" r="6.6" fill="currentColor"/><path d="M6.8 33.2c1.6-6.5 7-9.9 13.2-9.9s11.6 3.4 13.2 9.9A19.9 19.9 0 0 1 20 40a19.9 19.9 0 0 1-13.2-6.8z" fill="currentColor"/></svg><div><b>${esc(ME.name)}</b><small>${esc(ROLE_NAMES[ME.role] || '')}</small></div></div>
+      <button class="um-b" data-act="um-go" data-h="settings">${icon('sliders', 20)} الإعدادات</button>
+      <button class="um-b" data-act="um-out">${icon('logout', 20)} تغيير المحاسب / تسجيل الخروج</button>
+      <div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`); },
+  'um-go': el => { closeModal(); go(el.dataset.h); },
+  'um-out': () => { closeModal(); ACT.logout(); },
   'tk-sys': () => { LS.set('tkSys', LS.get('tkSys', 0) ? 0 : 1); stRe(); },
   'sel-toggle': () => { CST.selOn = !CST.selOn; if (!CST.selOn) CST.sel = new Set(); stRe(); },
   'st-pick': el => { const ids = String(el.dataset.id).split(','), on = !CST.sel.has(ids[0]); ids.forEach(i => on ? CST.sel.add(i) : CST.sel.delete(i)); stRe(); },
