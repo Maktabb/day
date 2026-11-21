@@ -1212,7 +1212,7 @@ body.srch .top,body.srch h1.pg,body.srch .print-head,body.srch .cl-pr,body.srch 
 body.srch .filters.card{position:sticky;top:0;z-index:25;margin-top:0;border-radius:0 0 18px 18px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
 body.srch .filters .search{margin:0}
 body.srch #ai-fab{display:none}
-.pg-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}.pg-row .pgt{flex:1;min-width:0}.pg-row .pgt small{display:block;white-space:nowrap}.ib-plus{width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;flex:none}
+.pg-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}.pg-row .pgt{flex:1;min-width:0}.pg-row .pgt small{display:block;white-space:nowrap}.ib-pr{background:var(--fill);color:var(--navy,#0f2747)}.pg-row{gap:8px}.ib-plus{width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;flex:none}
 </style>
 </head>
 <body>
@@ -1764,7 +1764,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-054000';
+const BUILD = '20261122-055000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3243,12 +3243,11 @@ function vClients(r, el) {
   const _lbl = ({ all: 'كل العملاء', fu: 'عملاء عندهم متابعة مفتوحة', month: 'تعاملنا معهم هذا الشهر', quarter: 'تعاملنا معهم هذا الربع', owing1: 'عليهم رصيد (آخر شهر)', owing: 'عليهم رصيد (آخر 3 شهور)', nophone: 'بدون رقم موبايل', debt: 'عليهم رصيد (مدينون)', credit: 'لهم رصيد', new: 'عملاء جدد' })[CJ.f] || 'كل العملاء';
   _pdClients = () => printClients(arr, _lbl + (CJ.q ? ' · بحث: ' + CJ.q : ''));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</b><div class="small muted">${per ? (CJ.f === 'month' ? 'تقرير عملاء الشهر' : 'تقرير عملاء الربع') + ' — من ' + from + ' إلى ' + td : 'العملاء'}</div></div></div>
-    <h1 class="pg pg-row no-print"><span class="pgt">${sup ? 'عملاء هذه الفترة' : 'العملاء'}<small>${sup ? arr.length : activeClients().length} عميل</small></span><button class="btn pri ib-plus" data-act="client-new" title="عميل جديد" aria-label="عميل جديد">${icon('plus', 22)}</button></h1>
+    <h1 class="pg pg-row no-print"><span class="pgt">${sup ? 'عملاء هذه الفترة' : 'العملاء'}<small>${sup ? arr.length : activeClients().length} عميل</small></span>${isPriv() ? `<button class="btn ib-plus ib-pr" data-act="pd-clients" title="طباعة PDF — بيان أرصدة العملاء (${arr.length})" aria-label="طباعة PDF — بيان أرصدة العملاء (${arr.length})">${icon('print', 21)}</button>` : ''}<button class="btn pri ib-plus" data-act="client-new" title="عميل جديد" aria-label="عميل جديد">${icon('plus', 22)}</button></h1>
     <div class="filters card pad">
       <div class="search">${icon('search', 18)}<input class="inp" data-cj="q" value="${esc(CJ.q)}" placeholder="ابحث بالاسم أو رقم الموبايل"></div>
       <div class="chips scroll">${[['all', 'الكل'], ['fu', '📊 المتابعة'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing', 'fu'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
     </div>
-    ${isPriv() ? `<div class="row no-print cl-pr" style="margin-top:10px;justify-content:flex-end"><button class="btn pri sm" data-act="pd-clients">${icon('print', 16)} طباعة PDF — بيان أرصدة العملاء (${arr.length})</button></div>` : ''}
     ${rep}
     ${['owing', 'owing1', 'debt'].includes(CJ.f) && isPriv() ? `<div class="card sumrow" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>👥 عدد العملاء</small><b>${arr.length}</b></div><div class="bal neg"><small>⚠️ إجمالي المستحق عليهم</small><b class="neg">${fmt(r2(arr.reduce((t, x) => t - Math.min((c[x.id] || {}).bal || 0, 0), 0)))}</b></div></div>` : ''}
     <div class="card ${per && isPriv() ? 'no-print' : ''}" style="margin-top:12px">${arr.slice(0, CJ.limit).map(x => {
