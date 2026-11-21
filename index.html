@@ -744,11 +744,13 @@ html{overflow-x:hidden}
 
 /* ===== تقارير PDF ===== */
 #print-area{display:none}
-@page land{size:A4 landscape;margin:10mm}
+@page land{size:A4 landscape;margin:0}
 @media print{
   body.pd-on>*:not(#print-area){display:none!important}
   body.pd-on #print-area{display:block!important}
   #print-area.pd-land{page:land}
+  table.pd-wrap{width:100%;border-collapse:collapse;border:0}table.pd-wrap>thead>tr>td>div{height:12mm}table.pd-wrap>tfoot>tr>td>div{height:14mm}table.pd-wrap>tbody>tr>td{padding:0 11mm;border:0}
+  #print-area.pd-land table.pd-wrap>tbody>tr>td{padding:0 10mm}
   .pd{font-family:inherit;color:#000;font-size:11.5px;direction:rtl}
   .pd-top{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px double #0f2747;padding-bottom:8px;margin-bottom:10px}
   .pd-org{display:flex;align-items:center;gap:10px}.pd-org img{width:46px;height:46px;border-radius:50%;object-fit:cover}
@@ -1031,8 +1033,9 @@ html{overscroll-behavior-y:none}
 @media print{.stmt .stk{background:none;padding:0;color:#000}.stmt .stk::after{content:" —"}.stmt tr.st-open td{background:#eef1f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 /* ---- كشف الحساب المطبوع ---- */
-@page{size:A4;margin:12mm 11mm 14mm}
+@page{size:A4;margin:0}
 @media print{
+  body:not(.pd-on){padding:12mm 11mm 14mm!important}
   html,body{background:#fff!important;font-size:12px;color:#000}
   .card{background:#fff!important;box-shadow:none!important}
   h2.sec{font-size:14px;margin:14px 0 6px;color:#0f2747}
@@ -1730,7 +1733,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-010000';
+const BUILD = '20261122-014000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3016,7 +3019,7 @@ function printDoc(o) {
   const cols = o.cols || [], nc = cols.length;
   const cell = (v, c) => `<td class="${c.n ? 'n' : ''}${c.c ? ' c' : ''}">${v == null || v === '' ? '' : v}</td>`;
   pa.className = o.land ? 'pd-land' : '';
-  pa.innerHTML = `<div class="pd">
+  pa.innerHTML = `<table class="pd-wrap"><thead><tr><td><div></div></td></tr></thead><tfoot><tr><td><div></div></td></tr></tfoot><tbody><tr><td><div class="pd">
     <div class="pd-top"><div class="pd-org">${LOGO ? `<img src="${LOGO}" alt="">` : ''}<div><b>مكتب محمود سالم</b><span>للمحاسبة والمراجعة وتأسيس الشركات</span></div></div>
       <div class="pd-title"><b>${esc(o.title)}</b><span>${dLong(today())}</span></div></div>
     ${(o.info || []).length ? `<table class="pd-info">${o.info.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join('')}</table>` : ''}
@@ -3025,7 +3028,7 @@ function printDoc(o) {
       <tbody>${o.rows.length ? o.rows.map(r => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${(r.v || r).map((v, i) => cell(v, cols[i])).join('')}</tr>`).join('') : `<tr><td colspan="${nc}" class="c">لا توجد بيانات</td></tr>`}</tbody>
       ${o.foot ? `<tfoot><tr>${o.foot.map((v, i) => v === null ? '' : `<td${Array.isArray(v) ? ` colspan="${v[1]}"` : ''} class="${(cols[i] || {}).n ? 'n' : ''}">${Array.isArray(v) ? v[0] : v}</td>`).join('')}</tr></tfoot>` : ''}</table>`}
     ${o.after || ''}
-    <div class="pd-foot">صدر من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · ${new Date().toLocaleString('ar-EG-u-nu-latn')}${ME ? ' · بواسطة ' + esc(ME.name) : ''}</div></div>`;
+    <div class="pd-foot">صدر من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · ${new Date().toLocaleString('ar-EG-u-nu-latn')}${ME ? ' · بواسطة ' + esc(ME.name) : ''}</div></div></td></tr></tbody></table>`;
   const oldT = document.title; document.title = (o.file || o.title).replace(/[\\/:*?"<>|]/g, '-');
   document.body.classList.add('pd-on');
   const done = () => { document.body.classList.remove('pd-on'); document.title = oldT; pa.innerHTML = ''; };
