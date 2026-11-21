@@ -1014,6 +1014,8 @@ html{overscroll-behavior-y:none}
 .sel-bar{position:fixed;inset-inline:10px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:40;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 28px #0f274733;padding:8px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
 .pd-sum{margin:12px 0 0 auto;width:min(360px,100%);border:1px solid #cfd6e4;border-radius:8px;overflow:hidden}.pd-sum>div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;padding:6px 10px;border-bottom:1px solid #e6eaf2}.pd-sum small{width:100%;color:#667;font-size:11px}.pd-sum .big{background:#f3f6fc;font-size:15px;font-weight:700;border-bottom:0}.pd-sum .big.neg b{color:#c0392b}
 .pd-note{margin-top:10px;font-size:12px;color:#556}.rcp{border:2px solid #0f2747;border-radius:10px;padding:14px 18px;margin:6px 0 14px;font-size:15px;line-height:2}.rcp-a{font-size:22px}
+.tk-sys{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg2,#f6f7fb);border-radius:10px;padding:8px 12px;margin-top:14px}.tk-sys i{font-style:normal;color:var(--muted)}
+.sx-sum{margin-top:10px;padding:10px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-inline-start:4px solid #c0392b}.sx-sum small{display:block;color:var(--muted);font-size:11.5px}.sx-sum b{font-size:16px}.sx-sum p{grid-column:1/-1;margin:2px 0 0}.sx-sum .bal b{font-size:18px}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
@@ -1722,7 +1724,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-200000';
+const BUILD = '20261121-233000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3838,6 +3840,7 @@ function vClient(r, el) {
       <div><small>🚗 المصروفات</small><b>${fmt(P.exp)}</b></div>
       <div class="bal ${endBal < -0.004 ? 'neg' : ''}"><small>${showBal ? (endBal < -0.004 ? '⚠️ عليه' : '✅ له') : (endBal < -0.004 ? 'صافي الفلتر (عليه)' : 'صافي الفلتر (له)')}</small><b class="${endBal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(endBal))}</b></div>
     </div>
+    ${exN.length ? `<div class="card sx-sum no-print"><div><small>🟥 مجموع المستبعد (${exN.length} حركة)</small><b class="num">${fmt(exSum)}</b></div><div><small>الرصيد قبل الاستبعاد</small><b class="num ${endBal - exSum < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(r2(endBal - exSum)))}${endBal - exSum < -0.004 ? ' عليه' : ' له'}</b></div><div class="bal"><small>الرصيد بعد الاستبعاد</small><b class="num ${endBal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(endBal))}${endBal < -0.004 ? ' عليه' : ' له'}</b></div><p class="small muted">المستبعد بيتحمّله المكتب: بيتحسب مصروف عمومي على المكتب ويتخصم من الأرباح، ومش بيظهر في كشف العميل ولا الطباعة.</p></div>` : ''}
     ${stAddBar(c, types)}
     ${clientTasksBlock(c)}
     <h2 class="sec no-print" style="margin-bottom:6px">كشف الحساب ${filtered ? `<span class="small muted">— ${esc(fDesc)}</span>` : ''}</h2>
@@ -4213,7 +4216,7 @@ function anKey(t) {
     default: return '';
   }
 }
-const anZero = () => ({ rev: 0, ref: 0, gov: 0, op: 0, gen: 0, sal: 0, pers: 0, wd: 0, fund: 0, xin: 0, xout: 0, fee: 0 });
+const anZero = () => ({ rev: 0, ref: 0, gov: 0, op: 0, gen: 0, sal: 0, pers: 0, wd: 0, fund: 0, xin: 0, xout: 0, fee: 0, excG: 0, excO: 0 });
 function anTxs(all) {
   const [from, to] = all ? ['0000', '9999'] : periodRange(AN.period, AN.from, AN.to);
   return listTx().filter(t => t.type !== 'OPENING' && t.type !== 'TRANSFER' && !isPend(t) && t.date >= from && t.date <= to);
@@ -4224,10 +4227,11 @@ function anAgg(txs) {
     const k = anKey(t); if (!k) return; const a = +t.amount || 0;
     S[k] += a;
     const m = t.date.slice(0, 7); (M[m] || (M[m] = anZero()))[k] += a;
+    if (isExcl(t)) { const e = k === 'gov' ? 'excG' : 'excO'; S[e] += a; M[m][e] += a; }   // مصروف عميل مستبعد: يتحمّله المكتب
   });
   const fin = o => {
-    const rev = o.rev + (AN.ownerRev ? o.fund : 0), netRev = rev - o.ref, direct = o.gov + o.op, gross = netRev - direct, opex = o.gen + o.sal, net = gross - opex;
-    return Object.assign(o, { revenue: rev, netRev, direct, gross, opex, net });
+    const rev = o.rev + (AN.ownerRev ? o.fund : 0), netRev = rev - o.ref, exc = o.excG + o.excO, direct = o.gov + o.op - exc, gross = netRev - direct, opex = o.gen + o.sal + exc, net = gross - opex;
+    return Object.assign(o, { revenue: rev, netRev, direct, gross, opex, net, exc });
   };
   fin(S); Object.values(M).forEach(fin);
   return { S, M, mk: Object.keys(M).sort() };
@@ -4255,7 +4259,7 @@ function vAnalytics(r, el) {
 /* ---- قائمة الدخل ---- */
 function anIncome(txs, S, M, mk) {
   const nr = S.netRev;
-  const gov = anBy(txs, t => anKey(t) === 'gov', anCat), gen = anBy(txs, t => anKey(t) === 'gen', anCat);
+  const gov = anBy(txs, t => anKey(t) === 'gov' && !isExcl(t), anCat), gen = anBy(txs, t => anKey(t) === 'gen', anCat);
   const lines = (arr, lim) => arr.slice(0, lim).map(([k, v]) => anRow(esc(k), v, { ind: 1, pct: anPct(v, nr) })).join('') + (arr.length > lim ? anRow(`بنود أخرى (${arr.length - lim})`, r2(arr.slice(lim).reduce((s, x) => s + x[1], 0)), { ind: 1, pct: anPct(arr.slice(lim).reduce((s, x) => s + x[1], 0), nr) }) : '');
   return `<div class="card pad"><label class="row small" style="cursor:pointer"><input type="checkbox" data-act="an-owner" ${AN.ownerRev ? 'checked' : ''}> اعتبار «وارد أ. محمود» (الذي ليس عليه اسم عميل) إيرادًا من العملاء</label>
       <div class="small muted" style="margin-top:4px">في الإكسيل أغلب مدفوعات العملاء كانت مسجلة «وارد أ. محمود» بدون اسم العميل. بدون هذا الخيار يظهر الإيراد أقل من الحقيقي في الفترة القديمة.</div></div>
@@ -4271,13 +4275,14 @@ function anIncome(txs, S, M, mk) {
       ${anRow('يخصم: رد مبالغ للعملاء', -S.ref, { ind: 1, neg: 1 })}
       ${anRow('<b>صافي الإيراد</b>', nr, { cls: 'tot', pct: nr > 0 ? '100%' : '' })}
       ${anRow('<b>التكاليف المباشرة</b>', 0, { blank: 1, cls: 'sech' })}
-      ${anRow(`الرسوم الحكومية (${gov.length} بند)`, S.gov, { ind: 1, pct: anPct(S.gov, nr) })}
+      ${anRow(`الرسوم الحكومية (${gov.length} بند)`, r2(S.gov - S.excG), { ind: 1, pct: anPct(S.gov - S.excG, nr) })}
       ${lines(gov, 6)}
-      ${anRow('مصروفات مباشرة على العملاء', S.op, { ind: 1, pct: anPct(S.op, nr) })}
+      ${anRow('مصروفات مباشرة على العملاء', r2(S.op - S.excO), { ind: 1, pct: anPct(S.op - S.excO, nr) })}
       ${anRow('<b>مجمل الربح</b>', S.gross, { cls: 'tot', neg: 1, pct: anPct(S.gross, nr) })}
       ${anRow('<b>المصروفات العمومية</b>', 0, { blank: 1, cls: 'sech' })}
       ${lines(gen, 10)}
       ${anRow('الرواتب والمرتبات', S.sal, { ind: 1, pct: anPct(S.sal, nr) })}
+      ${S.exc > 0.004 ? anRow('🟥 مصروفات عملاء تحمّلها المكتب (مستبعدة من حساب العميل)', S.exc, { ind: 1, pct: anPct(S.exc, nr) }) : ''}
       ${anRow('<b>إجمالي المصروفات العمومية والرواتب</b>', S.opex, { cls: 'tot', pct: anPct(S.opex, nr) })}
       ${anRow('<b>صافي الربح التشغيلي</b>', S.net, { cls: 'tot', neg: 1, pct: anPct(S.net, nr) })}
       ${anRow('<b>خارج قائمة الدخل (حقوق الملكية)</b>', 0, { blank: 1, cls: 'sech' })}
@@ -5797,7 +5802,8 @@ function vTasks(r, el) {
   const inScope = t => inScope0(t) && (!TK.cat || t.cat === TK.cat);
   const open = all.filter(t => tkOpen(t) && inScope(t)).sort(tkSort);
   const td = today();
-  const late = open.filter(tkLate), now = open.filter(t => t.due === td), later = open.filter(t => !t.due || t.due > td);
+  const isSys = t => /^(TF|RN)-/.test(t.id), man = open.filter(t => !isSys(t)), sys = open.filter(isSys), sysOn = !!LS.get('tkSys', 0), sysLate = sys.filter(tkLate).length;
+  const late = man.filter(tkLate), now = man.filter(t => t.due === td), later = man.filter(t => !t.due || t.due > td);
   const showWho = who === 'all';
   let chips = '';
   if (isPriv()) {
@@ -5826,8 +5832,9 @@ function vTasks(r, el) {
   }
   el.innerHTML = head + chips
     + (OPS_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">تعذّر تحديث المهام (${esc(OPS_ST.msg)}). المعروض آخر نسخة محفوظة على هذا الجهاز${OPS.q.length ? `، و${OPS.q.length} تعديل بانتظار الرفع` : ''}.</div></div>` : '')
-    + (open.length ? grp('متأخرة', late, 'late') + grp('اليوم', now) + grp('قادمة', later)
-      : `<div class="card"><div class="empty">${who === 'me' ? 'لا توجد مهام مفتوحة عليك.' : 'لا توجد مهام مفتوحة.'}</div></div>`)
+    + (man.length ? grp('متأخرة', late, 'late') + grp('اليوم', now) + grp('قادمة', later)
+      : (sys.length ? `<div class="small muted" style="margin:6px 0">لا توجد مهام مضافة يدويًا.</div>` : `<div class="card"><div class="empty">${who === 'me' ? 'لا توجد مهام مفتوحة عليك.' : 'لا توجد مهام مفتوحة.'}</div></div>`))
+    + (sys.length ? `<div class="tk-g tk-sys" data-act="tk-sys" role="button" aria-expanded="${sysOn}">⚙️ مهام النظام <small>(${sys.length})</small>${sysLate ? ` <small class="neg">· ${sysLate} متأخرة</small>` : ''}<span class="sp"></span><i>${sysOn ? '▴' : '▾'}</i></div>${sysOn ? `<div class="card">${sys.sort(tkSort).map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
     + (closed.length ? `<button class="btn sm ghost" data-act="tk-toggle-done" style="margin-top:14px">${TK.done ? 'إخفاء' : 'عرض'} ما أُغلق خلال 7 أيام (${closed.length})</button>${TK.done ? `<div class="card" style="margin-top:8px">${closed.map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
     + prod
     + `<div class="small muted" style="margin-top:16px">تُضاف المهام من هنا (➕ إضافة مهمة) أو من برنامج «إدارة المكتب» وتظهر هنا خلال دقيقة. إغلاق المهمة أو إعادة توزيعها من علامة ⋯.</div>`
@@ -7350,6 +7357,7 @@ function docFee(cid) {
 }
 const stRe = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 Object.assign(ACT, {
+  'tk-sys': () => { LS.set('tkSys', LS.get('tkSys', 0) ? 0 : 1); stRe(); },
   'sel-toggle': () => { CST.selOn = !CST.selOn; if (!CST.selOn) CST.sel = new Set(); stRe(); },
   'st-pick': el => { const ids = String(el.dataset.id).split(','), on = !CST.sel.has(ids[0]); ids.forEach(i => on ? CST.sel.add(i) : CST.sel.delete(i)); stRe(); },
   'sel-all': () => { CST.vis.forEach(i => CST.sel.add(i)); stRe(); },
