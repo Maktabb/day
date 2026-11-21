@@ -1044,6 +1044,8 @@ html{overscroll-behavior-y:none}
   .st-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:26px;text-align:center;font-size:12px}
   .st-sign i{display:block;border-bottom:1px dotted #555;height:34px}
   .st-foot{margin-top:14px;font-size:10px;color:#555;text-align:center;border-top:1px solid #ccc;padding-top:6px}
+  .st-thanks{margin-top:18px;text-align:center;border-top:1px solid #ccc;padding-top:10px}.st-thanks b{display:block;font-size:13.5px;color:#0f2747}.st-thanks p{margin:5px 0 0;font-size:11.5px;color:#444;line-height:1.7}
+
 }
 
 /* ---- الوضع الداكن للإضافات ---- */
@@ -1692,7 +1694,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261121-094500';
+const BUILD = '20261121-100000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3669,9 +3671,8 @@ function vClient(r, el) {
     <div class="print-only tblwrap">${rows.length || openRow ? `<table class="tbl stmt"><thead><tr><th class="c">م</th><th>التاريخ</th><th>البيان</th><th class="src">المصدر</th><th class="n">عليه (مدين)</th><th class="n">له (دائن)</th>${showBal ? '<th class="n">الرصيد</th>' : ''}</tr></thead>
       ${stBody(true)}
       <tfoot><tr><td colspan="3">الإجمالي (${rows.length} حركة)</td><td class="src"></td><td class="n">${fmt(P.dr)}</td><td class="n">${fmt(P.cr)}</td>${showBal ? `<td class="n"><b>${fmt(endBal)}</b></td>` : ''}</tr></tfoot></table>` : ''}</div>
-    ${mineOnly || !showBal ? '' : `<div class="print-only st-close"><div class="st-bal ${endBal < -0.004 ? 'neg' : ''}"><span>الرصيد ${CST.to ? 'في ' + esc(CST.to) : 'الختامي في ' + today()}</span><b>${fmt(Math.abs(endBal))} ج.م</b><span>${endBal < -0.004 ? 'مستحق على العميل' : endBal > 0.004 ? 'رصيد دائن للعميل (تحت الحساب)' : 'الحساب مسدَّد'}</span></div>
-      <div class="st-sign"><div>المحاسب المسؤول<i></i></div><div>ختم المكتب<i></i></div><div>توقيع العميل<i></i></div></div>
-      <div class="st-foot">صدر هذا الكشف من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · برجاء مراجعة الكشف وإبلاغنا بأي ملاحظات خلال 15 يومًا من تاريخه.</div></div>`}
+    <div class="print-only st-close">${mineOnly || !showBal ? '' : `<div class="st-bal ${endBal < -0.004 ? 'neg' : ''}"><span>الرصيد ${CST.to ? 'في ' + esc(CST.to) : 'الختامي في ' + today()}</span><b>${fmt(Math.abs(endBal))} ج.م</b><span>${endBal < -0.004 ? 'مستحق على العميل' : endBal > 0.004 ? 'رصيد دائن للعميل (تحت الحساب)' : 'الحساب مسدَّد'}</span></div>`}
+      <div class="st-thanks"><b>شكرًا لثقتكم في مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</b><p>يسعدنا دائمًا خدمتكم، ونتشرف بتعاملكم معنا. ولأي استفسار أو ملاحظة على هذا الكشف يسعدنا تواصلكم معنا خلال 15 يومًا من تاريخه.</p></div></div>
     ${sa.length ? `<h2 class="sec">كشف حساب المحاسب الذكي</h2>
       <div class="note ${sa[sa.length - 1].bal < 0 ? 'warn' : 'info'}" style="margin-bottom:10px">${icon('info', 18)}<div>الرصيد الحالي: <b>${money(Math.abs(sa[sa.length - 1].bal))}</b> ج.م ${sa[sa.length - 1].bal < 0 ? 'مستحق على العميل' : 'له (تحت الحساب)'} — هو الرصيد الرسمي للعميل حتى 11/11/2026، وأي حركات جديدة في البرنامج بعده تُضاف عليه.</div></div>
       <div class="card tblwrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>البيان</th><th class="n">مدين</th><th class="n">دائن</th><th class="n">الرصيد</th></tr></thead>
