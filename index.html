@@ -743,7 +743,7 @@ html{overflow-x:hidden}
 
 
 /* ===== تقارير PDF ===== */
-#ai-fab{position:fixed;left:14px;bottom:84px;z-index:50;width:50px;height:50px;border-radius:50%;border:0;background:#0f2747;color:#fff;font-size:24px;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}body.pd-on #ai-fab{display:none}@media print{#ai-fab{display:none!important}}
+#ai-fab{position:fixed;left:12px;bottom:88px;z-index:50;width:44px;height:44px;opacity:.93;border-radius:50%;border:0;background:#0f2747;color:#fff;font-size:21px;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}body.pd-on #ai-fab{display:none}@media print{#ai-fab{display:none!important}}
 #print-area{display:none}
 @page land{size:A4 landscape;margin:0}
 @media print{
@@ -1183,6 +1183,29 @@ html{overscroll-behavior-y:none}
   .sr2 .cl b i{display:inline!important;margin-inline-start:3px}
   .sx{display:inline-flex;gap:4px;align-items:center;border:0;background:transparent;color:#b42318;font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;font-family:inherit;white-space:nowrap}.sx i{font-style:normal;width:16px;height:16px;border:2px solid #d92d20;border-radius:4px;display:grid;place-items:center;color:#fff;font-size:11px;line-height:1;background:transparent}.sx.on i{background:#d92d20}
   .sr.xr{background:#fdecea!important}.sr.xr .sb,.sr.xr .sn,.sr.xr .sd{opacity:.75}.sr.xr .cl.dr b{text-decoration:line-through;color:#b42318;opacity:.7}.sx-note{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:#fdecea;color:#912018;font-size:13px}
+
+/* ===== لمسة جمالية موحّدة للأزرار (iOS) ===== */
+.btn,.chip,.ibtn,.tk-x,.ap-ck,.tk-c{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none}
+.btn{line-height:1.25;box-shadow:0 1px 0 rgba(0,0,0,.04);transition:transform .14s cubic-bezier(.3,1.4,.5,1),opacity .12s,background .15s}
+.btn:active{opacity:1;transform:scale(.95)}
+.btn svg,.chip svg{flex:none}
+.btn.pri{box-shadow:0 4px 12px -4px rgba(15,39,71,.45)}
+.btn.sm{min-height:36px;padding:6px 14px}
+.chip{min-height:34px;transition:transform .14s cubic-bezier(.3,1.4,.5,1),background .15s}
+.chip:active{opacity:1;transform:scale(.94)}
+.chips,.row.wrap{gap:8px}
+.btn-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.btn-grid .btn{justify-content:center;min-height:44px;font-size:14px;border-radius:14px;width:100%}
+.btn-grid .btn.pri,.btn-grid .btn:last-child:nth-child(even){grid-column:1/-1}
+.co-acts{grid-template-columns:repeat(3,minmax(0,1fr))}.co-acts .btn{min-height:40px;border-radius:12px}
+.co-top-acts{display:flex;gap:8px;flex-wrap:wrap}.co-top-acts .btn{flex:1 1 130px}
+.card .btn.sm.ghost{background:var(--fill)}
+.lrow .btn.sm{flex:none}
+.tk-x{border-radius:10px;min-width:36px;min-height:36px}
+/* فقاعة الشرح */
+#tip{position:fixed;z-index:9999;max-width:min(260px,86vw);background:rgba(20,26,40,.94);color:#fff;border-radius:14px;padding:9px 13px;font-size:13px;line-height:1.55;box-shadow:0 10px 28px rgba(0,0,0,.28);pointer-events:none;opacity:0;transform:translateY(4px) scale(.97);transition:opacity .15s,transform .15s;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#tip.on{opacity:1;transform:none}#tip b{display:block;font-size:13.5px;margin-bottom:2px}
+@media print{#tip{display:none!important}}
 </style>
 </head>
 <body>
@@ -1734,7 +1757,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-043000';
+const BUILD = '20261122-050000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -7087,7 +7110,7 @@ function fuHtml(c) {
       ${kp('📥 طلبات مفتوحة', req.length)}${kp('✅ مراحل تمت', done.filter(x => x.ic !== '✕').length)}${kp('🗓️ مهام مخططة', plan.length + nxt.length + (S.late ? ` <span class="small neg">(${S.late} متأخرة)</span>` : ''))}
       ${kp('💼 الأتعاب', fmt(P.fee), 'pos')}<div class="bal ${P.bal < -0.004 ? 'neg' : ''}"><small>${P.bal < -0.004 ? '⚠️ عليه' : '✅ له'}</small><b class="${P.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(P.bal))}</b></div></div>
     ${clientApBlock(c)}
-    <div class="row wrap no-print" style="gap:6px;margin:8px 0">
+    <div class="btn-grid no-print">
       ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة جديدة</button>` : ''}
       ${canTab('work') ? `<button class="btn sm" data-act="wk-addc" data-c="${c.id}">📂 ملف شغال</button>` : ''}
       ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">📦 مستندات</button>` : ''}
@@ -7610,6 +7633,107 @@ setInterval(() => {
   if (!ME || !D || document.getElementById('ai-fab')) return;
   const b = document.createElement('button'); b.id = 'ai-fab'; b.className = 'no-print'; b.setAttribute('aria-label', 'المساعد'); b.textContent = '🤖'; b.onclick = aiOpen; document.body.appendChild(b);
 }, 2000);
+
+/* ====== شرح الأزرار: ضغطة طويلة على الموبايل أو وقوف الماوس عليها ====== */
+const TIPS = {
+  'client-edit': ['تعديل العميل', 'تعديل الاسم والموبايل والبيانات الأساسية للعميل.'],
+  'ap-add': ['موعد', 'إضافة موعد مرتبط بالعميل (تحصيل، اجتماع، تسليم…) مع تذكير قبلها وتكليف زميل.'],
+  'coll-toggle': ['التحصيل', 'إضافة العميل لقائمة التحصيل (بالرصيد أو بدفعة محددة مع تكليف محاسب). لو هو فيها بتعدّليه أو تشيليه.'],
+  'coll-add': ['إضافة للتحصيل', 'اختاري عميل وحدّدي هتحصّلي منه إيه ومين المسؤول.'],
+  'coll-edit': ['تعديل التحصيل', 'تغيير المبلغ المطلوب أو المحاسب المكلَّف أو الملاحظة.'],
+  'coll-del': ['إزالة من التحصيل', 'تشيل العميل من القايمة بعد ما يتحصّل أو لو اتلغى الطلب.'],
+  'dl-add': ['مستندات', 'تسجيل مستندات ورقية أو أصول تخص العميل ومتابعة تسليمها.'],
+  'client-wa': ['واتساب', 'فتح محادثة واتساب مع العميل برسالة جاهزة (ملخص حسابه).'],
+  'client-merge': ['دمج العميل', 'دمج عميلين مكرّرين في واحد، وتنتقل كل حركاتهم للعميل المختار.'],
+  'client-del': ['حذف العميل', 'حذف العميل من البرنامج (للمدير فقط). اتأكدي قبلها.'],
+  'client-new': ['عميل جديد', 'إضافة عميل جديد بالاسم والموبايل.'],
+  'ch-toggle': ['تمديد / تقليل', 'إظهار أو إخفاء أزرار وبيانات العميل الإضافية.'],
+  'bill-edit': ['نوع المحاسبة', 'تحديد هل العميل بيتحاسب برسوم + أتعاب، أو باتفاق إجمالي بدفعات.'],
+  'tk-add': ['مهمة جديدة', 'إضافة مهمة لعميل وتكليفها لزميل مع ميعاد.'],
+  'tk-done': ['إتمام', 'تعليم المهمة كمنتهية.'],
+  'tk-more': ['خيارات المهمة', 'تسجيل مصروف، إعادة توزيع لزميل، أو تسجيل إنها لم تُنفَّذ.'],
+  'tk-arch': ['أرشفة', 'إخفاء مهمة النظام من القايمة (تقدري ترجعيها من الأرشيف).'],
+  'tk-arch-late': ['أرشفة المتأخرة', 'أرشفة كل مهام النظام المتأخرة مرة واحدة.'],
+  'tk-unarch': ['استرجاع', 'إرجاع المهمة المؤرشفة للقايمة.'],
+  'tk-wa': ['واتساب المهام', 'إرسال قايمة المهام لزميل على واتساب.'],
+  'wk-addc': ['ملف شغال', 'فتح ملف شغل جديد للعميل (تأسيس، تعديل، تجديد…) ومتابعة خطواته.'],
+  'fu-print': ['تقرير المتابعة', 'طباعة أو PDF لتقرير متابعة العميل.'],
+  'cv-set': ['تبديل العرض', 'التنقّل بين المتابعة وكشف الحساب.'],
+  'sel-toggle': ['تحديد حركات', 'تشغيل وضع التحديد لإصدار فاتورة أو مطالبة أو كشف جزئي من حركات معينة.'],
+  'sel-doc': ['إصدار مستند', 'فاتورة أو مطالبة أو كشف جزئي أو إيصال من الحركات المحددة.'],
+  'sel-fee': ['إضافة أتعاب', 'إضافة بند أتعاب جديد على الحركات المحددة.'],
+  'sel-all': ['تحديد الكل', 'تحديد كل الحركات الظاهرة.'],
+  'sel-clear': ['مسح التحديد', 'إلغاء كل التحديدات.'],
+  'tx': ['تفاصيل الحركة', 'فتح الحركة لعرضها أو تعديلها.'],
+  'tx-edit': ['تعديل الحركة', 'تغيير المبلغ أو البيان أو التاريخ.'],
+  'tx-del': ['حذف الحركة', 'حذف الحركة (بيتطلب رمز الحذف).'],
+  'tx-excl': ['استبعاد', 'استبعاد المصروف من حساب العميل وتحميله على المكتب.'],
+  'tx-approve': ['اعتماد', 'اعتماد الحركة بعد المراجعة.'],
+  'tx-reject': ['رفض', 'رفض الحركة وإرجاعها للمحاسب.'],
+  'tx-to-client': ['تحويل لمصروف عميل', 'نقل مصروف مكتب ليتحمّله عميل بعينه.'],
+  'tx-to-office': ['تحويل لمصروف مكتب', 'نقل الحركة لمصروفات المكتب العامة.'],
+  'tx-photo': ['صورة', 'عرض أو إرفاق صورة الإيصال.'],
+  'new-type': ['حركة جديدة', 'تسجيل حركة مالية (إيراد، مصروف، أتعاب…).'],
+  'entry-save': ['حفظ الحركة', 'حفظ الحركة وإضافتها للدفتر.'],
+  'theme-toggle': ['الوضع الليلي', 'التبديل بين الوضع الفاتح والداكن.'],
+  'calc-open': ['آلة حاسبة', 'فتح حاسبة سريعة.'],
+  'calc': ['آلة حاسبة', 'فتح حاسبة سريعة.'],
+  'user-menu': ['حسابك', 'تسجيل الخروج وتبديل المستخدم.'],
+  'logout': ['تسجيل الخروج', 'الخروج من البرنامج على الجهاز ده.'],
+  'app-update': ['تحديث البرنامج', 'تحميل آخر نسخة من البرنامج.'],
+  'nt-log': ['سجل الإشعارات', 'مراجعة الإشعارات اللي اتبعتت للفريق.'],
+  'cal-today': ['النهارده', 'الرجوع لشهر ويوم النهارده في التقويم.'],
+  'cal-mine': ['مواعيدي', 'إظهار المواعيد المكلَّفة ليكي بس.'],
+  'ap-done': ['تم', 'تعليم الموعد كمنتهي.'],
+  'ap-edit': ['تعديل الموعد', 'تغيير التاريخ أو الوقت أو التكليف.'],
+  'ap-del': ['حذف الموعد', 'حذف الموعد نهائيًا.'],
+  'pd-collect': ['طباعة التحصيل', 'طباعة كشف التحصيل بمبالغ وملاحظات كل عميل.'],
+  'pd-clients': ['طباعة العملاء', 'طباعة قايمة العملاء وأرصدتهم.'],
+  'pd-journal': ['طباعة اليومية', 'طباعة حركات اليومية للفترة المختارة.'],
+  'pd-account': ['طباعة الحساب', 'طباعة كشف الحساب.'],
+  'pd-reports': ['طباعة التقارير', 'طباعة التقرير الظاهر.'],
+  'pd-review': ['طباعة المراجعة', 'طباعة حركات المراجعة.'],
+  'pd-analytics': ['طباعة التحليلات', 'طباعة تقرير الأرباح والتحليلات.'],
+  'pd-taxc': ['طباعة الضرائب', 'طباعة مطالبات الضرائب.'],
+  'pd-deliver': ['طباعة التسليمات', 'طباعة كشف المستندات المطلوب تسليمها.'],
+  'tax-done': ['تم التحصيل', 'تعليم مطالبة الضرائب كمسدّدة.'],
+  'mclose': ['إغلاق', 'إغلاق النافذة من غير حفظ.'],
+  'ops-setup': ['ربط المهام', 'ضبط ربط المهام ببرنامج إدارة المكتب.'],
+  'xl-import': ['استيراد', 'استيراد بيانات من ملف إكسل.'],
+  'crm-imp': ['استيراد للـ CRM', 'تحميل بيانات الشركات لقاعدة بيانات الشركات.'],
+  'tk-sys': ['مهام النظام', 'مهام بتتولّد تلقائي (إقرارات، تجديدات). اضغطي للفتح والإغلاق.']
+};
+(function () {
+  let tip = null, tm = 0, lp = 0, held = 0, anchor = null;
+  const el = () => tip || (tip = Object.assign(document.body.appendChild(document.createElement('div')), { id: 'tip' }));
+  const info = b => {
+    const act = b.dataset && b.dataset.act, t = TIPS[act];
+    if (t) return t;
+    const lbl = b.getAttribute('aria-label') || b.getAttribute('title');
+    return lbl ? [lbl, ''] : null;
+  };
+  const hide = () => { clearTimeout(tm); clearTimeout(lp); if (tip) tip.classList.remove('on'); anchor = null; };
+  const show = b => {
+    const i = info(b); if (!i) return false;
+    const t = el(); t.innerHTML = `<b>${esc(i[0])}</b>${i[1] ? esc(i[1]) : ''}`; t.style.left = '0px'; t.style.top = '0px'; t.classList.add('on');
+    const r = b.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
+    let x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8), y = r.top - h - 10; if (y < 8) y = r.bottom + 10;
+    t.style.left = x + 'px'; t.style.top = y + 'px'; anchor = b; return true;
+  };
+  const tgt = e => e.target.closest && e.target.closest('button,[data-act],.chip,a.btn');
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    const b = tgt(e); if (!b) return hide();
+    clearTimeout(lp); lp = setTimeout(() => { if (show(b)) { held = Date.now(); clearTimeout(tm); tm = setTimeout(hide, 3200); } }, 480);
+  }, true);
+  ['pointerup', 'pointercancel', 'scroll'].forEach(ev => document.addEventListener(ev, () => { clearTimeout(lp); }, true));
+  document.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse' && !held) clearTimeout(lp); }, true);
+  document.addEventListener('click', e => { if (held && Date.now() - held < 700) { e.stopPropagation(); e.preventDefault(); } held = 0; }, true);
+  document.addEventListener('contextmenu', e => { if (tgt(e) && e.pointerType !== 'mouse' && anchor) e.preventDefault(); }, true);
+  document.addEventListener('mouseover', e => { const b = tgt(e); if (!b || b === anchor || !matchMedia('(hover:hover)').matches) return; clearTimeout(tm); tm = setTimeout(() => show(b), 450); }, true);
+  document.addEventListener('mouseout', e => { if (tgt(e)) hide(); }, true);
+  document.addEventListener('keydown', hide, true); window.addEventListener('hashchange', hide);
+})();
 </script>
 </body>
 </html>
