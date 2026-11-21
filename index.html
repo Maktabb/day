@@ -1020,6 +1020,8 @@ html{overscroll-behavior-y:none}
 .me.meh{padding:0;border:0;background:transparent;width:38px;height:38px;border-radius:50%;color:#c7d2e6;display:grid;place-items:center;flex:none}.me.meh svg{display:block}.me.meh:active{opacity:.7}
 .um-h{display:flex;align-items:center;gap:12px;margin-bottom:12px}.um-h svg{color:#9aa6bd;flex:none}.um-h small{display:block;color:var(--muted)}
 .um-b{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:12px 6px;border:0;border-top:1px solid var(--line);background:none;font:inherit;color:var(--ink)}
+.search .sx-clear{display:none;position:absolute;left:8px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;border:0;background:var(--line);color:var(--muted);font-size:17px;line-height:1;padding:0;place-items:center;cursor:pointer}
+.search .inp:not(:placeholder-shown)~.sx-clear{display:grid}.search .inp:not(:placeholder-shown){padding-left:38px}
 .sumrow .bal{background:var(--in-soft)}.sumrow .bal.neg{background:var(--out-soft)}
 @media (min-width:700px){.sumrow small{font-size:12.5px}.sumrow>div{padding:14px 10px}}
 .stmt .z{color:var(--muted);opacity:.6}
@@ -1728,7 +1730,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-000500';
+const BUILD = '20261122-002000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -7382,6 +7384,14 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && ME
 var DEFER_INSTALL = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); DEFER_INSTALL = e; try { render(); } catch (x) { } });
 window.addEventListener('appinstalled', () => { DEFER_INSTALL = null; try { render(); } catch (x) { } });
+/* زر ✕ في آخر خانات البحث: يمسح الخانة بضغطة */
+(function () {
+  const add = root => { (root || document).querySelectorAll('.search > input').forEach(inp => { if (inp.type === 'date' || inp.type === 'time' || inp.type === 'checkbox') return; if (!inp.placeholder) inp.placeholder = ' '; if (inp.nextElementSibling && inp.nextElementSibling.classList.contains('sx-clear')) return; const b = document.createElement('button'); b.type = 'button'; b.className = 'sx-clear'; b.tabIndex = -1; b.setAttribute('aria-label', 'مسح'); b.textContent = '×'; inp.after(b); }); };
+  let q = 0; const sched = () => { if (q) return; q = requestAnimationFrame(() => { q = 0; add(); }); };
+  new MutationObserver(sched).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.sx-clear'); if (!b) return; e.preventDefault(); e.stopPropagation(); const inp = b.previousElementSibling; if (!inp) return; inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); inp.focus(); }, true);
+  sched();
+})();
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 boot();
 
