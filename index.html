@@ -1730,7 +1730,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-002000';
+const BUILD = '20261122-010000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3304,31 +3304,44 @@ document.addEventListener('input', e => { if (e.target && e.target.id === 'log-q
 const collList = () => { const seen = {}; return list('collect').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.c).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c] && !seen[x.c] && (seen[x.c] = 1)); };
 function collSave(arr) { D.lists = D.lists || {}; D.lists.collect = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { collect: D.lists.collect } }); changed(); }
 const collHas = id => collList().some(x => x.c === resCid(id));
+/* المطلوب تحصيله: الرصيد / دفعة من الاتفاق / مبلغ محدد / فاتورة صادرة */
+function collAmt(x, st) {
+  const own = Math.max(r2(-((st && st.bal) || 0)), 0);
+  if (x.m === 'agree') { const it = (billGet(x.c).items || [])[+x.ai]; return { amt: it ? r2(+it.amt || 0) : 0, lbl: '🤝 ' + (it && it.t ? it.t : 'دفعة من الاتفاق'), own }; }
+  if (x.m === 'amt') return { amt: r2(+x.a || 0), lbl: '💵 دفعة محددة', own };
+  if (x.m === 'doc') return { amt: r2(+x.a || 0), lbl: '🧾 ' + (x.dn || 'فاتورة'), own };
+  return { amt: own, lbl: '', own };
+}
 function collRows() {
   const cs = calc().cli;
-  return collList().map(x => { const s = cs[x.c] || { bal: 0, last: '' }; return { x: { ...x, d: nextColl(x.c) }, s, owe: Math.max(r2(-(s.bal || 0)), 0) }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
+  return collList().map(x => { const s = cs[x.c] || { bal: 0, last: '' }, a = collAmt(x, s); return { x: { ...x, d: nextColl(x.c) }, s, owe: a.amt, own: a.own, lbl: a.lbl }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
 }
+const CO = { w: 'all' };
+const collWho = x => x.w ? bareName((userById(x.w) || {}).name || '') : '';
 function vCollect(r, el) {
   apMigrate();
-  const rows = collRows(), td = today();
+  const rowsAll = collRows(), td = today();
+  const rows = CO.w === 'all' ? rowsAll : rowsAll.filter(q => q.x.w === (CO.w === 'me' ? ME.id : CO.w));
   const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
+  const wn = k => rowsAll.filter(q => q.x.w === k).length, wChips = rowsAll.length ? `<div class="tk-who"><button class="chip ${CO.w === 'all' ? 'on' : ''}" data-act="co-w" data-k="all">الكل <small>${rowsAll.length}</small></button><button class="chip ${CO.w === 'me' ? 'on' : ''}" data-act="co-w" data-k="me">تحصيلي <small>${wn(ME.id)}</small></button>${isPriv() ? liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id && wn(u.id)).map(u => `<button class="chip ${CO.w === u.id ? 'on' : ''}" data-act="co-w" data-k="${u.id}">${esc(bareName(u.name))} <small>${wn(u.id)}</small></button>`).join('') : ''}</div>` : '';
   const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
   el.innerHTML = `<div class="co-h"><div class="co-t"><h1 class="pg" style="margin:0">💰 التحصيل</h1><div class="small muted">تحصيل العملاء ومتابعة مطالبات الضرائب</div></div>
       <div class="co-top-acts"><button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل</button>${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} PDF</button>` : ''}</div></div>
+    ${wChips}
     <div class="card sumrow co-sum">
       <div><small>في القائمة</small><b>${rows.length}</b></div>
       <div><small>عليهم رصيد</small><b>${n0}</b></div>
       <div><small>تأخر موعدهم</small><b class="${late ? 'neg' : ''}">${late}</b></div>
       <div class="bal ${tot > 0 ? 'neg' : ''}"><small>المتوقع تحصيله</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
     </div>
-    ${rows.length ? rows.map(({ x, s, owe }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td, has = owe > 0.004;
+    ${rows.length ? rows.map(({ x, s, owe, own, lbl }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td, has = owe > 0.004;
       return `<div class="card co-c${isLate ? ' late' : ''}"><div class="co-top"><a class="co-n" href="#client/${c.id}">${esc(c.name)}</a>
-          <div class="co-amt"><small>${has ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد')}</small><b class="${has ? 'neg' : 'pos'}">${fmt(has ? owe : Math.max(s.bal || 0, 0))}</b></div></div>
-        <div class="co-meta">${c.phone ? `<span class="num">📞 ${esc(c.phone)}</span>` : ''}<span>آخر نشاط <span class="num">${esc(s.last || '—')}</span></span>${x.d ? `<span class="${isLate ? 'neg' : ''}">الموعد <span class="num">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}</span>` : ''}</div>
+          <div class="co-amt"><small>${lbl ? esc(lbl) : (has ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد'))}</small><b class="${has ? 'neg' : 'pos'}">${fmt(has ? owe : Math.max(s.bal || 0, 0))}</b></div></div>
+        <div class="co-meta">${x.w ? `<span class="co-w">👤 ${esc(collWho(x))}</span>` : ''}${lbl ? `<span>رصيده الكلي <b class="num ${own > 0.004 ? 'neg' : ''}">${fmt(own)}</b></span>` : ''}${c.phone ? `<span class="num">📞 ${esc(c.phone)}</span>` : ''}<span>آخر نشاط <span class="num">${esc(s.last || '—')}</span></span>${x.d ? `<span class="${isLate ? 'neg' : ''}">الموعد <span class="num">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}</span>` : ''}</div>
         ${x.n ? `<div class="co-note">📝 ${esc(x.n)}</div>` : ''}
         <div class="co-acts no-print">
           ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 15)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} كشف</button>` : ''}
-          <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 15)} ملاحظة</button>
+          <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
           <button class="btn sm" data-act="ap-add" data-c="${c.id}" data-k="collect">📅 موعد</button>
           <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 15)} إزالة</button></div></div>`; }).join('')
     : `<div class="card pad empty" style="margin-top:12px">لسه ماحدّدتيش عملاء للتحصيل. اضغطي «إضافة عميل»، أو افتحي أي عميل واضغطي «علّم للتحصيل».</div>`}
@@ -3630,7 +3643,7 @@ function dlForm(id, clientId) {
 }
 function collHomeCard(view) {
   apMigrate();
-  const rows = collRows(), td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
+  const all0 = collRows(), mine0 = all0.filter(q => q.x.w === ME.id), rows = !isPriv() && mine0.length ? mine0 : all0, td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
   const d = document.createElement('div'); d.className = 'card';
   const tx0 = taxRows().filter(x => !x.done);
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>💰 التحصيل</b><span class="sp"></span><a href="#collect" class="small">كل التحصيل ←</a></div>
@@ -3651,9 +3664,9 @@ function printCollect() {
   printDoc({ title: 'كشف التحصيل — عملاء مطلوب التحصيل منهم', file: 'كشف_التحصيل_' + today(), land: true,
     info: [['عدد العملاء', String(rows.length)], ['إجمالي المتوقع تحصيله', fmt(tot)]],
     kpis: [['عدد العملاء', rows.length], ['إجمالي المتوقع تحصيله', fmt(tot), 'neg']],
-    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'آخر نشاط', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'ملاحظة' }, { h: 'المطلوب تحصيله', n: 1 }],
-    rows: rows.map((q, i) => [i + 1, esc(D.clients[q.x.c].name), `<span class="num">${esc(D.clients[q.x.c].phone || '')}</span>`, esc(q.s.last || ''), esc(q.x.d || ''), esc(q.x.n || ''), `<b>${fmt(q.owe)}</b>`]),
-    foot: [['الإجمالي (' + rows.length + ' عميل)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
+    cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'آخر نشاط', c: 1 }, { h: 'الموعد', c: 1 }, { h: 'المسؤول', c: 1 }, { h: 'المطلوب / ملاحظة' }, { h: 'المطلوب تحصيله', n: 1 }],
+    rows: rows.map((q, i) => [i + 1, esc(D.clients[q.x.c].name), `<span class="num">${esc(D.clients[q.x.c].phone || '')}</span>`, esc(q.s.last || ''), esc(q.x.d || ''), esc(collWho(q.x)), esc([q.lbl, q.x.n].filter(Boolean).join(' — ')), `<b>${fmt(q.owe)}</b>`]),
+    foot: [['الإجمالي (' + rows.length + ' عميل)', 7], null, null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
 }
 /* ====== متابعة مطالبات الضرائب (داخل التحصيل) ====== */
 const taxDoneSet = () => new Set(list('taxDone'));
@@ -3686,22 +3699,49 @@ function printTaxc() {
     foot: [['الإجمالي (' + L.length + ' مطالبة)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
 }
 function collForm(id) {
-  const cur = collList().find(q => q.c === id) || {}; let pick = id || '';
-  const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'ملاحظة التحصيل' : 'إضافة عميل للتحصيل'}</h3>
-    ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:240px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`, { req: 1 })}
+  const cur = collList().find(q => q.c === id) || {}; let pick = id || '', mode = cur.m || 'bal';
+  const users = liveUsers().filter(u => +u.active !== 0), w0 = cur.w || '';
+  const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'التحصيل' : 'إضافة عميل للتحصيل'}</h3>
+    ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`)}
+    <div id="cl-mx"></div>
+    ${fld('تكليف (Assign to)', `<select id="cl-w" class="inp"><option value="">بدون تكليف</option>${users.map(u => `<option value="${u.id}" ${w0 === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
     ${fld('ملاحظة (اختياري)', `<input id="cl-n" class="inp" placeholder="مثال: وعد يدفع نهاية الشهر" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  const mx = () => {
+    const box = m.querySelector('#cl-mx'); if (!pick) { box.innerHTML = ''; return; }
+    const st = cliStat(resCid(pick)), own = Math.max(r2(-(st.bal || 0)), 0), items = billGet(resCid(pick)).items || [];
+    const chip = (k, l) => `<button class="chip ${mode === k ? 'on' : ''}" data-m="${k}" style="justify-content:flex-start">${mode === k ? '◉' : '○'} ${l}</button>`;
+    box.innerHTML = fld('المطلوب تحصيله', `<div style="display:grid;gap:6px">${chip('bal', `الرصيد المستحق عليه <b class="num">${fmt(own)}</b> ج`)}
+      ${chip('agree', 'دفعة من الاتفاق')}${mode === 'agree' ? (items.length ? `<select id="cl-ai" class="inp">${items.map((it, i) => `<option value="${i}" ${(+cur.ai || 0) === i ? 'selected' : ''}>${esc(it.t || 'دفعة ' + (i + 1))} — ${fmt(+it.amt || 0)} ج${it.d ? ' (' + esc(it.d) + ')' : ''}</option>`).join('')}</select>` : '<div class="small neg">مفيش دفعات متسجّلة في اتفاق العميل. ضيفيها من «نوع المحاسبة» في صفحته.</div>') : ''}
+      ${chip('amt', 'دفعة أخرى (مبلغ أكتبه)')}${mode === 'amt' ? `<input id="cl-a" type="number" step="0.01" inputmode="decimal" class="inp num" placeholder="المبلغ" value="${cur.m === 'amt' ? esc(cur.a || '') : ''}">` : ''}
+      ${cur.m === 'doc' && cur.c === pick ? chip('doc', `فاتورة ${esc(cur.dn || '')} <b class="num">${fmt(+cur.a || 0)}</b> ج`) : ''}</div>`);
+  };
   const paint = () => { const l = $('#cl-l'); if (l) l.innerHTML = clientSearch($('#cl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
-  if (!id) paint();
+  if (!id) paint(); mx();
   m.addEventListener('input', e => { if (e.target.id === 'cl-q') paint(); });
-  m.addEventListener('click', e => { const r = e.target.closest('[data-pick]'); if (!r) return; pick = r.dataset.pick; $('#cl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; });
+  m.addEventListener('click', e => {
+    const r = e.target.closest('[data-pick]'); if (r) { pick = r.dataset.pick; $('#cl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; mx(); return; }
+    const b = e.target.closest('[data-m]'); if (b) { mode = b.dataset.m; mx(); }
+  });
   m.querySelector('#cl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
-    const arr = collList().filter(q => q.c !== pick);
-    arr.push({ c: pick, n: $('#cl-n').value.trim(), d: cur.d || '', by: ME.id, at: cur.at || today() });
-    collSave(arr); closeModal(); toast('تم الحفظ في التحصيل'); render();
+    const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), w: $('#cl-w').value, d: cur.d || '', by: ME.id, at: cur.at || today() };
+    if (mode === 'agree') { const sel = m.querySelector('#cl-ai'); if (!sel) return toast('مفيش دفعات في الاتفاق', 'err'); e.ai = +sel.value; }
+    if (mode === 'amt') { e.a = r2(+m.querySelector('#cl-a').value || 0); if (e.a <= 0) return toast('اكتبي مبلغ الدفعة', 'err'); }
+    if (mode === 'doc') { e.a = cur.a; e.dn = cur.dn; }
+    collSave(collList().filter(q => q.c !== e.c).concat([e])); closeModal(); toast('تم الحفظ في التحصيل'); render();
   };
 }
+/* مهام التحصيل المكلَّف بها: تظهر في «مهامي» عند المحاسب، وإنجازها = تشيل العميل من التحصيل */
+let _clT = null, _clTk = '';
+function clTasks() {
+  if (!ME || !D || !D.lists) return [];
+  const k = VER + '|' + ME.id; if (_clT && _clTk === k) return _clT;
+  _clT = collList().filter(x => x.w && D.clients[x.c]).map(x => { const c = D.clients[x.c], a = collAmt(x, cliStat(x.c)), u = userById(x.w), dd = nextColl(x.c) || '';
+    return { id: 'CL-' + x.c, crm: 'c', cl: true, cid: c.id, clientName: c.name, text: 'تحصيل ' + fmt(a.amt) + ' ج' + (a.lbl ? ' — ' + a.lbl.replace(/^\S+\s/, '') : ''), cat: '', place: '', note: x.n || '', who: u ? u.name : '', due: dd, d: dd, status: 'open', why: '', by: x.by }; });
+  _clTk = k; return _clT;
+}
+function clTaskSet(id, patch) { if (!('done' in patch) || !patch.done) return; collSave(collList().filter(q => q.c !== id.slice(3))); toast('اتشال من التحصيل'); }
 function clientTasksBlock(c) {
   const all = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name)));
   const mineOnly = !isPriv(), vis = mineOnly ? all.filter(tkMine) : all;
@@ -5619,8 +5659,8 @@ const tkAuto = linked => { const from = (D.meta || {}).cutover || '0000'; return
   return { id: 'AX-' + t.id, local: true, auto: true, cid: c.id, clientName: c.name, text: t.category || TYPES[t.type].n, cat: '', note: t.description || '', who: u ? u.name : '', due: t.date, d: t.date, status: 'done', why: '', doneAt: t.createdAt || t.date, txId: t.id, by: t.userId };
 }); };
 const tkLocal = () => { if (_tkl && _tklV === VER) return _tkl; const L = Object.values(tkRecs()).map(tkFromRec), linked = new Set(Object.values(OPS.tasks).map(t => t.txId).concat(L.map(t => t.txId)).filter(Boolean)); _tkl = L.concat(tkAuto(linked)); _tklV = VER; return _tkl; };
-const tkAll = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks(), apTasks());
-const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id) || crmTasks().find(t => t.id === id) || apTasks().find(t => t.id === id);
+const tkAll = () => Object.values(OPS.tasks).concat(tkLocal(), crmTasks(), apTasks(), clTasks());
+const tkGet = id => OPS.tasks[id] || tkLocal().find(t => t.id === id) || crmTasks().find(t => t.id === id) || apTasks().find(t => t.id === id) || clTasks().find(t => t.id === id);
 function tkRecSave(r) { D.lists = D.lists || {}; D.lists[TKL + r.id] = [JSON.stringify(r)]; queue('saveLists', { lists: { [TKL + r.id]: D.lists[TKL + r.id] } }); changed(); }
 function tkLocalSet(id, p) {
   const r = tkRecs()[id]; if (!r) return;
@@ -5677,6 +5717,7 @@ function opsBuild(projects) {
 function opsSet(id, patch, touch) {
   if (/^(TF|RN)-/.test(id)) return crmTaskSet(id, patch);
   if (/^AP-/.test(id)) return apTaskSet(id, patch);
+  if (/^CL-/.test(id)) return clTaskSet(id, patch);
   if (!OPS.tasks[id] && tkLocal().some(x => x.id === id)) return tkLocalSet(id, patch);
   const t = OPS.tasks[id]; if (!t) return;
   const raw = { ...t.raw, ...patch };
@@ -5992,6 +6033,7 @@ function tkMergePick(autoId) {
 }
 function openTaskMore(id) {
   if (id.startsWith('AP-')) return apForm(id.slice(3));
+  if (id.startsWith('CL-')) return collForm(id.slice(3));
   if (id.startsWith('TF-')) return crmTfMore(id.slice(3));
   if (id.startsWith('RN-')) return crmRenewForm(id);
   const t = tkGet(id); if (!t) return;
@@ -7329,15 +7371,16 @@ function docForm(cid) {
     <div id="df-amt" style="display:none">${fld('مبلغ الإيصال', `<input id="df-a" type="number" step="0.01" class="inp num">`)}</div>
     <div id="df-op">${fld('الرصيد القديم المرحّل', `<label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="df-o" ${open ? 'checked' : ''}> إظهاره في المستند وحسابه ضمن الإجمالي</label>`)}</div>
     <div id="df-du" style="display:none">${fld('آخر موعد للسداد (اختياري)', `<input id="df-d" type="date" class="inp">`)}</div>
+    <div id="df-co">${fld('تحصيله (Assign to)', `<select id="df-w" class="inp"><option value="">من غير تحصيل</option><option value="any">للتحصيل — بدون تكليف</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}">يحصّله: ${esc(bareName(u.name))}</option>`).join('')}</select>`)}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('رقم المستند', `<input id="df-n" class="inp ltr">`)}${fld('ملاحظة (اختياري)', `<input id="df-t" class="inp">`)}</div>
-    <div class="acts"><button class="btn pri" id="df-p">${icon('print', 17)} طباعة / PDF</button><button class="btn" id="df-w">واتساب</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+    <div class="acts"><button class="btn pri" id="df-p">${icon('print', 17)} طباعة / PDF</button><button class="btn" id="df-w">واتساب</button><button class="btn" id="df-c">💰 للتحصيل فقط</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
   let auto = '';
   const paint = () => {
     const D0 = base(); LS.set('docK', k); LS.set('docOpen', open ? 1 : 0);
     m.querySelectorAll('#df-k [data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === k));
     m.querySelectorAll('[data-rk]').forEach(b => b.classList.toggle('on', b.dataset.rk === rk));
     m.querySelector('#df-rk').style.display = m.querySelector('#df-amt').style.display = k === 'rcp' ? '' : 'none';
-    m.querySelector('#df-du').style.display = k === 'clm' ? '' : 'none'; m.querySelector('#df-op').style.display = k === 'rcp' ? 'none' : '';
+    m.querySelector('#df-du').style.display = k === 'clm' ? '' : 'none'; m.querySelector('#df-co').style.display = k === 'inv' || k === 'clm' ? '' : 'none'; m.querySelector('#df-op').style.display = k === 'rcp' ? 'none' : '';
     m.querySelector('#df-sum').innerHTML = `<b>${esc(c.name)}</b> — ${D0.rows.length} حركة · عليه <b class="num">${fmt(D0.dr)}</b> · له <b class="num">${fmt(D0.cr)}</b>`;
     if (k === 'rcp') { const v = rk === 'fee' ? D0.rows.filter(r => r.t.type === 'FEE' || r.mg).reduce((a, r) => a + (r.mg ? r.mg.f : r.dr), 0) : (D0.cr || Math.max(-D0.net, 0)); m.querySelector('#df-a').value = r2(v); }
     const nn = m.querySelector('#df-n'); if (!nn.value || nn.value === auto) { auto = docNum(k, seq()); nn.value = auto; }
@@ -7346,8 +7389,17 @@ function docForm(cid) {
   m.querySelector('#df-o').onchange = e => { open = e.target.checked; paint(); };
   const get = () => ({ open: k !== 'rcp' && open, rk, amt: +m.querySelector('#df-a').value || 0, due: m.querySelector('#df-d').value, num: m.querySelector('#df-n').value.trim() || auto, note: m.querySelector('#df-t').value.trim() });
   const used = o => { if (o.num === auto) docBump(k); };
-  m.querySelector('#df-p').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); used(o); closeModal(); printDoc(docBuild(cid, k, o)); };
-  m.querySelector('#df-w').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); used(o); waGo(c.phone, docText(cid, k, o)); closeModal(); };
+  const toColl = o => {   // تحويل الفاتورة/المطالبة لتحصيل (مبلغ ثابت) وتكليف محاسب
+    const w = m.querySelector('#df-w').value; if (!w || (k !== 'inv' && k !== 'clm')) return true;
+    const D0 = docData(cid, o.open), due = D0.net < -0.004 ? r2(-D0.net) : 0;
+    if (!due) { toast('مفيش مبلغ مستحق في المستند عشان يتحصّل', 'err'); return false; }
+    const old = collList().find(q => q.c === resCid(cid)) || {};
+    collSave(collList().filter(q => q.c !== resCid(cid)).concat([{ c: resCid(cid), m: 'doc', a: due, dn: o.num, n: o.note || old.n || '', w: w === 'any' ? '' : w, d: old.d || '', by: ME.id, at: old.at || today() }]));
+    toast('اتحوّلت للتحصيل' + (w !== 'any' ? ' وتكلّف بيها ' + bareName((userById(w) || {}).name || '') : '')); return true;
+  };
+  m.querySelector('#df-p').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!toColl(o)) return; used(o); closeModal(); printDoc(docBuild(cid, k, o)); };
+  m.querySelector('#df-w').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!toColl(o)) return; used(o); waGo(c.phone, docText(cid, k, o)); closeModal(); };
+  m.querySelector('#df-c').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!m.querySelector('#df-w').value) m.querySelector('#df-w').value = 'any'; if (!toColl(o)) return; used(o); closeModal(); render(); };
   paint();
 }
 function docFee(cid) {
@@ -7369,6 +7421,7 @@ Object.assign(ACT, {
       <div class="acts"><button class="btn" data-act="mclose">إغلاق</button></div>`); },
   'um-go': el => { closeModal(); go(el.dataset.h); },
   'um-out': () => { closeModal(); ACT.logout(); },
+  'co-w': el => { CO.w = el.dataset.k; stRe(); },
   'tk-sys': () => { LS.set('tkSys', LS.get('tkSys', 0) ? 0 : 1); stRe(); },
   'sel-toggle': () => { CST.selOn = !CST.selOn; if (!CST.selOn) CST.sel = new Set(); stRe(); },
   'st-pick': el => { const ids = String(el.dataset.id).split(','), on = !CST.sel.has(ids[0]); ids.forEach(i => on ? CST.sel.add(i) : CST.sel.delete(i)); stRe(); },
