@@ -1217,6 +1217,45 @@ body.srch .filters.card{position:sticky;top:0;z-index:25;margin-top:0;border-rad
 body.srch .filters .search{margin:0}
 body.srch #ai-fab{display:none}
 .pg-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}.pg-row .pgt{flex:1;min-width:0}.pg-row .pgt small{display:block;white-space:nowrap}.ib-pr{background:var(--fill);color:var(--navy,#0f2747)}.pg-row{gap:8px}.ib-plus{width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;flex:none}
+
+/* ===== v3: زجاج + أيقونات إيموجي (ستايل آيفون) ===== */
+.gls{display:inline-grid;place-items:center;width:34px;height:34px;min-width:34px;padding:0;border-radius:50%;border:1px solid rgba(255,255,255,.75);background:linear-gradient(160deg,rgba(255,255,255,.85),rgba(210,225,255,.45));backdrop-filter:blur(10px) saturate(1.6);-webkit-backdrop-filter:blur(10px) saturate(1.6);box-shadow:0 2px 8px rgba(15,39,71,.16),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;font:inherit;flex:none}
+.gls i{font-style:normal;font-size:15px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
+.gls.sm{width:26px;height:26px;min-width:26px}.gls.sm i{font-size:12px}
+.gls:active{transform:scale(.9)}
+[data-theme=dark] .gls{border-color:rgba(255,255,255,.18);background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(120,150,220,.12));box-shadow:0 2px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.2)}
+.ct-h,.hops .card>.row:first-child{align-items:center}
+.ct-h{display:flex;gap:8px}.ct-h h2{margin-inline-end:auto}
+h2.sec .gls{margin-inline-start:6px}
+.hops .card.hc-closed>:not(:first-child){display:none}
+.hops .card.hc-closed>.row:first-child{padding-bottom:12px!important}
+.kt{cursor:pointer}.kt .l{display:flex;align-items:center;gap:6px}.kt .l .sp{flex:1}
+.hdet{margin-top:8px;padding:0 0 6px}.hdt{padding:10px 14px 0;font-weight:700;font-size:14px}
+.cmp{display:flex;flex-wrap:wrap;gap:6px 16px;padding:8px 14px 10px;font-size:13px;font-weight:400}
+.cmp-i{display:inline-flex;gap:6px;align-items:baseline;color:inherit;text-decoration:none;white-space:nowrap}
+.cmp-i b{font-weight:600}.cmp-i b.neg{color:#d92d20}
+.ctl-row{display:flex;gap:8px;margin:12px 0 4px;justify-content:flex-start}
+.ctl{flex:1 1 0;max-width:92px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit}
+.ctl i{font-style:normal;width:50px;height:50px;border-radius:15px;display:grid;place-items:center;font-size:26px;box-shadow:0 3px 10px rgba(15,39,71,.2),inset 0 1px 0 rgba(255,255,255,.55)}
+.ctl span{font-size:11.5px;font-weight:600;color:var(--muted,#64748b);white-space:nowrap}
+.ctl.t-in i{background:linear-gradient(160deg,#6fe09a,#1f9a58)}.ctl.t-out i{background:linear-gradient(160deg,#ff9a8f,#e0382c)}
+.ctl.t-tk i{background:linear-gradient(160deg,#8fb0ff,#3b5bc4)}.ctl.t-fin i{background:linear-gradient(160deg,#ffd77a,#e0a21b)}.ctl.t-fin.on i{outline:3px solid rgba(224,162,27,.45)}
+.ctl.t-wk i{background:linear-gradient(160deg,#ffcf8a,#e8871e)}.ctl.t-dl i{background:linear-gradient(160deg,#7fd6f0,#1a8fb8)}.ctl.t-pr i{background:linear-gradient(160deg,#c9ccd6,#7c8296)}
+.ctl:active{transform:scale(.93)}
+.cmp-i b{direction:ltr;unicode-bidi:embed}
+/* الستة أيقونات في الرئيسية */
+.epick .pm,.pm{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px 8px!important;max-width:420px;margin:0 auto}
+.epick .pm[class] .pmb,.pm .pmb{height:auto!important;min-height:0!important;flex-direction:column!important;gap:6px!important;padding:2px 0!important;background:none!important;border:0!important;box-shadow:none!important;color:var(--text,#0f2747)!important;text-shadow:none!important;font-size:13px!important;font-weight:600!important;position:relative}
+.pm .pmb span{display:grid;place-items:center;width:62px;height:62px;border-radius:19px;font-size:33px!important;filter:none!important;box-shadow:0 4px 12px rgba(15,39,71,.22),inset 0 1px 0 rgba(255,255,255,.55)}
+.pm .pmb.in span{background:linear-gradient(160deg,#6fe09a,#1f9a58)}.pm .pmb.out span{background:linear-gradient(160deg,#ff9a8f,#e0382c)}
+.pm .pmb.fee span{background:linear-gradient(160deg,#5fd8cb,#0f8077)}.pm .pmb.task span{background:linear-gradient(160deg,#8fb0ff,#3b5bc4)}
+.pm .pmb.rev span{background:linear-gradient(160deg,#ffd77a,#e0a21b)}.pm .pmb:not(.in):not(.out):not(.fee):not(.task):not(.rev) span{background:linear-gradient(160deg,#b9a3f0,#6c4fc0)}
+.epick .pmb.sel span{outline:3px solid var(--gold,#c9a24b);outline-offset:2px}
+.pm .pmn{top:-4px;inset-inline-start:calc(50% - 40px)}
+@media (min-width:700px){.pm .pmb span{width:70px;height:70px;font-size:36px!important}}
+.ch-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sumrow>div>small{font-size:11px!important;letter-spacing:0}
+.ch-top{align-items:center}
 </style>
 </head>
 <body>
@@ -1771,7 +1810,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-014500';
+const BUILD = '20261123-032000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2187,7 +2226,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
+  try { fn(r, vw); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); hopsFold(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2355,6 +2394,33 @@ function installBanner() {
   if (!canInstallUI() || LS.get('pwaHide', '')) return '';
   return `<div class="note info no-print" style="margin-bottom:10px">${icon('download', 18)}<div class="grow">ثبّتي البرنامج على هذا الجهاز كتطبيق مستقل (لابتوب أو آيباد) ليفتح بأيقونة مباشرة.</div><button class="btn pri sm" data-act="pwa-install">تثبيت</button><button class="btn ghost sm" data-act="pwa-hide" title="إخفاء">✕</button></div>`;
 }
+/* طي وفرد الأقسام: زرار زجاجي بإيموجي */
+const colOpen = (k, def) => { const v = LS.get('col_' + k, -1); return v === -1 ? (def ? 1 : 0) : +v; };
+const colBtn = (k, def) => `<button type="button" class="gls" data-act="col-tog" data-k="${esc(k)}" data-def="${def ? 1 : 0}" title="${colOpen(k, def) ? 'طي' : 'فرد'}" aria-label="${colOpen(k, def) ? 'طي' : 'فرد'}" aria-expanded="${colOpen(k, def) ? 'true' : 'false'}"><i>${colOpen(k, def) ? '🔼' : '🔽'}</i></button>`;
+function hopsFold(root) {
+  root.querySelectorAll('.hops > .card').forEach(cd => {
+    const h = cd.firstElementChild; if (!h || !h.classList.contains('row') || h.querySelector('.gls')) return;
+    const b = h.querySelector('b'), k = 'hc:' + (b ? b.textContent.replace(/[0-9٠-٩]/g, '').trim().slice(0, 24) : '');
+    if (!colOpen(k, 1)) cd.classList.add('hc-closed');
+    h.insertAdjacentHTML('beforeend', colBtn(k, 1));
+  });
+}
+const cmpList = (items, empty) => items.length ? `<div class="cmp">${items.map(([l, v, h, p]) => `<${h ? 'a href="' + h + '"' : 'span'} class="cmp-i"><span>${esc(l)}</span><b class="${v < 0 ? 'neg' : ''}">${fmt(v)}</b>${p ? `<small class="muted">⏳ ${fmt(p)}</small>` : ''}</${h ? 'a' : 'span'}>`).join('')}</div>` : `<div class="small muted" style="padding:10px 14px">${empty || 'لا يوجد'}</div>`;
+function offItems() {
+  const t = officeTrs(); if (t.length > 1) return t.map(a => [trsLabel(a).replace('خزنة المكتب — ', ''), accBal(a.id), '#account/' + a.id]);
+  const m = {}; listTx().forEach(x => { const sg = x.toAcc === 'TRS' ? 1 : x.fromAcc === 'TRS' ? -1 : 0; if (!sg) return; const k = payNorm(x.payMethod) || 'بدون تحديد طريقة'; m[k] = r2((m[k] || 0) + sg * (+x.amount || 0)); });
+  return Object.entries(m).filter(([, v]) => Math.abs(v) > 0.004).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v, '']);
+}
+const mainItems = () => mainTrs().map(a => [trsLabel(a), accBal(a.id), '#account/' + a.id]);
+/* تنبيهات النظام (كانت على الرئيسية، دلوقتي في الإعدادات) */
+function alertsHtml() {
+  const noPhone = activeClients().filter(x => !x.phone).length, dupN = (D.dups || []).filter(d => !d.status).length, negs = D.accounts.filter(a => a.type === 'custody' && +a.active !== 0 && accBal(a.id) < 0);
+  const L = [
+    noPhone && !isSup() ? `<div class="note warn">${icon('phone', 18)}<div><b>${noPhone}</b> عميلًا مرحّلين من الإكسيل بدون رقم موبايل. أضف الرقم عند أول حركة للعميل لمنع التكرار. <a href="#clients?f=nophone">عرضهم</a></div></div>` : '',
+    dupN && isFull() ? `<div class="note warn">${icon('merge', 18)}<div><b>${dupN}</b> حالة تشابه محتملة بين أسماء العملاء تحتاج مراجعة. <a href="#dups">مراجعة الآن</a></div></div>` : '',
+    negs.length ? `<div class="note err">${icon('alert', 18)}<div>عهد بالسالب: ${negs.map(a => `<b>${esc(a.name.replace('عهدة ', ''))}</b> (${money(accBal(a.id))})`).join('، ')}</div></div>` : ''].filter(Boolean);
+  return { n: L.length, html: L.join('') || `<div class="note ok">${icon('check', 18)}<div>مفيش تنبيهات دلوقتي ✅</div></div>` };
+}
 function vHome(r, el) {
   const c = calc();
   const ms = monthStart(today());
@@ -2383,35 +2449,30 @@ function vHome(r, el) {
     const negs = cust.filter(a => accBal(a.id) < 0);
     const owe = isSup() ? (() => { const L = owingRecent(1), tt = r2(L.reduce((s, o) => s - o.b, 0)); return `<a class="card kpi owe" href="#clients?f=owing1"><div class="l">⚠️ عملاء آخر شهر عليهم رصيد <span class="badge" style="margin-inline-start:6px">${L.length}</span><span class="sp"></span><small>عرض القائمة ←</small></div><div class="v ${tt ? 'neg' : ''}">${money(tt)} <small>ج.م</small></div></a>`; })() : '';
     const notes = `${!cfgOk() ? `<div class="note info">${icon('info', 18)}<div>التطبيق يعمل الآن على هذا الجهاز فقط. لربطه بالشيت ومزامنته بين أجهزة الفريق: <a href="#settings"><b>الإعدادات ← الاتصال بالشيت</b></a>.</div></div>` : ''}
-      ${noPhone && !isSup() ? `<div class="note warn">${icon('phone', 18)}<div><b>${noPhone}</b> عميلًا مرحّلين من الإكسيل بدون رقم موبايل. أضف الرقم عند أول حركة للعميل لمنع التكرار. <a href="#clients?f=nophone">عرضهم</a></div></div>` : ''}
-      ${dupN && isFull() ? `<div class="note warn">${icon('merge', 18)}<div><b>${dupN}</b> حالة تشابه محتملة بين أسماء العملاء تحتاج مراجعة. <a href="#dups">مراجعة الآن</a></div></div>` : ''}
-      ${negs.length ? `<div class="note err">${icon('alert', 18)}<div>عهد بالسالب: ${negs.map(a => `<b>${esc(a.name.replace('عهدة ', ''))}</b> (${money(accBal(a.id))})`).join('، ')}</div></div>` : ''}
       ${FAILED.length ? `<div class="note err">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings">التفاصيل</a></div></div>` : ''}`;
     const mo = AR_MONTHS[+ms.slice(5, 7) - 1];
     body = `<div class="hnotes">${notes}</div>
     <div class="grid gk">
-      <div class="card kpi hl"><div class="l">🏦 خزنة المكتب</div><div class="v ${trs < 0 ? 'neg' : ''}">${money(trs)} <small>ج.م</small></div></div>
-      ${mainA.length ? `<div class="card kpi hl"><div class="l">🔐 الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span></div><div class="v ${trsMain < 0 ? 'neg' : ''}">${money(trsMain)} <small>ج.م</small></div></div>
+      <div class="card kpi hl kt" data-act="col-tog" data-k="hm_off" data-def="0" role="button"><div class="l">🏦 خزنة المكتب<span class="sp"></span><i class="gls sm">${colOpen('hm_off', 0) ? '🔼' : '🔽'}</i></div><div class="v ${trs < 0 ? 'neg' : ''}">${money(trs)} <small>ج.م</small></div></div>
+      ${mainA.length ? `<div class="card kpi hl kt" data-act="col-tog" data-k="hm_main" data-def="0" role="button"><div class="l">🔐 الخزنة الرئيسية <span class="badge" style="margin-inline-start:6px">خاصة</span><span class="sp"></span><i class="gls sm">${colOpen('hm_main', 0) ? '🔼' : '🔽'}</i></div><div class="v ${trsMain < 0 ? 'neg' : ''}">${money(trsMain)} <small>ج.م</small></div></div>
       <div class="card kpi"><div class="l">🧮 إجمالي الخزنتين</div><div class="v ${r2(trs + trsMain) < 0 ? 'neg' : ''}">${money(r2(trs + trsMain))} <small>ج.م</small></div></div>` : ''}
-      <div class="card kpi"><div class="l">👛 العهد لدى الفريق</div><div class="v ${custTot < 0 ? 'neg' : ''}">${money(custTot)} <small>ج.م</small></div></div>
+      <div class="card kpi kt" data-act="col-tog" data-k="hm_cust" data-def="0" role="button"><div class="l">👛 العهد لدى الفريق<span class="sp"></span><i class="gls sm">${colOpen('hm_cust', 0) ? '🔼' : '🔽'}</i></div><div class="v ${custTot < 0 ? 'neg' : ''}">${money(custTot)} <small>ج.م</small></div></div>
     </div>
+    ${colOpen('hm_off', 0) ? `<div class="card hdet"><div class="hdt">🏦 خزنة المكتب</div>${cmpList(offItems(), 'لا توجد حركات على الخزنة')}</div>` : ''}
+    ${mainA.length && colOpen('hm_main', 0) ? `<div class="card hdet"><div class="hdt">🔐 الخزنة الرئيسية</div>${cmpList(mainItems())}</div>` : ''}
+    ${colOpen('hm_cust', 0) ? `<div class="card hdet"><div class="hdt">👛 أرصدة العهد</div>${cmpList(cust.map(a => [a.name.replace('عهدة ', ''), accBal(a.id), '#account/' + a.id, (c.acc[a.id] || {}).pend]), 'لا توجد عُهد')}</div>` : ''}
     ${owe ? `<div class="gk1">${owe}</div>` : ''}
     ${isSup() ? '' : `<div class="grid gk" style="margin-top:12px">
       <div class="card kpi"><div class="l">📥 وارد العملاء — ${mo}</div><div class="v pos">${money(inc)} <small>ج.م</small></div></div>
       <div class="card kpi"><div class="l">📤 المصروفات — ${mo}</div><div class="v neg">${money(exp)} <small>ج.م</small></div></div></div>`}
     <div class="hops"></div>
-    <div class="hbreak">
-    ${trsBreakdown()}
-    <div class="card hcust"><h2 class="sec" style="margin:14px 14px 6px">👛 أرصدة العهد</h2>
-      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));padding:8px 14px 14px">${cust.map(a => { const b = accBal(a.id), p = (c.acc[a.id] || {}).pend; return `<a class="card kpi" href="#account/${a.id}"><div class="l">${esc(a.name.replace('عهدة ', ''))}</div><div class="v ${b < 0 ? 'neg' : ''}">${money(b)}</div>${p ? `<div class="small" style="color:#b45309">⏳ ${money(p)} بانتظار الاعتماد</div>` : ''}</a>`; }).join('') || '<div class="empty">لا توجد عُهد.</div>'}</div>
-    </div></div>
 `;
   }
   if (mine) { el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + body; return; }
   el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
-    <h2 class="sec">🕘 آخر الحركات</h2>
-    <div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
-    ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>`);
+    <h2 class="sec">🕘 آخر الحركات<span class="sp"></span>${colBtn('recent', 1)}</h2>
+    ${colOpen('recent', 1) ? `<div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
+    ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>` : ''}`);
 }
 function bigBtn(em, title, hint, c, h, cls) {
   return `<button class="bigbtn ${cls || ''}" style="--c:${c}" data-act="go" data-h="${h}"><span class="em">${em}</span><span class="tx"><b>${title}</b>${hint ? `<small>${hint}</small>` : ''}</span></button>`;
@@ -3840,7 +3901,7 @@ function clTaskSet(id, patch) { if (!('done' in patch) || !patch.done) return; c
 function clientApBlock(c) {
   const L = apAll().filter(a => a.c && resCid(a.c) === c.id && !a.ok).sort((a, b) => String(a.d).localeCompare(String(b.d)));
   if (!L.length) return '';
-  return `<div class="ct-h no-print"><h2>📅 مواعيد العميل <span class="cnt">${L.length}</span></h2><button class="btn sm pri" data-act="ap-add" data-c="${c.id}">${icon('plus', 15)} موعد</button></div><div class="card no-print">${L.map(a => apRow(a, { date: true })).join('')}</div>`;
+  return `<div class="ct-h no-print"><h2>📅 مواعيد العميل <span class="cnt">${L.length}</span></h2>${colBtn('cap', 1)}</div>${colOpen('cap', 1) ? `<div class="card no-print">${L.map(a => apRow(a, { date: true })).join('')}</div>` : ''}`;
 }
 /* فاتورة التحصيل: المستند المرفق بمهمة التحصيل بالمبلغ المطلوب */
 function collInvDoc(x) {
@@ -3869,22 +3930,25 @@ function collInv(cid) {
   m.querySelector('#ci-w').onclick = () => { waGo(c.phone, R.txt); closeModal(); };
 }
 function clientTasksBlock(c) {
-  const all = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name)));
-  const mineOnly = !isPriv(), vis = mineOnly ? all.filter(tkMine) : all;
+  const vis = cTkAll(c);
   const open = vis.filter(tkOpen).sort(tkSort), fin = vis.filter(t => !tkOpen(t)).sort((a, b) => String(b.doneAt).localeCompare(String(a.doneAt)));
   if (!canTab('tasks') && !canAddTask()) return '';
-  return `<div class="ct-h no-print"><h2>📋 مهام العميل <span class="cnt">${open.length}</span></h2>
-      ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة</button>` : ''}
-      ${fin.length ? `<button class="btn sm ghost" data-act="tk-cdone">${TK.cdone ? 'إخفاء' : 'المنتهية'} (${fin.length})</button>` : ''}</div>
-    <div class="card no-print">${open.length ? open.map(t => tkRow(t, { who: true })).join('') : `<div class="empty">لا توجد مهام مفتوحة لهذا العميل.</div>`}</div>
-    ${TK.cdone && fin.length ? `<div class="small muted no-print" style="margin:10px 0 4px">المهام المنتهية</div><div class="card no-print">${fin.map(t => tkRow(t, { who: true, merge: true })).join('')}</div>` : ''}`;
+  const on = colOpen('ctk', 1);
+  return `<div class="ct-h no-print"><h2>📋 مهام العميل <span class="cnt">${open.length}</span></h2>${colBtn('ctk', 1)}</div>
+    ${on ? `<div class="card no-print">${open.length ? open.map(t => tkRow(t, { who: true })).join('') : `<div class="empty">لا توجد مهام مفتوحة لهذا العميل.</div>`}</div>
+    ${TK.cdone && fin.length ? `<div class="small muted no-print" style="margin:10px 0 4px">المهام المنتهية</div><div class="card no-print">${fin.map(t => tkRow(t, { who: true, merge: true })).join('')}</div>` : ''}` : ''}`;
 }
 /* ====== شاشة كشف حساب العميل: أزرار + و−، فترات، وصفوف مضغوطة ====== */
 const ST_ADD = ['IN_CLIENT', 'FEE', 'TAXC'], ST_SPEND = ['GOV_FEE', 'OP_EXP', 'CLIENT_REFUND'];
+const cTkAll = c => { const all = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name))); return isPriv() ? all : all.filter(tkMine); };
 function stAddBar(c, types) {
-  const a = ST_ADD.filter(k => types.includes(k)), d = ST_SPEND.filter(k => types.includes(k));
-  if (!a.length && !d.length) return '';
-  return `<div class="row no-print st-pm">${a.length ? `<button class="btn pm pl" data-act="st-pm" data-g="add" data-c="${c.id}"><b>＋</b> إضافة للعميل</button>` : ''}${d.length ? `<button class="btn pm mi" data-act="st-pm" data-g="out" data-c="${c.id}"><b>－</b> صرف للعميل</button>` : ''}</div>`;
+  const a = ST_ADD.filter(k => types.includes(k)), d = ST_SPEND.filter(k => types.includes(k)), fin = cTkAll(c).filter(t => !tkOpen(t)).length;
+  const tile = (cls, em, l, tip, at) => `<button class="ctl ${cls}" ${at} title="${tip}" aria-label="${tip}"><i>${em}</i><span>${l}</span></button>`, b = [];
+  if (a.length) b.push(tile('t-in', '📥', 'إضافة', 'إضافة للعميل: أتعاب أو مطالبة أو وارد', `data-act="st-pm" data-g="add" data-c="${c.id}"`));
+  if (d.length) b.push(tile('t-out', '📤', 'صرف', 'صرف للعميل: رسوم أو مصروف', `data-act="st-pm" data-g="out" data-c="${c.id}"`));
+  if (canAddTask()) b.push(tile('t-tk', '📋', 'مهمة', 'إضافة مهمة للعميل', `data-act="tk-add" data-c="${c.id}"`));
+  if (fin) b.push(tile('t-fin ' + (TK.cdone ? 'on' : ''), '✅', 'المنتهية ' + (TK.cdone ? '▴' : '▾'), (TK.cdone ? 'إخفاء' : 'إظهار') + ' المهام المنتهية (' + fin + ')', 'data-act="tk-cdone"'));
+  return b.length ? `<div class="no-print ctl-row">${b.join('')}</div>` : '';
 }
 function stBar(c, st, filtered) {
   const per = CST.per, yrs = [...new Set(st.map(x => String(x.t.date).slice(0, 4)).filter(Boolean))].sort().reverse();
@@ -3993,7 +4057,7 @@ function vClient(r, el) {
       <div class="ch-top"><div class="av ch-av">${esc(initials(c.name))}</div>
         <div class="grow ch-nm"><div class="ch-h">${esc(c.name)}</div>
           <div class="small muted">${c.kind || ''}${c.service ? ' · ' + esc(c.service) : ''}${c.contact ? ' · المسؤول: ' + esc(c.contact) : ''}</div></div>
-        <button class="ch-tg" data-act="ch-toggle" aria-expanded="${CHX() ? 'true' : 'false'}" title="${CHX() ? 'تقليل' : 'تمديد'}"><span>${CHX() ? 'تقليل' : 'تمديد'}</span><i>${CHX() ? '▴' : '▾'}</i></button></div>
+        <button class="gls" data-act="ch-toggle" aria-expanded="${CHX() ? 'true' : 'false'}" title="${CHX() ? 'تقليل' : 'تمديد'}" aria-label="${CHX() ? 'تقليل' : 'تمديد'}"><i>${CHX() ? '🔼' : '🔽'}</i></button></div>
       <div class="ch-chips">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${icon('phone', 14)} <span class="num">${esc(c.phone)}</span></a>` : `<span class="badge warn">بدون رقم موبايل</span>`}
         ${c.phone2 ? `<a class="chip" href="tel:${esc(c.phone2)}"><span class="num">${esc(c.phone2)}</span></a>` : ''}
         ${isPriv() || ccGet(c.id) ? `<button class="chip" ${isPriv() ? `data-act="cc-pick" data-id="${c.id}"` : 'disabled'}>${ccGet(c.id) ? CC_L[ccGet(c.id)] : '🗂️ تصنيف الحساب'}</button>` : ''}<button class="chip ch-bt" ${isPriv() ? `data-act="bill-edit" data-id="${c.id}"` : 'disabled'}>${billGet(c.id).m === 'agree' ? '🤝 اتفاق إجمالي' : '💼 رسوم + أتعاب'}${isPriv() ? ' ✎' : ''}</button></div>
@@ -4772,6 +4836,7 @@ function vSettings(r, el) {
     </div>`);
   if (FAILED.length) push('conn', `<h2 class="sec">عمليات لم تُحفظ على الشيت</h2><div class="card">${FAILED.map((f, i) => `<div class="lrow" style="cursor:default"><div class="grow"><b>${esc(f.msg)}</b><div class="small muted">${esc(f.action)} · ${new Date(f.at).toLocaleString('ar-EG-u-nu-latn')}</div></div>
     <button class="btn sm" data-act="fail-retry" data-i="${i}">إعادة المحاولة</button><button class="btn sm danger" data-act="fail-drop" data-i="${i}">تجاهل</button></div>`).join('')}</div>`);
+  if (isPriv()) { const al = alertsHtml(); push('alerts', `<h2 class="sec">🔔 تنبيهات النظام ${al.n ? `<span class="cnt">${al.n}</span>` : ''}</h2>${al.html}`); }
   push('acct', `<h2 class="sec">حسابي</h2><div class="card pad"><div class="row wrap"><div class="grow" style="flex:1 1 220px"><b>${esc(ME.name)}</b><div class="small muted">${ROLE_NAMES[ME.role]} · ${esc(accName(ME.account))}</div></div>
     <button class="btn" data-act="set-code">${icon('key', 17)} تغيير رمز الدخول</button><button class="btn" data-act="logout">${icon('logout', 17)} خروج</button></div>
     ${String(ME.code) === '1234' ? `<div class="note warn" style="margin-top:10px">${icon('alert', 18)}<div>ما زلت تستخدم الرمز الافتراضي 1234. يُرجى تغييره.</div></div>` : ''}</div>`);
@@ -4828,14 +4893,14 @@ function vSettings(r, el) {
     <label class="row" style="gap:10px;cursor:pointer"><input type="checkbox" class="sw" data-look="haptic" ${LS.get('haptic', 'on') !== 'off' ? 'checked' : ''}> <span class="grow"><b>📳 اهتزاز خفيف عند اللمس</b><br><small class="muted">على الموبايلات التي تدعمه</small></span></label>
     <p class="small muted" style="margin:12px 0 0">هذه الاختيارات تُحفظ على هذا الجهاز فقط.</p></div>`);
   if (isFull()) push('hr', hrView());
-  if (isSup()) Object.keys(secs).forEach(k => { if (!['lists', 'acct'].includes(k)) delete secs[k]; });
-  const GEN = ['acct', 'look', 'conn', 'rem', 'xl', 'bk', 'log'];
+  if (isSup()) Object.keys(secs).forEach(k => { if (!['lists', 'acct', 'alerts'].includes(k)) delete secs[k]; });
+  const GEN = ['acct', 'alerts', 'look', 'conn', 'rem', 'xl', 'bk', 'log'];
   if (isFull()) secs.ntl = `<h2 class="sec">سجل الإشعارات</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">الإشعارات المرسلة للفريق ومين شافها.</p><button class="btn" data-act="nt-log">${icon('list', 17)} فتح سجل الإشعارات</button></div>`;
   if (secs.xl) secs.xl = '<h2 class="sec">ترحيل حركات الإكسيل</h2>' + secs.xl;
   const genOrder = [...GEN, 'ntl'].filter(k => secs[k]);
   if (genOrder.length) secs.gen = genOrder.map(k => secs[k]).join('');
   const GENSET = new Set([...GEN, 'ntl']), argK = GENSET.has(r.arg) ? 'gen' : r.arg;
-  const CATS = [['gen', 'إعدادات التطبيق', 'sliders', 'حسابي · المظهر · الاتصال بالشيت · التذكير · ترحيل الإكسيل · النسخ الاحتياطي · سجل التعديلات والإشعارات'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
+  const CATS = [['gen', 'إعدادات التطبيق', 'sliders', 'حسابي · التنبيهات · المظهر · الاتصال بالشيت · التذكير · ترحيل الإكسيل · النسخ الاحتياطي · سجل التعديلات والإشعارات'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
     ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['hr', 'الموارد البشرية HR', 'users', 'الحضور والإجازات والسلف والتقييم والمسحوبات']].filter(c => secs[c[0]]);
   if (argK && secs[argK]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === argK)[1]}</h1>` + (argK === 'gen' ? secs.gen : secs[argK].replace(/<h2 class="sec">(القوائم|كود الحذف|كود التعديل)<\/h2>/, '')); if (argK === 'gen' && secs.log || argK === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
@@ -7263,11 +7328,11 @@ function fuHtml(c) {
       ${kp('📥 طلبات مفتوحة', req.length)}${kp('✅ مراحل تمت', done.filter(x => x.ic !== '✕').length)}${kp('🗓️ مهام مخططة', plan.length + nxt.length + (S.late ? ` <span class="small neg">(${S.late} متأخرة)</span>` : ''))}
       ${kp('💼 الأتعاب', fmt(P.fee), 'pos')}<div class="bal ${P.bal < -0.004 ? 'neg' : ''}"><small>${P.bal < -0.004 ? '⚠️ عليه' : '✅ له'}</small><b class="${P.bal < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(P.bal))}</b></div></div>
     ${clientApBlock(c)}
-    <div class="btn-grid no-print">
-      ${canAddTask() ? `<button class="btn sm pri" data-act="tk-add" data-c="${c.id}">${icon('plus', 15)} مهمة جديدة</button>` : ''}
-      ${canTab('work') ? `<button class="btn sm" data-act="wk-addc" data-c="${c.id}">📂 ملف شغال</button>` : ''}
-      ${canTab('deliver') ? `<button class="btn sm" data-act="dl-add" data-id="${c.id}">📦 مستندات</button>` : ''}
-      <span class="sp"></span><button class="btn sm" data-act="fu-print" data-id="${c.id}">${icon('print', 15)} تقرير المتابعة PDF</button></div>
+    <div class="no-print ctl-row">
+      ${canAddTask() ? `<button class="ctl t-tk" data-act="tk-add" data-c="${c.id}" title="إضافة مهمة للعميل" aria-label="إضافة مهمة للعميل"><i>📋</i><span>مهمة</span></button>` : ''}
+      ${canTab('work') ? `<button class="ctl t-wk" data-act="wk-addc" data-c="${c.id}" title="ملف شغال جديد للعميل" aria-label="ملف شغال جديد للعميل"><i>📂</i><span>ملف شغال</span></button>` : ''}
+      ${canTab('deliver') ? `<button class="ctl t-dl" data-act="dl-add" data-id="${c.id}" title="تسليم مستندات للعميل" aria-label="تسليم مستندات للعميل"><i>🛵</i><span>تسليم</span></button>` : ''}
+      <button class="ctl t-pr" data-act="fu-print" data-id="${c.id}" title="طباعة تقرير المتابعة PDF" aria-label="طباعة تقرير المتابعة PDF"><i>🖨️</i><span>تقرير PDF</span></button></div>
     ${sv.length ? `<h2 class="sec">🧩 الخدمات المقدمة</h2><div class="card pad"><div class="chips" style="flex-wrap:wrap">${sv.map(([n, k]) => `<span class="chip">${esc(n)}${k > 1 ? ` <b class="num">${k}</b>` : ''}</span>`).join('')}</div>
       ${F.cos.length ? `<div class="small muted" style="margin-top:6px">🗂️ في قاعدة البيانات: ${F.cos.map(x => `<a href="#crm/p/${x.pid}">${esc(x.name)}</a>`).join('، ')}</div>` : (typeof CRM !== 'undefined' && crmCfg() ? '<div class="small muted" style="margin-top:6px">العميل لسه مش متربط بقاعدة البيانات.</div>' : '')}</div>` : ''}
     <h2 class="sec">📥 طلبات العميل <span class="cnt">${req.length}</span></h2>
@@ -7630,7 +7695,7 @@ Object.assign(ACT, {
   'sel-fee': el => docFee(el.dataset.id),
   'sel-doc': el => docForm(el.dataset.id),
 });
-Object.assign(ACT, { 'bill-edit': el => billForm(el.dataset.id) });
+Object.assign(ACT, { 'bill-edit': el => billForm(el.dataset.id), 'col-tog': el => { const k = el.dataset.k, def = +el.dataset.def; LS.set('col_' + k, colOpen(k, def) ? 0 : 1); stRe(); } });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
@@ -7801,6 +7866,7 @@ setInterval(() => {
 
 /* ====== شرح الأزرار: ضغطة طويلة على الموبايل أو وقوف الماوس عليها ====== */
 const TIPS = {
+  'col-tog': ['طي / فرد', 'يلمّ القسم ده أو يفرده عشان توفري مساحة'],
   'cc-pick': ['تصنيف الحساب', 'تحديد إن حساب العميل مظبوط أو محتاج مراجعة، وتقدري تفلتري بيه في صفحة العملاء'],
   'client-edit': ['تعديل العميل', 'تعديل الاسم والموبايل والبيانات الأساسية للعميل.'],
   'ap-add': ['موعد', 'إضافة موعد مرتبط بالعميل (تحصيل، اجتماع، تسليم…) مع تذكير قبلها وتكليف زميل.'],
