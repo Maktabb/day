@@ -1764,7 +1764,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-150000';
+const BUILD = '20261122-170000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -5786,7 +5786,7 @@ function opsSet(id, patch, touch) {
   const t = OPS.tasks[id]; if (!t) return;
   const raw = { ...t.raw, ...patch };
   const closed = !!raw.done || !!raw.nx;
-  OPS.tasks[id] = { ...t, raw, who: String(raw.who || ''), status: raw.nx ? 'nx' : raw.done ? 'done' : 'open', why: String(raw.why || ''), doneAt: closed ? String(raw.doneAt || nowIso()) : '', txId: String(raw.tx || '') };
+  OPS.tasks[id] = { ...t, raw, text: String(raw.t || raw.ph || t.text || ''), due: String(raw.due || ''), place: String(raw.place || ''), who: String(raw.who || ''), status: raw.nx ? 'nx' : raw.done ? 'done' : 'open', why: String(raw.why || ''), doneAt: closed ? String(raw.doneAt || nowIso()) : '', txId: String(raw.tx || '') };
   const op = { op: 'update', c: 'projects', id: t.pid, taskops: { set: [raw] } };
   if (touch) op.data = { updatedAt: today() };
   OPS.q.push({ id, op });
@@ -5892,7 +5892,7 @@ function tkRow(t, o = {}) {
   }
   return `<div class="tk ${late ? 'late' : ''}"><button class="tk-c" data-act="tk-done" data-id="${esc(t.id)}" aria-label="إتمام المهمة: ${esc(t.text)}"></button>
     <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}</div></div>
-    ${o.arch ? `<button class="tk-x" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="أرشفة" title="أرشفة">🗄️</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
+    ${tkCanEdit(t) || (/^(AP|CL)-/.test(t.id) && (isPriv() || tkMine(t))) ? `<button class="tk-x" data-act="tk-edit" data-id="${esc(t.id)}" aria-label="تعديل المهمة" title="تعديل المهمة">✏️</button>` : ''}${o.arch ? `<button class="tk-x" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="أرشفة" title="أرشفة">🗄️</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
 }
 function opsSetupCard() {
   const c = opsCfg();
@@ -6097,6 +6097,31 @@ function tkMergePick(autoId) {
     <div class="acts"><button class="btn" data-act="mclose">إلغاء</button></div>`);
   m.addEventListener('click', e => { const r = e.target.closest('[data-mt]'); if (r) tkMerge(r.dataset.mt, a.txId); });
 }
+const tkCanEdit = t => !!t && !t.auto && (t.local || !!OPS.tasks[t.id]) && (isPriv() || t.by === ME.id || tkMine(t));
+/* تعديل المهمة: النص والمكلَّف والتاريخ والملاحظة/المكان */
+function tkEdit(id) {
+  const t = tkGet(id); if (!tkCanEdit(t)) return toast('مش مسموح تعديل المهمة دي', 'err');
+  const rec = t.local ? tkRecs()[id] : null, users = liveUsers().filter(u => +u.active !== 0), wk = nkey(bareName(t.who));
+  const cats = t.local ? list('taskCats') : [];
+  const m = modal(`<h3>✏️ تعديل المهمة</h3><div class="small muted" style="margin-bottom:8px">${esc(t.clientName || '')}</div>
+    ${fld('المهمة', `<input id="te-t" class="inp" value="${esc(t.text)}">${cats.length ? `<div class="chips" id="te-cats" style="margin-top:6px">${cats.map(c => `<button type="button" class="chip ${c === t.text ? 'on' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}`, { req: 1 })}
+    ${fld('المكلَّف بها', `<select id="te-w" class="inp"><option value="">— بدون —</option>${users.map(u => `<option value="${esc(u.name)}" ${nkey(bareName(u.name)) === wk ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+    ${fld('التاريخ', `<input id="te-d" type="date" class="inp" value="${esc(t.due || '')}">`)}
+    ${t.local ? fld('ملاحظات', `<input id="te-n" class="inp" value="${esc(t.note || '')}">`) : fld('المكان', `<input id="te-p" class="inp" value="${esc(t.place || '')}">`)}
+    <div class="acts"><button class="btn pri" id="te-ok">حفظ التعديل</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  m.addEventListener('click', e => { const c = e.target.closest('[data-cat]'); if (!c) return; $('#te-t').value = c.dataset.cat; m.querySelectorAll('#te-cats .chip').forEach(b => b.classList.toggle('on', b === c)); });
+  m.querySelector('#te-ok').onclick = () => {
+    const text = $('#te-t').value.trim(), who = $('#te-w').value, due = $('#te-d').value;
+    if (!text) return toast('اكتبي المهمة', 'err');
+    if (t.local) {
+      if (!rec) return toast('المهمة مش موجودة', 'err');
+      Object.assign(rec, { cat: text, text, who, due, note: $('#te-n').value.trim(), upd: nowIso(), updBy: ME.id }); tkRecSave(rec);
+    } else {
+      opsSet(t.id, { t: text, who, due, place: $('#te-p').value.trim() }, true); opsRefresh();
+    }
+    closeModal(); toast('اتعدّلت المهمة'); render();
+  };
+}
 function openTaskMore(id) {
   if (id.startsWith('AP-')) return apForm(id.slice(3));
   if (id.startsWith('CL-')) return collForm(id.slice(3));
@@ -6111,8 +6136,9 @@ function openTaskMore(id) {
       ${(mx => mx.length ? fld('🔗 المهمة اتنفذت بمصروف متسجّل؟ ادمجها معاه', `<div class="card">${mx.map(x => `<div class="lrow" data-mx="${esc(x.txId)}" style="cursor:pointer"><div class="grow"><b>${esc(x.text)}</b><div class="small muted">${esc(bareName(x.who))} · ${esc(x.d)} · ${fmt(+(D.txs[x.txId] || {}).amount || 0)}</div></div><span class="btn sm pri">دمج</span></div>`).join('')}</div>`) : '')(tkMergeTxs(t))}
       ${fld('إعادة توزيع لزميل آخر', `<div class="row wrap"><select id="tx-re" class="inp" style="flex:1 1 160px"><option value="">اختر الزميل…</option>${liveUsers().filter(u => +u.active !== 0 && nkey(bareName(u.name)) !== nkey(bareName(t.who))).map(u => `<option value="${esc(u.name)}">${esc(bareName(u.name))}</option>`).join('')}</select><button class="btn" id="tx-reb">إعادة التوزيع</button></div>`)}
       ${fld('لم تُنفَّذ؟ اكتب السبب', `<input id="tx-why" class="inp" placeholder="مثال: الموظف المختص غير موجود">`)}</div>
-    <div class="acts"><button class="btn" id="tx-nx">تسجيل «لم تُنفَّذ»</button>${t.local && (isPriv() || t.by === ME.id) ? `<button class="btn danger" id="tx-del">حذف المهمة</button>` : ''}<button class="btn" data-act="mclose">إغلاق</button></div>`);
+    <div class="acts">${tkCanEdit(t) ? `<button class="btn pri" id="tx-ed">✏️ تعديل المهمة</button>` : ''}<button class="btn" id="tx-nx">تسجيل «لم تُنفَّذ»</button>${t.local && (isPriv() || t.by === ME.id) ? `<button class="btn danger" id="tx-del">حذف المهمة</button>` : ''}<button class="btn" data-act="mclose">إغلاق</button></div>`);
   m.addEventListener('click', e => { const r = e.target.closest('[data-mx]'); if (r) tkMerge(t.id, r.dataset.mx); });
+  const ed = m.querySelector('#tx-ed'); if (ed) ed.onclick = () => { closeModal(); tkEdit(t.id); };
   m.querySelector('#tx-reb').addEventListener('click', () => {
     const w = m.querySelector('#tx-re').value; if (!w) return toast('اختر الزميل أولًا', 'err');
     opsSet(t.id, { who: w }, true); closeModal(); toast('أُعيد توزيع المهمة على ' + bareName(w)); opsRefresh(); if (route().name === 'client') render();
@@ -7508,6 +7534,7 @@ Object.assign(ACT, {
   'um-go': el => { closeModal(); go(el.dataset.h); },
   'um-out': () => { closeModal(); ACT.logout(); },
   'co-w': el => { CO.w = el.dataset.k; stRe(); },
+  'tk-edit': el => { const id = el.dataset.id; if (id.startsWith('AP-')) return apForm(id.slice(3)); if (id.startsWith('CL-')) return collForm(id.slice(3)); tkEdit(id); },
   'tk-arch': el => { const st = tkArchSet(); st.add(el.dataset.id); tkArchSave(st); toast('اتأرشفت'); stRe(); },
   'tk-arch-late': async () => { const L = tkAll().filter(t => /^(TF|RN)-/.test(t.id) && tkOpen(t) && tkLate(t)); if (!L.length) return; if (!(await ask('أرشفة ' + L.length + ' مهمة نظام متأخرة؟ تقدري ترجعيهم من الأرشيف.', 'أرشفة'))) return; const st = tkArchSet(); L.forEach(t => st.add(t.id)); tkArchSave(st); toast('اتأرشفوا ' + L.length); stRe(); },
   'tk-arch-view': () => { LS.set('tkArchOn', LS.get('tkArchOn', 0) ? 0 : 1); stRe(); },
@@ -7696,6 +7723,7 @@ const TIPS = {
   'tk-add': ['مهمة جديدة', 'إضافة مهمة لعميل وتكليفها لزميل مع ميعاد.'],
   'tk-done': ['إتمام', 'تعليم المهمة كمنتهية.'],
   'tk-more': ['خيارات المهمة', 'تسجيل مصروف، إعادة توزيع لزميل، أو تسجيل إنها لم تُنفَّذ.'],
+  'tk-edit': ['تعديل المهمة', 'تغيير نص المهمة أو المكلَّف بيها أو تاريخها أو ملاحظاتها.'],
   'tk-arch': ['أرشفة', 'إخفاء مهمة النظام من القايمة (تقدري ترجعيها من الأرشيف).'],
   'tk-arch-late': ['أرشفة المتأخرة', 'أرشفة كل مهام النظام المتأخرة مرة واحدة.'],
   'tk-unarch': ['استرجاع', 'إرجاع المهمة المؤرشفة للقايمة.'],
