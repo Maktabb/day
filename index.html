@@ -1768,7 +1768,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-200000';
+const BUILD = '20261122-220000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3152,7 +3152,7 @@ function printAccount(id) {
   const inT = r2(rows.filter(x => x.v > 0).reduce((n, x) => n + x.v, 0)), outT = r2(rows.filter(x => x.v < 0).reduce((n, x) => n - x.v, 0));
   const out = rows.map(({ t, v, bal }, i) => [i + 1, `<span class="num">${t.date}</span>`, esc((TYPES[t.type] || {}).s || ''), esc(pdDesc(t) + (t.clientId ? ' · ' + clientName(t.clientId) : '')), v > 0 ? fmt(v) : '', v < 0 ? fmt(-v) : '', `<b>${pdNum(bal)}</b>`]);
   if (from !== '0000') out.unshift({ cls: 'pd-open', v: ['—', `<span class="num">${from}</span>`, '', '<b>رصيد أول الفترة</b>', '', '', `<b>${pdNum(opening)}</b>`] });
-  printDoc({ title: 'كشف حساب ' + a.name, file: 'كشف_' + a.name + '_' + today(),
+  printDoc({ title: 'كشف حساب ' + a.name, file: 'كشف حساب ' + a.name,
     info: [['الحساب', esc(a.name)], ['الفترة', pdPer(from, to)]],
     kpis: [['رصيد أول الفترة', pdNum(opening)], ['وارد الفترة', fmt(inT)], ['صادر الفترة', fmt(outT), 'neg'], ['رصيد آخر الفترة', pdNum(rows.length ? rows[rows.length - 1].bal : opening)]],
     cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'التاريخ', c: 1 }, { h: 'النوع', c: 1 }, { h: 'البيان' }, { h: 'وارد', n: 1 }, { h: 'صادر', n: 1 }, { h: 'الرصيد', n: 1 }],
@@ -5152,7 +5152,10 @@ const ACT = {
   'client-merge': el => openMergeModal(el.dataset.id),
   'client-del': el => deleteClient(el.dataset.id),
   print: () => { if (route().name === 'account' && AS.limit < 1e9) { AS.limit = 1e9; render(); }
-    const onCl = route().name === 'client'; document.body.classList.toggle('print-src', onCl && !!CST.src); document.body.classList.toggle('print-notyp', onCl && !CST.typ); return window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(); },
+    const onCl = route().name === 'client'; document.body.classList.toggle('print-src', onCl && !!CST.src); document.body.classList.toggle('print-notyp', onCl && !CST.typ);
+    const oldT = document.title, r0 = route(); if (onCl && D.clients[resCid(r0.arg)]) document.title = ('كشف حساب ' + D.clients[resCid(r0.arg)].name).replace(/[\\/:*?"<>|]/g, '-'); else if (r0.name === 'account' && accById(r0.arg)) document.title = 'كشف حساب ' + accById(r0.arg).name;
+    const back = () => { document.title = oldT; }; window.addEventListener('afterprint', back, { once: true }); setTimeout(back, 8000);
+    return window.AndroidBridge ? AndroidBridge.print(document.title || 'اليومية') : window.print(); },
   'dup-keep': el => mergeClients(el.dataset.k, el.dataset.d),
   'dup-no': el => {
     const { a, b } = el.dataset;
@@ -7269,7 +7272,7 @@ function fuPrint(id) {
   const nxt = F.work.filter(x => !x.fin && wkNext(x)), strip = s => String(s || '').replace(/<[^>]+>/g, '');
   const sec = (t, b) => `<div class="crm-part"><div class="crm-pt">${t}</div>${b}</div>`;
   const ul = L => L.length ? `<table class="pd-t"><tbody>${L.join('')}</tbody></table>` : '<p>—</p>';
-  printDoc({ title: 'تقرير متابعة عميل', file: 'متابعة_' + c.name,
+  printDoc({ title: 'تقرير متابعة عميل', file: 'تقرير متابعة ' + c.name,
     info: [['العميل', `<b>${esc(c.name)}</b>`], ['الموبايل', esc(c.phone || '—')], ['الخدمات', esc(sv.map(x => x[0].replace(/^\S+\s/, '')).join('، ') || '—')]],
     kpis: [['طلبات مفتوحة', req.length], ['مراحل تمت', done.length], ['مهام مخططة', plan.length + nxt.length], ['الأتعاب', fmt(P.fee)], [P.bal < -0.004 ? 'المستحق عليه' : 'الرصيد له', fmt(Math.abs(P.bal)), P.bal < -0.004 ? 'neg' : '']],
     body: sec('📥 طلبات العميل', ul(req.map(x => `<tr><td>${esc(x.t)}</td><td>${strip(x.sub)}</td></tr>`)))
