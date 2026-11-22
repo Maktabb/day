@@ -1250,8 +1250,11 @@ const monthStart = d => d.slice(0, 8) + '01';
 const nowIso = () => new Date().toISOString();
 const uid = p => p + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-const dLong = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return d; } };
-const dShort = d => { if (!d) return ''; const [y, m, dd] = d.split('-'); return `${+dd} ${AR_MONTHS[+m - 1]}`; };
+const AR_DIG = v => String(v).replace(/\d/g, c => '٠١٢٣٤٥٦٧٨٩'[c]);
+/* التاريخ للعرض: يوم شهر(بالاسم) سنة بالعربي — مثال ٢٣ نوفمبر ٢٠٢٦ */
+const dA = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? AR_DIG(+m[3] + ' ' + AR_MONTHS[+m[2] - 1] + ' ' + m[1]) : (d || ''); };
+const dLong = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return d; } };
+const dShort = d => d ? dA(d) : '';
 const monthName = ym => { const [y, m] = ym.split('-'); return AR_MONTHS[+m - 1] + ' ' + y; };
 
 function parseAmount(v) {
@@ -1768,7 +1771,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-010000';
+const BUILD = '20261123-014500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3404,7 +3407,7 @@ function vCollect(r, el) {
     ${rows.length ? rows.map(({ x, s, owe, own, lbl }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td, has = owe > 0.004;
       return `<div class="card co-c${isLate ? ' late' : ''}"><div class="co-top"><a class="co-n" href="#client/${c.id}">${esc(c.name)}</a>
           <div class="co-amt"><small>${lbl ? esc(lbl) : (has ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد'))}</small><b class="${has ? 'neg' : 'pos'}">${fmt(has ? owe : Math.max(s.bal || 0, 0))}</b></div></div>
-        <div class="co-meta">${x.w ? `<span class="co-w">👤 ${esc(collWho(x))}</span>` : ''}${lbl ? `<span>رصيده الكلي <b class="num ${own > 0.004 ? 'neg' : ''}">${fmt(own)}</b></span>` : ''}${c.phone ? `<span class="num">📞 ${esc(c.phone)}</span>` : ''}<span>آخر نشاط <span class="num">${esc(s.last || '—')}</span></span>${x.d ? `<span class="${isLate ? 'neg' : ''}">الموعد <span class="num">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}</span>` : ''}</div>
+        <div class="co-meta">${x.w ? `<span class="co-w">👤 ${esc(collWho(x))}</span>` : ''}${lbl ? `<span>رصيده الكلي <b class="num ${own > 0.004 ? 'neg' : ''}">${fmt(own)}</b></span>` : ''}${c.phone ? `<span class="num">📞 ${esc(c.phone)}</span>` : ''}<span>آخر نشاط <span class="num">${esc(s.last || '—')}</span></span>${x.d ? `<span class="${isLate ? 'neg' : ''}">الموعد <span class="num">${esc(dA(x.d))}</span>${isLate ? ' ⚠️ متأخر' : ''}</span>` : ''}</div>
         ${x.n ? `<div class="co-note">📝 ${esc(x.n)}</div>` : ''}
         <div class="co-acts no-print">
           ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 15)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} كشف</button>` : ''}
@@ -3567,7 +3570,7 @@ function vDeliver(r, el) {
     ${L.length ? L.map(x => { const c = D.clients[x.c], p = dlPend(x), isLate = p && x.d && x.d < td;
       return `<div class="card pad" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:10px">
         <div class="grow"><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>
-          <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(x.d)}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
+          <div class="small muted">${c.phone ? `<span class="num">${esc(c.phone)}</span> · ` : ''}${x.d ? `الموعد: <span class="num ${isLate ? 'neg' : ''}">${esc(dA(x.d))}</span>${isLate ? ' ⚠️ متأخر' : ''}` : 'بدون موعد'}</div>
           ${dlWho(x) ? `<div class="small" style="margin-top:4px">👤 القائم بالمهمة: <b>${esc(bareName(dlWho(x).name))}</b></div>` : ''}${x.cn || x.cp ? `<div class="small" style="margin-top:2px">☎️ جهة التواصل: ${esc(x.cn || '')} <span class="num">${esc(x.cp || '')}</span></div>` : ''}
           ${x.n ? `<div class="small" style="margin-top:4px">📝 ${esc(x.n)}</div>` : ''}</div>
         <span class="badge">${DLK[dlKind(x)][3]} ${DLK[dlKind(x)][0]}</span><span class="badge ${p ? 'warn' : ''}">${p ? p + ' ' + DLK[dlKind(x)][2] : (dlKind(x) === 'in' ? 'تم الاستلام كله ✓' : 'تم التسليم كله ✓')}</span></div>
@@ -3646,7 +3649,7 @@ function dsumHomeCard(view) {
   if (!imp.length) return;
   const d = document.createElement('div'); d.className = 'card';
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>⭐ ملاحظات مهمة من الفريق</b><span class="sp"></span><span class="small muted">${imp.length}</span></div>
-    ${imp.slice(0, 6).map(r => `<div class="lrow" style="align-items:flex-start"><div class="grow"><b>${esc(hrName(r.u))}</b> <span class="small muted">${esc(r.d)}</span><div style="white-space:pre-wrap">${esc(r.n)}</div></div><button class="btn sm" data-act="dsum-ok" data-k="${esc(r._k)}">تمت ✓</button></div>`).join('')}`;
+    ${imp.slice(0, 6).map(r => `<div class="lrow" style="align-items:flex-start"><div class="grow"><b>${esc(hrName(r.u))}</b> <span class="small muted">${esc(dA(r.d))}</span><div style="white-space:pre-wrap">${esc(r.n)}</div></div><button class="btn sm" data-act="dsum-ok" data-k="${esc(r._k)}">تمت ✓</button></div>`).join('')}`;
   (view.querySelector('.hops') || view).prepend(d);
 }
 const dlWho = x => x.who ? userById(x.who) : null;
@@ -3730,7 +3733,7 @@ function dlHomeCard(view) {
   const d = document.createElement('div'); d.className = 'card';
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>📦 التسليم</b><span class="sp"></span><a href="#deliver" class="small">كل التسليمات ←</a></div>
     ${L.length ? `<div class="tks"><div class="tks-i"><b>${L.length}</b><small>ملفات</small></div><div class="tks-i"><b>${left}</b><small>مستندات لم تُسلَّم</small></div><div class="tks-i ${late ? 'late' : ''}"><b>${late}</b><small>متأخر</small></div></div>
-    ${L.slice(0, 4).map(x => `<a class="lrow" href="#deliver"><b class="grow">${esc(clientName(x.c))}</b><span class="small muted">${dlPend(x)} مستند${x.d ? ' · ' + esc(x.d) : ''}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">✅ لا توجد مستندات مطلوب تسليمها.</div>`}`;
+    ${L.slice(0, 4).map(x => `<a class="lrow" href="#deliver"><b class="grow">${esc(clientName(x.c))}</b><span class="small muted">${dlPend(x)} مستند${x.d ? ' · ' + esc(dA(x.d)) : ''}</span></a>`).join('')}` : `<div class="small muted" style="padding:6px 14px 12px">✅ لا توجد مستندات مطلوب تسليمها.</div>`}`;
   (view.querySelector('.hops') || view).appendChild(d);
 }
 function printCollect() {
@@ -3759,7 +3762,7 @@ function taxSection() {
     ${L.length ? `<div class="card tblwrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>العميل</th><th>الموبايل</th><th class="n">المطالبة</th><th>النوع</th><th>التاريخ</th><th class="no-print"></th></tr></thead><tbody>
       ${L.map(({ t, c, done }) => `<tr style="${done ? 'opacity:.55' : ''}"><td><a href="#client/${c.id}"><b>${esc(c.name)}</b></a>${t.description ? `<div class="small muted">${esc(t.description)}</div>` : ''}</td>
         <td class="num">${c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '—'}</td>
-        <td class="n"><b>${fmt(+t.amount || 0)}</b></td><td><span class="stk">${esc(t.category || 'أخرى')}</span></td><td class="num">${esc(t.date)}</td>
+        <td class="n"><b>${fmt(+t.amount || 0)}</b></td><td><span class="stk">${esc(t.category || 'أخرى')}</span></td><td class="num">${esc(dA(t.date))}</td>
         <td class="no-print" style="white-space:nowrap"><button class="btn sm ${done ? '' : 'pri'}" data-act="tax-done" data-id="${t.id}">${done ? 'إعادة فتح' : '✔ تمت المتابعة'}</button></td></tr>`).join('')}</tbody></table></div>`
     : `<div class="card pad empty" style="margin-top:10px">لا توجد مطالبات ضرائب. سجّلي مطالبة من «حركة جديدة ← مطالبة ← مطالبة ضرائب».</div>`}`;
 }
@@ -3769,7 +3772,7 @@ function printTaxc() {
     info: [['عدد المطالبات المفتوحة', String(L.length)], ['إجمالي المطالبات', fmt(tot)]],
     kpis: [['مطالبات مفتوحة', L.length], ['الإجمالي', fmt(tot), 'neg']],
     cols: [{ h: 'م', c: 1, w: '32px' }, { h: 'العميل' }, { h: 'الموبايل', c: 1 }, { h: 'النوع' }, { h: 'التاريخ', c: 1 }, { h: 'ملاحظة' }, { h: 'المطالبة', n: 1 }],
-    rows: L.map(({ t, c }, i) => [i + 1, esc(c.name), `<span class="num">${esc(c.phone || '')}</span>`, esc(t.category || 'أخرى'), esc(t.date), esc(t.description || ''), `<b>${fmt(+t.amount || 0)}</b>`]),
+    rows: L.map(({ t, c }, i) => [i + 1, esc(c.name), `<span class="num">${esc(c.phone || '')}</span>`, esc(t.category || 'أخرى'), esc(dA(t.date)), esc(t.description || ''), `<b>${fmt(+t.amount || 0)}</b>`]),
     foot: [['الإجمالي (' + L.length + ' مطالبة)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
 }
 function collForm(id) {
@@ -3786,7 +3789,7 @@ function collForm(id) {
     const st = cliStat(resCid(pick)), own = Math.max(r2(-(st.bal || 0)), 0), items = billGet(resCid(pick)).items || [];
     const chip = (k, l) => `<button class="chip ${mode === k ? 'on' : ''}" data-m="${k}" style="justify-content:flex-start">${mode === k ? '◉' : '○'} ${l}</button>`;
     box.innerHTML = fld('المطلوب تحصيله', `<div style="display:grid;gap:6px">${chip('bal', `الرصيد المستحق عليه <b class="num">${fmt(own)}</b> ج`)}
-      ${chip('agree', 'دفعة من الاتفاق')}${mode === 'agree' ? (items.length ? `<select id="cl-ai" class="inp">${items.map((it, i) => `<option value="${i}" ${(+cur.ai || 0) === i ? 'selected' : ''}>${esc(it.t || 'دفعة ' + (i + 1))} — ${fmt(+it.amt || 0)} ج${it.d ? ' (' + esc(it.d) + ')' : ''}</option>`).join('')}</select>` : '<div class="small neg">مفيش دفعات متسجّلة في اتفاق العميل. ضيفيها من «نوع المحاسبة» في صفحته.</div>') : ''}
+      ${chip('agree', 'دفعة من الاتفاق')}${mode === 'agree' ? (items.length ? `<select id="cl-ai" class="inp">${items.map((it, i) => `<option value="${i}" ${(+cur.ai || 0) === i ? 'selected' : ''}>${esc(it.t || 'دفعة ' + (i + 1))} — ${fmt(+it.amt || 0)} ج${it.d ? ' (' + esc(dA(it.d)) + ')' : ''}</option>`).join('')}</select>` : '<div class="small neg">مفيش دفعات متسجّلة في اتفاق العميل. ضيفيها من «نوع المحاسبة» في صفحته.</div>') : ''}
       ${chip('amt', 'دفعة أخرى (مبلغ أكتبه)')}${mode === 'amt' ? `<input id="cl-a" type="number" step="0.01" inputmode="decimal" class="inp num" placeholder="المبلغ" value="${cur.m === 'amt' ? esc(cur.a || '') : ''}">` : ''}
       ${chip('pick', 'حركات محددة من الحساب (زي الفاتورة)')}${mode === 'pick' ? pkBox() : ''}</div>`);
     if (mode === 'pick') pkTot();
@@ -3795,7 +3798,7 @@ function collForm(id) {
   const pkNet = () => { const L = pkRows().filter(r => pk.has(r.t.id)); return r2(L.reduce((a, r) => a + r.dr - r.cr, 0)); };
   const pkTot = () => { const e = m.querySelector('#pk-t'); if (e) { const v = pkNet(); e.innerHTML = `${pk.size} حركة · المطلوب تحصيله <b class="num ${v > 0 ? 'neg' : ''}">${fmt(Math.max(v, 0))}</b> ج`; } };
   const pkBox = () => { const L = pkRows(); return `<div class="small muted">علّمي الحركات اللي عايزة تطلبي تحصيلها (الأتعاب والمصروفات بتتجمع، والمدفوع بيتخصم).</div>
-      <div class="card" style="max-height:230px;overflow:auto">${L.length ? L.map(r => `<label class="lrow" style="gap:8px;cursor:pointer"><input type="checkbox" data-pk="${esc(r.t.id)}" ${pk.has(r.t.id) ? 'checked' : ''}><span class="small muted num" style="min-width:70px">${esc(r.t.date)}</span><span class="grow small">${esc(docDesc(r))}</span><b class="num ${r.cr ? 'pos' : 'neg'}">${r.cr ? '+' + fmt(r.cr) : fmt(r.dr)}</b></label>`).join('') : '<div class="empty">مفيش حركات على العميل</div>'}</div>
+      <div class="card" style="max-height:230px;overflow:auto">${L.length ? L.map(r => `<label class="lrow" style="gap:8px;cursor:pointer"><input type="checkbox" data-pk="${esc(r.t.id)}" ${pk.has(r.t.id) ? 'checked' : ''}><span class="small muted num" style="min-width:70px">${esc(dA(r.t.date))}</span><span class="grow small">${esc(docDesc(r))}</span><b class="num ${r.cr ? 'pos' : 'neg'}">${r.cr ? '+' + fmt(r.cr) : fmt(r.dr)}</b></label>`).join('') : '<div class="empty">مفيش حركات على العميل</div>'}</div>
       <div class="row" style="gap:6px"><button type="button" class="btn sm" data-pkall="1">تحديد الكل</button><button type="button" class="btn sm" data-pkall="0">مسح التحديد</button></div>
       <div class="small muted" style="margin-top:4px">＋ أتعاب جديدة (بتتسجّل على حساب العميل):</div>
       <div class="row" style="gap:6px"><input id="pk-d" class="inp grow" placeholder="البيان" value="أتعاب"><input id="pk-a" type="number" step="0.01" inputmode="decimal" class="inp num" placeholder="المبلغ" style="width:96px"><button type="button" class="btn sm pri" data-pkfee="1">إضافة</button></div>
@@ -4185,7 +4188,7 @@ function exclTab(from, to) {
   return `<div class="note info" style="margin-top:12px">${icon('info', 18)}<div>مصروفات سجّلها الفريق على عملاء ولا بنحاسبهم عليها: خارج كشف حساب العميل وخارج الطباعة، لكنها داخلة في ربحية العملية وأرباح وخسارة المكتب.</div></div>
     <div class="grid g4" style="margin-top:10px"><div class="card kpi hl"><div class="l">إجمالي المستبعد في الفترة</div><div class="v neg">${money(tot)} <small>ج.م</small></div></div><div class="card kpi"><div class="l">عدد الحركات</div><div class="v">${L.length}</div></div><div class="card kpi"><div class="l">عدد العملاء</div><div class="v">${gs.length}</div></div></div>
     ${gs.length ? gs.map(([k, a, sm]) => `<div class="card" style="margin-top:10px"><div class="row" style="padding:10px 14px;align-items:center"><b class="grow"><a href="#client/${k}">${esc(clientName(k))}</a></b><b class="num neg">${fmt(sm)}</b></div>
-      ${a.map(t => `<div class="lrow" data-act="tx" data-id="${t.id}"><span class="num small muted" style="min-width:76px">${esc(t.date)}</span><div class="grow"><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}<div class="small muted">${esc(accName(t.fromAcc).replace('عهدة ', ''))}</div></div><b class="num">${fmt(+t.amount || 0)}</b><button class="btn sm ghost no-print" data-act="tx-excl" data-id="${t.id}">رجّعها للعميل</button></div>`).join('')}</div>`).join('') : '<div class="card pad empty" style="margin-top:10px">لا توجد مصروفات مستبعدة في هذه الفترة.</div>'}`;
+      ${a.map(t => `<div class="lrow" data-act="tx" data-id="${t.id}"><span class="num small muted" style="min-width:76px">${esc(dA(t.date))}</span><div class="grow"><span class="stk">${esc((TYPES[t.type] || {}).s || '')}</span> ${esc(t.category || t.description || '')}<div class="small muted">${esc(accName(t.fromAcc).replace('عهدة ', ''))}</div></div><b class="num">${fmt(+t.amount || 0)}</b><button class="btn sm ghost no-print" data-act="tx-excl" data-id="${t.id}">رجّعها للعميل</button></div>`).join('')}</div>`).join('') : '<div class="card pad empty" style="margin-top:10px">لا توجد مصروفات مستبعدة في هذه الفترة.</div>'}`;
 }
 /* حركات يومية الإكسيل القديمة لعضو الفريق (للاطلاع، رصيدها الختامي = الرصيد الافتتاحي المرحّل) */
 const AL = {};
@@ -4704,7 +4707,7 @@ function hrAdv() {
     ${byU.length ? `<h2 class="sec">المتبقي على كل موظف</h2><div class="grid gk">${byU.map(([u, v]) => `<div class="card kpi"><div class="l">${esc(bareName(u.name))}</div><div class="v ${v > 0 ? 'neg' : ''}">${fmt(v)} <small>ج.م</small></div></div>`).join('')}</div>` : ''}
     <h2 class="sec">السلف</h2>
     <div class="card">${L.length ? L.map(r => { const p = paid(r), rm = rem(r), inst = +r.inst > 1 ? r2(+r.amt / +r.inst) : 0; return `<div class="lrow" style="cursor:default;flex-wrap:wrap"><div class="grow"><b>${esc(hrName(r.u))}</b> · <span class="num">${fmt(+r.amt)}</span>${inst ? ` <span class="small muted">(${r.inst} أقساط × ${fmt(inst)})</span>` : ''}
-        <div class="small muted">${esc(r.d)}${r.n ? ' · ' + esc(r.n) : ''} · اتسدد ${fmt(p)} · <b class="${rm > 0 ? 'neg' : 'pos'}">المتبقي ${fmt(rm)}</b>${(r.pays || []).length ? ' · السداد: ' + r.pays.map(x => `${esc(x.d)} (${fmt(+x.a)})`).join('، ') : ''}</div></div>
+        <div class="small muted">${esc(dA(r.d))}${r.n ? ' · ' + esc(r.n) : ''} · اتسدد ${fmt(p)} · <b class="${rm > 0 ? 'neg' : 'pos'}">المتبقي ${fmt(rm)}</b>${(r.pays || []).length ? ' · السداد: ' + r.pays.map(x => `${esc(dA(x.d))} (${fmt(+x.a)})`).join('، ') : ''}</div></div>
         ${rm > 0 ? `<button class="btn sm pri" data-act="hr-av-pay" data-k="${r._k}">تسجيل سداد</button>` : '<span class="small pos">✅ مسدّدة</span>'}<button class="btn sm danger" data-act="hr-del" data-k="${r._k}">حذف</button></div>`; }).join('') : '<div class="empty">لا توجد سلف.</div>'}</div>`;
 }
 function hrEval() {
@@ -6172,8 +6175,8 @@ function tkMergePick(autoId) {
   const a = tkGet(autoId); if (!a) return;
   const L = tkMergeCands(a.cid);
   if (!L.length) return toast('مفيش مهام لنفس العميل ينفع تتدمج مع المصروف ده', 'err');
-  const m = modal(`<h3>🔗 دمج المصروف مع مهمة</h3><p class="small muted" style="margin:0 0 10px">المصروف: <b>${esc(a.text)}</b> · ${fmt(+(D.txs[a.txId] || {}).amount || 0)} · ${esc(a.d)}<br>اختر المهمة اللي المصروف ده كان تنفيذها — هتتقفل (لو مفتوحة) وتتربط بالمصروف، ويختفي التكرار.</p>
-    <div class="card">${L.map(t => `<div class="lrow" data-mt="${esc(t.id)}" style="cursor:pointer"><div class="grow"><b>${esc(t.text)}</b><div class="small muted">${esc(tkWhoName(t))}${t.due ? ' · ' + esc(t.due) : ''} · ${tkOpen(t) ? 'مفتوحة' : 'مقفولة'}</div></div><span class="btn sm pri">دمج</span></div>`).join('')}</div>
+  const m = modal(`<h3>🔗 دمج المصروف مع مهمة</h3><p class="small muted" style="margin:0 0 10px">المصروف: <b>${esc(a.text)}</b> · ${fmt(+(D.txs[a.txId] || {}).amount || 0)} · ${esc(dA(a.d))}<br>اختر المهمة اللي المصروف ده كان تنفيذها — هتتقفل (لو مفتوحة) وتتربط بالمصروف، ويختفي التكرار.</p>
+    <div class="card">${L.map(t => `<div class="lrow" data-mt="${esc(t.id)}" style="cursor:pointer"><div class="grow"><b>${esc(t.text)}</b><div class="small muted">${esc(tkWhoName(t))}${t.due ? ' · ' + esc(dA(t.due)) : ''} · ${tkOpen(t) ? 'مفتوحة' : 'مقفولة'}</div></div><span class="btn sm pri">دمج</span></div>`).join('')}</div>
     <div class="acts"><button class="btn" data-act="mclose">إلغاء</button></div>`);
   m.addEventListener('click', e => { const r = e.target.closest('[data-mt]'); if (r) tkMerge(r.dataset.mt, a.txId); });
 }
@@ -6213,7 +6216,7 @@ function openTaskMore(id) {
   const m = modal(`<h3>${esc(t.text)}</h3><div class="small muted" style="margin-bottom:10px">${esc(t.clientName)}${t.who ? ' · ' + esc(tkWhoName(t)) : ''}</div>
     ${types.length ? `<div class="small muted">تسجيل حركة مالية لهذا العميل وإغلاق المهمة معها</div><div class="row wrap" style="margin:6px 0 14px">${types.map(k => `<button class="btn sm" data-go="${k}">${esc(TYPES[k].n)}</button>`).join('')}</div>` : ''}
     <div class="form">${t.note ? `<div class="note info" style="margin-bottom:8px"><div>📝 ${esc(t.note)}</div></div>` : ''}
-      ${(mx => mx.length ? fld('🔗 المهمة اتنفذت بمصروف متسجّل؟ ادمجها معاه', `<div class="card">${mx.map(x => `<div class="lrow" data-mx="${esc(x.txId)}" style="cursor:pointer"><div class="grow"><b>${esc(x.text)}</b><div class="small muted">${esc(bareName(x.who))} · ${esc(x.d)} · ${fmt(+(D.txs[x.txId] || {}).amount || 0)}</div></div><span class="btn sm pri">دمج</span></div>`).join('')}</div>`) : '')(tkMergeTxs(t))}
+      ${(mx => mx.length ? fld('🔗 المهمة اتنفذت بمصروف متسجّل؟ ادمجها معاه', `<div class="card">${mx.map(x => `<div class="lrow" data-mx="${esc(x.txId)}" style="cursor:pointer"><div class="grow"><b>${esc(x.text)}</b><div class="small muted">${esc(bareName(x.who))} · ${esc(dA(x.d))} · ${fmt(+(D.txs[x.txId] || {}).amount || 0)}</div></div><span class="btn sm pri">دمج</span></div>`).join('')}</div>`) : '')(tkMergeTxs(t))}
       ${fld('إعادة توزيع لزميل آخر', `<div class="row wrap"><select id="tx-re" class="inp" style="flex:1 1 160px"><option value="">اختر الزميل…</option>${liveUsers().filter(u => +u.active !== 0 && nkey(bareName(u.name)) !== nkey(bareName(t.who))).map(u => `<option value="${esc(u.name)}">${esc(bareName(u.name))}</option>`).join('')}</select><button class="btn" id="tx-reb">إعادة التوزيع</button></div>`)}
       ${fld('لم تُنفَّذ؟ اكتب السبب', `<input id="tx-why" class="inp" placeholder="مثال: الموظف المختص غير موجود">`)}</div>
     <div class="acts">${tkCanEdit(t) ? `<button class="btn pri" id="tx-ed">✏️ تعديل المهمة</button>` : ''}<button class="btn" id="tx-nx">تسجيل «لم تُنفَّذ»</button>${t.local && (isPriv() || t.by === ME.id) ? `<button class="btn danger" id="tx-del">حذف المهمة</button>` : ''}<button class="btn" data-act="mclose">إغلاق</button></div>`);
@@ -6725,7 +6728,7 @@ function vTaxes(r, el) {
   } else {
     const R = crmRenewals();
     body = `${R.list.length ? `<div class="card">${R.list.map(x => `<div class="lrow"><div class="grow"><b>${esc(x.c.name)}</b><div class="small">${x.t}</div><div class="small ${x.due < td ? 'neg' : 'muted'}">${x.due < td ? 'انتهى' : 'ينتهي'} ${dayAr(x.due)}</div></div><button class="btn sm pri" data-act="rn-do" data-id="${x.id}">تحديث</button></div>`).join('')}</div>` : '<div class="card pad empty">مفيش مستخرجات أو أختام هتنتهي خلال 30 يوم ✅</div>'}
-      ${R.pend.length ? `<div class="tk-g">📄 مستخرج سجل في اليومية لعميل عنده أكتر من شركة — حدّدي الشركة</div><div class="card">${R.pend.slice(0, 30).map(x => `<div class="lrow" style="flex-wrap:wrap;gap:6px"><div class="grow small"><b>${esc(x.p.name)}</b> — ${esc(x.t.date)} ${esc(x.t.description || x.t.category || '')}</div>${x.cos.map(c => `<button class="btn sm" data-act="rn-pick" data-c="${c.id}" data-d="${esc(x.t.date)}">${esc(c.name)}</button>`).join('')}</div>`).join('')}</div>` : ''}`;
+      ${R.pend.length ? `<div class="tk-g">📄 مستخرج سجل في اليومية لعميل عنده أكتر من شركة — حدّدي الشركة</div><div class="card">${R.pend.slice(0, 30).map(x => `<div class="lrow" style="flex-wrap:wrap;gap:6px"><div class="grow small"><b>${esc(x.p.name)}</b> — ${esc(dA(x.t.date))} ${esc(x.t.description || x.t.category || '')}</div>${x.cos.map(c => `<button class="btn sm" data-act="rn-pick" data-c="${c.id}" data-d="${esc(x.t.date)}">${esc(c.name)}</button>`).join('')}</div>`).join('')}</div>` : ''}`;
   }
   const users = [...new Set(all.map(f => f.who).filter(Boolean))].map(userById).filter(Boolean);
   el.innerHTML = `<h1 class="pg">🏛️ الضرائب ${me ? '<small>(المسندة ليك)</small>' : ''}</h1>
@@ -7033,7 +7036,7 @@ async function crmRepPrint(p, cos, opt, onlyCo) {
     if (opt.cos) body += sec('بيانات الشركة', kv([['النوع', c.kind], ['الحالة', c.status], ['المحافظة', c.gov], ['الحي', c.district], ['العنوان', c.addr], ['المسؤول', ow ? bareName(ow.name) : '']])) + sec('التسجيل والتراخيص', kv([['الرقم الضريبي', c.tax], ['السجل التجاري', c.cr], ['انتهاء مستخرج السجل', cr || ''], ['الرقم التأميني', c.ins], ['اتحاد التشييد', c.constr], ['البطاقة التصديرية', c.exportCard], ['تاريخ التأسيس', c.founded], ['بدء النشاط', c.start], ['انتهاء الختم', c.sealExp], ['المنظومة', c.portal === 'old' ? 'القديمة' : c.portal === 'new' ? 'الجديدة (SAP)' : '']]));
     if (opt.tax) {
       const F = crmFilings().filter(f => f.c.id === c.id && f.st === 'open').slice(0, 12);
-      body += sec('الالتزامات الضريبية', `<div style="padding:2px 8px;font-size:11.5px">${ob.map(esc).join(' · ')}</div>${F.length ? `<table class="pd-info" style="margin-top:4px"><tr><th>الإقرار</th><th>الفترة</th><th>الموعد</th><th>الحالة</th></tr>${F.map(f => `<tr><td>${esc(TXK[f.kind].replace(/^\S+\s/, ''))}</td><td>${esc(perLabel(f.period))}</td><td>${esc(f.due)}</td><td>${f.due < td ? 'متأخر' : 'قادم'}</td></tr>`).join('')}</table>` : ''}`);
+      body += sec('الالتزامات الضريبية', `<div style="padding:2px 8px;font-size:11.5px">${ob.map(esc).join(' · ')}</div>${F.length ? `<table class="pd-info" style="margin-top:4px"><tr><th>الإقرار</th><th>الفترة</th><th>الموعد</th><th>الحالة</th></tr>${F.map(f => `<tr><td>${esc(TXK[f.kind].replace(/^\S+\s/, ''))}</td><td>${esc(perLabel(f.period))}</td><td>${esc(dA(f.due))}</td><td>${f.due < td ? 'متأخر' : 'قادم'}</td></tr>`).join('')}</table>` : ''}`);
     }
     if (opt.sec) {
       let S = {}; try { S = await crmSecrets(c.id); } catch (e) { toast(e.message, 'err'); }
@@ -7131,7 +7134,7 @@ function wkForm(id, sec, cid0) {
 function wkCard(it) {
   const sc = wkSec(it.s), tot = sc.steps.length, dn = (it.dn || []).length, last = wkLast(it), nx = wkNext(it), c = it.cid && D.clients[it.cid];
   const link = c && canTab('crm') !== undefined ? `<a href="#client/${c.id}">${esc(it.n)}</a>` : (it.pid && CRM.p[it.pid] ? `<a href="#crm/p/${it.pid}">${esc(it.n)}</a>` : esc(it.n));
-  return `<div class="card pad" style="margin-top:8px${it.fin ? ';opacity:.7' : ''}"><div class="row wrap" style="gap:6px;align-items:center"><b class="grow" style="font-size:16px">${link}</b><span class="badge">${sc.e} ${esc(sc.n)}</span>${it.d ? `<span class="small muted num">${esc(it.d)}</span>` : ''}</div>
+  return `<div class="card pad" style="margin-top:8px${it.fin ? ';opacity:.7' : ''}"><div class="row wrap" style="gap:6px;align-items:center"><b class="grow" style="font-size:16px">${link}</b><span class="badge">${sc.e} ${esc(sc.n)}</span>${it.d ? `<span class="small muted num">${esc(dA(it.d))}</span>` : ''}</div>
     ${tot ? `<div style="height:6px;background:var(--line,#e4dfd2);border-radius:3px;margin:8px 0 4px"><div style="height:6px;width:${Math.round(dn / tot * 100)}%;background:var(--gold,#c9a24a);border-radius:3px"></div></div><div class="small muted">${dn}/${tot} خطوة</div>` : ''}
     <div class="small" style="margin-top:4px">${last ? `📍 آخر موقف: <b>${esc(last)}</b>` : ''}${last && nx ? ' · ' : ''}${nx ? `➡️ الخطوة القادمة: <b>${esc(nx)}</b>` : ''}</div>
     ${it.nt ? `<div class="small" style="margin-top:4px">📝 ${esc(it.nt)}</div>` : ''}
@@ -7239,7 +7242,7 @@ const fuReqRow = x => `<div class="lrow" style="align-items:flex-start;cursor:de
 function fuReqs(c, F) {
   const o = [];
   F.work.filter(x => !x.fin).forEach(x => { const s = wkSec(x.s), tot = s.steps.length, dn = (x.dn || []).length, last = wkLast(x);
-    o.push({ ic: s.e, t: `${s.n}${x.n && nkey(x.n) !== nkey(c.name) ? ' — ' + x.n : ''}`, src: 'ملف شغال', sub: [last ? '📍 آخر موقف: <b>' + esc(last) + '</b>' : '', tot ? `${dn}/${tot} خطوة` : '', x.nt ? '📝 ' + esc(x.nt) : '', x.d ? '<span class="num">' + esc(x.d) + '</span>' : ''].filter(Boolean).join(' · '), prog: tot ? Math.round(dn / tot * 100) : null, btn: `<button class="btn sm" data-act="wk-edit" data-id="${x.id}">${icon('edit', 15)}</button>` }); });
+    o.push({ ic: s.e, t: `${s.n}${x.n && nkey(x.n) !== nkey(c.name) ? ' — ' + x.n : ''}`, src: 'ملف شغال', sub: [last ? '📍 آخر موقف: <b>' + esc(last) + '</b>' : '', tot ? `${dn}/${tot} خطوة` : '', x.nt ? '📝 ' + esc(x.nt) : '', x.d ? '<span class="num">' + esc(dA(x.d)) + '</span>' : ''].filter(Boolean).join(' · '), prog: tot ? Math.round(dn / tot * 100) : null, btn: `<button class="btn sm" data-act="wk-edit" data-id="${x.id}">${icon('edit', 15)}</button>` }); });
   F.fp.forEach(x => o.push({ ic: '🏗️', t: 'تأسيس — ' + x.name, src: 'مشروع تأسيس', sub: `الإجمالي <b class="num">${fmt(x.app.total)}</b> · المدفوع <b class="num">${fmt(x.app.paid)}</b>${x.app.total > x.app.paid ? ` · الباقي <b class="num neg">${fmt(x.app.total - x.app.paid)}</b>` : ''}`, prog: x.app.total ? Math.min(100, Math.round(x.app.paid / x.app.total * 100)) : null }));
   F.dl.filter(dlPend).forEach(x => { const a = x.docs.filter(d => !d.x).map(d => d.t), inn = dlKind(x) === 'in';
     o.push({ ic: inn ? '📥' : '📤', t: (inn ? 'مستندات مطلوبة منه: ' : 'مستندات جاهزة لتسليمها: ') + a.join('، '), src: 'تسليمات', sub: [dlWho(x) ? 'مع ' + esc(bareName(dlWho(x).name)) : '', x.d ? 'الموعد ' + esc(dShort(x.d)) : ''].filter(Boolean).join(' · '), btn: `<button class="btn sm" data-act="dl-wc" data-id="${x.id}" title="رسالة للعميل">${icon('chat', 15)}</button>` }); });
@@ -7316,8 +7319,8 @@ function fuPrint(id) {
     info: [['العميل', `<b>${esc(c.name)}</b>`], ['الموبايل', esc(c.phone || '—')], ['الخدمات', esc(sv.map(x => x[0].replace(/^\S+\s/, '')).join('، ') || '—')]],
     kpis: [['طلبات مفتوحة', req.length], ['مراحل تمت', done.length], ['مهام مخططة', plan.length + nxt.length], ['الأتعاب', fmt(P.fee)], [P.bal < -0.004 ? 'المستحق عليه' : 'الرصيد له', fmt(Math.abs(P.bal)), P.bal < -0.004 ? 'neg' : '']],
     body: sec('📥 طلبات العميل', ul(req.map(x => `<tr><td>${esc(x.t)}</td><td>${strip(x.sub)}</td></tr>`)))
-      + sec('🗓️ المخطط', ul(nxt.map(x => `<tr><td>${esc(wkNext(x))}</td><td>${esc(wkSec(x.s).n)} — الخطوة القادمة</td></tr>`).concat(plan.map(t => `<tr><td>${esc(t.text)}</td><td>${t.due ? esc(t.due) : ''} ${esc(tkWhoName(t))}</td></tr>`))))
-      + sec('✅ مراحل التنفيذ اللي تمت', ul(done.map(x => `<tr><td class="num" style="width:90px">${esc(x.d)}</td><td>${esc(x.t)}${x.amt ? ' — ' + fmt(x.amt) : ''}</td></tr>`)))
+      + sec('🗓️ المخطط', ul(nxt.map(x => `<tr><td>${esc(wkNext(x))}</td><td>${esc(wkSec(x.s).n)} — الخطوة القادمة</td></tr>`).concat(plan.map(t => `<tr><td>${esc(t.text)}</td><td>${t.due ? esc(dA(t.due)) : ''} ${esc(tkWhoName(t))}</td></tr>`))))
+      + sec('✅ مراحل التنفيذ اللي تمت', ul(done.map(x => `<tr><td class="num" style="width:90px">${esc(dA(x.d))}</td><td>${esc(x.t)}${x.amt ? ' — ' + fmt(x.amt) : ''}</td></tr>`)))
       + sec('💰 الحساب', ul([['المدفوع', P.paid], ['الأتعاب', P.fee], ['الرسوم', P.gov], ['المصروفات', P.exp], ['نسبة التحصيل', P.coll + '%']].map(([k, v]) => `<tr><td>${k}</td><td class="n">${typeof v === 'number' ? fmt(v) : v}</td></tr>`)))
   });
 }
@@ -7432,7 +7435,7 @@ function billCard(c) {
   if (!o.agree) return '';
   const sg = (v, a, b) => v < -0.004 ? b : v > 0.004 ? a : 'مسدَّد';
   return `<div class="card pad bill-c" style="margin-top:10px"><div class="row wrap" style="align-items:center;gap:6px"><b class="grow">🤝 محاسبة باتفاق إجمالي</b>${priv ? `<button class="btn sm no-print" data-act="bill-edit" data-id="${c.id}">${icon('edit', 15)} الاتفاق</button>` : ''}</div>
-    ${(o.b.items || []).length ? `<div class="small" style="margin-top:6px">${o.b.items.map(x => `• ${esc(x.t || 'اتفاق')}: <b class="num">${fmt(+x.amt || 0)}</b>${x.d ? ` <span class="muted num">(${esc(x.d)})</span>` : ''}`).join('<br>')}</div>` : ''}
+    ${(o.b.items || []).length ? `<div class="small" style="margin-top:6px">${o.b.items.map(x => `• ${esc(x.t || 'اتفاق')}: <b class="num">${fmt(+x.amt || 0)}</b>${x.d ? ` <span class="muted num">(${esc(dA(x.d))})</span>` : ''}`).join('<br>')}</div>` : ''}
     ${o.b.note ? `<div class="small muted" style="margin-top:4px">📝 ${esc(o.b.note)}</div>` : ''}
     <div class="sumrow bill-g" style="margin-top:8px">
       <div><small>قيمة الاتفاق</small><b class="num">${fmt(o.tot)}</b></div>
@@ -7485,7 +7488,7 @@ function sjOffer(arr, then) {
   const P = SJ_PRICE(), cnt0 = t => Math.max(1, Math.round((+t.amount || 0) / 400));
   const m = modal(`<h3>🧾 أتعاب مستخرج السجل التجاري</h3>
     <p class="small muted" style="margin:0 0 8px">سعر السجل للعميل <b class="num">${fmt(P)}</b> ج.م، والباقي بعد الرسوم بيتسجل «أتعاب سجل» على العميل.</p>
-    ${L.map((t, i) => `<div class="card pad" style="margin-top:6px"><label class="row" style="gap:8px;align-items:center;cursor:pointer"><input type="checkbox" data-sj="${i}" checked><b class="grow">${esc(clientName(t.clientId))}</b><span class="small muted num">${esc(t.date)}</span></label>
+    ${L.map((t, i) => `<div class="card pad" style="margin-top:6px"><label class="row" style="gap:8px;align-items:center;cursor:pointer"><input type="checkbox" data-sj="${i}" checked><b class="grow">${esc(clientName(t.clientId))}</b><span class="small muted num">${esc(dA(t.date))}</span></label>
       <div class="row wrap small" style="gap:8px;margin-top:6px;align-items:center">الرسوم <b class="num">${fmt(+t.amount || 0)}</b> · عدد المستخرجات <input type="number" min="1" class="inp num" data-sjn="${i}" value="${cnt0(t)}" style="width:64px"> · الأتعاب <input type="number" class="inp num" data-sjf="${i}" value="${r2(cnt0(t) * P - (+t.amount || 0))}" style="width:96px"></div></div>`).join('')}
     <div class="acts"><button class="btn pri" id="sj-ok">إضافة الأتعاب</button><button class="btn" id="sj-no">من غير أتعاب</button></div>`);
   m.addEventListener('input', e => { const n = e.target.closest('[data-sjn]'); if (!n) return; const i = +n.dataset.sjn, t = L[i]; m.querySelector(`[data-sjf="${i}"]`).value = r2(Math.max(1, +n.value || 1) * P - (+t.amount || 0)); });
@@ -7518,7 +7521,7 @@ function docBuild(cid, k, o) {
   const c = D.clients[cid], D0 = docData(cid, o.open), { rows, op, dr, cr, opn, net } = D0, due = net < -0.004, nm = (v) => `<span class="num">${fmt(v)}</span>`;
   const info = [['العميل', `<b>${esc(c.name)}</b>`], ['رقم المستند', `<span class="num">${esc(o.num)}</span>`], ['التاريخ', dLong(today())]];
   if (c.phone) info.push(['الموبايل', `<span class="num">${esc(c.phone)}</span>`]);
-  if (k === 'clm' && o.due) info.push(['آخر موعد للسداد', `<span class="num">${esc(o.due)}</span>`]);
+  if (k === 'clm' && o.due) info.push(['آخر موعد للسداد', `<span class="num">${esc(dA(o.due))}</span>`]);
   const note = o.note ? `<div class="pd-note">📝 ${esc(o.note)}</div>` : '';
   const opRow = (cols) => op.length && o.open ? `<tr class="tot"><td class="c">—</td>${cols}</tr>` : '';
   let body = '';
@@ -7526,22 +7529,22 @@ function docBuild(cid, k, o) {
     const items = rows.filter(r => o.rk === 'fee' ? r.t.type === 'FEE' || r.mg : (r.cr > 0 || r.dr > 0));
     body = `<div class="rcp"><p>استلمنا من السادة / <b>${esc(c.name)}</b></p><p>مبلغ وقدره: <b class="num rcp-a">${fmt(o.amt)}</b> جنيه مصري</p>
       <p>وذلك ${o.rk === 'fee' ? 'أتعاب عن' : 'سدادًا عن'}: ${items.length ? items.map(r => esc(docDesc(r))).join('، ') : '—'}</p>${note}</div>
-      ${items.length ? `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th style="width:90px">التاريخ</th><th>البيان</th><th style="width:100px">المبلغ</th></tr></thead><tbody>${items.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${esc(r.t.date)}</td><td>${esc(docDesc(r))}</td><td class="n">${nm(r.cr || r.dr)}</td></tr>`).join('')}</tbody></table>` : ''}`;
+      ${items.length ? `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th style="width:90px">التاريخ</th><th>البيان</th><th style="width:100px">المبلغ</th></tr></thead><tbody>${items.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${esc(dA(r.t.date))}</td><td>${esc(docDesc(r))}</td><td class="n">${nm(r.cr || r.dr)}</td></tr>`).join('')}</tbody></table>` : ''}`;
   } else if (k === 'st') {
     body = `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th style="width:90px">التاريخ</th><th>البيان</th><th style="width:96px">عليه</th><th style="width:96px">له</th></tr></thead><tbody>
       ${op.length ? `<tr class="tot"><td class="c">—</td><td></td><td>رصيد مرحّل</td><td class="n">${opn < 0 ? nm(-opn) : ''}</td><td class="n">${opn > 0 ? nm(opn) : ''}</td></tr>` : ''}
-      ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${esc(r.t.date)}</td><td>${esc(docDesc(r))}</td><td class="n">${r.dr ? nm(r.dr) : ''}</td><td class="n">${r.cr ? nm(r.cr) : ''}</td></tr>`).join('')}</tbody>
+      ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${esc(dA(r.t.date))}</td><td>${esc(docDesc(r))}</td><td class="n">${r.dr ? nm(r.dr) : ''}</td><td class="n">${r.cr ? nm(r.cr) : ''}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="3">الإجمالي (${rows.length} حركة)</td><td class="n">${nm(r2(dr + (opn < 0 ? -opn : 0)))}</td><td class="n">${nm(r2(cr + (opn > 0 ? opn : 0)))}</td></tr></tfoot></table>
       <div class="pd-sum"><div class="big ${due ? 'neg' : ''}"><span>${due ? 'المستحق على العميل' : net > 0.004 ? 'رصيد دائن للعميل' : 'الصافي'}</span><b class="num">${fmt(Math.abs(net))}</b></div></div>${note}
       <div class="pd-note" style="margin-top:6px">كشف جزئي: يشمل الحركات المذكورة فقط، وليس الرصيد الكلي للحساب.</div>`;
   } else {
     const it = rows.filter(r => r.dr > 0), pd = rows.filter(r => r.cr > 0), tot = r2(it.reduce((a, r) => a + r.dr, 0)), paid = r2(pd.reduce((a, r) => a + r.cr, 0));
     body = `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th>البيان</th><th style="width:90px">التاريخ</th><th style="width:110px">المبلغ</th></tr></thead><tbody>
-      ${it.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(docDesc(r))}</td><td class="c">${esc(r.t.date)}</td><td class="n">${nm(r.dr)}</td></tr>`).join('')}</tbody>
+      ${it.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(docDesc(r))}</td><td class="c">${esc(dA(r.t.date))}</td><td class="n">${nm(r.dr)}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="3">إجمالي ${k === 'inv' ? 'الفاتورة' : 'المطالبة'}</td><td class="n">${nm(tot)}</td></tr></tfoot></table>
-      <div class="pd-sum">${op.length && o.open ? `<div><span>رصيد سابق مرحّل ${opn < 0 ? '(عليه)' : '(له)'}</span><b class="num">${fmt(Math.abs(opn))}</b></div>` : ''}${paid ? `<div><span>المسدّد</span><b class="num">${fmt(paid)}</b>${pd.map(r => `<small>${esc(r.t.date)} — ${esc(docDesc(r))}: ${fmt(r.cr)}</small>`).join('')}</div>` : ''}
+      <div class="pd-sum">${op.length && o.open ? `<div><span>رصيد سابق مرحّل ${opn < 0 ? '(عليه)' : '(له)'}</span><b class="num">${fmt(Math.abs(opn))}</b></div>` : ''}${paid ? `<div><span>المسدّد</span><b class="num">${fmt(paid)}</b>${pd.map(r => `<small>${esc(dA(r.t.date))} — ${esc(docDesc(r))}: ${fmt(r.cr)}</small>`).join('')}</div>` : ''}
         <div class="big ${due ? 'neg' : ''}"><span>${due ? (k === 'clm' ? 'المطلوب سداده' : 'المتبقي') : net > 0.004 ? 'رصيد دائن للعميل' : 'الحساب مسدَّد'}</span><b class="num">${fmt(Math.abs(net))}</b></div></div>${note}
-      ${k === 'clm' && due ? `<div class="pd-note" style="margin-top:6px">برجاء التكرم بسداد المبلغ المستحق${o.due ? ' في موعد أقصاه ' + esc(o.due) : ''}. شاكرين تعاونكم.</div>` : ''}`;
+      ${k === 'clm' && due ? `<div class="pd-note" style="margin-top:6px">برجاء التكرم بسداد المبلغ المستحق${o.due ? ' في موعد أقصاه ' + esc(dA(o.due)) : ''}. شاكرين تعاونكم.</div>` : ''}`;
   }
   return { title: DOC_T[k][0] + (k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : ''), file: `${DOC_T[k][0]}${k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : ''} - ${c.name} - ${o.num}`, info, body };
 }
@@ -7641,6 +7644,17 @@ window.addEventListener('appinstalled', () => { DEFER_INSTALL = null; try { rend
   new MutationObserver(sched).observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.sx-clear'); if (!b) return; e.preventDefault(); e.stopPropagation(); const inp = b.previousElementSibling; if (!inp) return; inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); inp.focus(); }, true);
   sched();
+})();
+/* الأرقام بالعربي (٠١٢٣…) في كل ما يظهر على الشاشة؛ الحقول نفسها بتفضل بأرقام لاتينية عشان الإدخال */
+(function () {
+  const rx = /[0-9]/g, map = '٠١٢٣٤٥٦٧٨٩', skip = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1, OPTION: 0 };
+  const fix = root => {
+    if (!root) return; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => /[0-9]/.test(n.nodeValue) && !(n.parentNode && skip[n.parentNode.nodeName]) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+    const L = []; while (w.nextNode()) L.push(w.currentNode); L.forEach(n => { n.nodeValue = n.nodeValue.replace(rx, c => map[c]); });
+  };
+  let q = 0, pend = new Set();
+  new MutationObserver(ms => { ms.forEach(m => m.addedNodes.forEach(n => pend.add(n))); if (q) return; q = requestAnimationFrame(() => { q = 0; const L = [...pend]; pend.clear(); L.forEach(n => { if (n.nodeType === 3) { if (!(n.parentNode && skip[n.parentNode.nodeName]) && /[0-9]/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(rx, c => map[c]); } else if (n.nodeType === 1 && n.isConnected) fix(n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+  fix(document.body);
 })();
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 boot();
