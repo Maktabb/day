@@ -747,7 +747,11 @@ html{overflow-x:hidden}
 #print-area{display:none}
 @page land{size:A4 landscape;margin:0}
 @media print{
+  html,body.pd-on{height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important}
+  body.pd-on{padding:0!important;margin:0!important}
   body.pd-on>*:not(#print-area){display:none!important}
+  body.pd-on #print-area:not(.pd-land){width:210mm;max-width:100%}
+  .pd-one .pd-t tr,.pd-one .pd-sum,.pd-one .pd-info{break-inside:avoid}
   body.pd-on #print-area{display:block!important}
   #print-area.pd-land{page:land}
   table.pd-wrap{width:100%;border-collapse:collapse;border:0}table.pd-wrap>thead>tr>td>div{height:12mm}table.pd-wrap>tfoot>tr>td>div{height:14mm}table.pd-wrap>tbody>tr>td{padding:0 11mm;border:0}
@@ -1764,7 +1768,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-181000';
+const BUILD = '20261122-200000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3058,7 +3062,7 @@ function printDoc(o) {
   if (!pa) { pa = document.createElement('div'); pa.id = 'print-area'; document.body.appendChild(pa); }
   const cols = o.cols || [], nc = cols.length;
   const cell = (v, c) => `<td class="${c.n ? 'n' : ''}${c.c ? ' c' : ''}">${v == null || v === '' ? '' : v}</td>`;
-  pa.className = o.land ? 'pd-land' : '';
+  pa.className = (o.land ? 'pd-land' : '') + (o.body ? ' pd-one' : '');
   pa.innerHTML = `<table class="pd-wrap"><thead><tr><td><div></div></td></tr></thead><tfoot><tr><td><div></div></td></tr></tfoot><tbody><tr><td><div class="pd">
     <div class="pd-top"><div class="pd-org">${LOGO ? `<img src="${LOGO}" alt="">` : ''}<div><b>مكتب محمود سالم</b><span>للمحاسبة والمراجعة وتأسيس الشركات</span></div></div>
       <div class="pd-title"><b>${esc(o.title)}</b><span>${dLong(today())}</span></div></div>
@@ -3069,6 +3073,10 @@ function printDoc(o) {
       ${o.foot ? `<tfoot><tr>${o.foot.map((v, i) => v === null ? '' : `<td${Array.isArray(v) ? ` colspan="${v[1]}"` : ''} class="${(cols[i] || {}).n ? 'n' : ''}">${Array.isArray(v) ? v[0] : v}</td>`).join('')}</tr></tfoot>` : ''}</table>`}
     ${o.after || ''}
     <div class="pd-foot">صدر من برنامج «يومية المكتب» — مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات · ${new Date().toLocaleString('ar-EG-u-nu-latn')}${ME ? ' · بواسطة ' + esc(ME.name) : ''}</div></div></td></tr></tbody></table>`;
+  if (o.body) {   // مستند واحد (فاتورة/مطالبة/إيصال): يتظبط على صفحة A4 واحدة
+    const pd = pa.querySelector('.pd'), n = pa.querySelectorAll('.pd-t tbody tr').length + (pa.querySelector('.pd-note') ? 2 : 0) + (pa.querySelectorAll('.pd-info tr').length > 4 ? 1 : 0);
+    pd.style.zoom = n > 26 ? Math.max(0.5, 27 / n).toFixed(3) : '';
+  }
   const oldT = document.title; document.title = (o.file || o.title).replace(/[\\/:*?"<>|]/g, '-');
   document.body.classList.add('pd-on');
   const done = () => { document.body.classList.remove('pd-on'); document.title = oldT; pa.innerHTML = ''; };
@@ -3813,7 +3821,7 @@ function collInvDoc(x) {
     <div class="pd-sum"><div class="big neg"><span>المطلوب سداده</span><b class="num">${fmt(a.amt)}</b></div></div>${x.n && x.m !== 'amt' ? `<div class="pd-note">📝 ${esc(x.n)}</div>` : ''}
     <div class="pd-note" style="margin-top:6px">برجاء التكرم بسداد المبلغ المستحق. شاكرين تعاونكم.</div>`;
   const txt = [`السادة / ${c.name}`, `نرسل لكم مطالبة مالية رقم ${x.dn}:`, '', `• ${desc}: ${fmt(a.amt)} ج.م`, '', `المطلوب سداده: ${fmt(a.amt)} ج.م`, '', 'مع خالص الشكر — مكتب محمود سالم للمحاسبة والمراجعة.'].join('\n');
-  return { k: 'clm', d: { title: 'مطالبة مالية', file: `مطالبة مالية ${c.name} ${x.dn}`, info, body }, txt };
+  return { k: 'clm', d: { title: 'مطالبة مالية', file: `مطالبة مالية - ${c.name} - ${x.dn}`, info, body }, txt };
 }
 function collInv(cid) {
   const x = collList().find(q => q.c === resCid(cid)); if (!x) return toast('العميل مش في التحصيل', 'err');
@@ -7492,7 +7500,7 @@ function docBuild(cid, k, o) {
         <div class="big ${due ? 'neg' : ''}"><span>${due ? (k === 'clm' ? 'المطلوب سداده' : 'المتبقي') : net > 0.004 ? 'رصيد دائن للعميل' : 'الحساب مسدَّد'}</span><b class="num">${fmt(Math.abs(net))}</b></div></div>${note}
       ${k === 'clm' && due ? `<div class="pd-note" style="margin-top:6px">برجاء التكرم بسداد المبلغ المستحق${o.due ? ' في موعد أقصاه ' + esc(o.due) : ''}. شاكرين تعاونكم.</div>` : ''}`;
   }
-  return { title: DOC_T[k][0] + (k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : ''), file: `${DOC_T[k][0]} ${c.name} ${o.num}`, info, body };
+  return { title: DOC_T[k][0] + (k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : ''), file: `${DOC_T[k][0]}${k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : ''} - ${c.name} - ${o.num}`, info, body };
 }
 function docText(cid, k, o) {
   const c = D.clients[cid], { rows, dr, cr, opn, net } = docData(cid, o.open), t = DOC_T[k][0] + (k === 'rcp' ? (o.rk === 'fee' ? ' أتعاب' : ' سداد') : '');
