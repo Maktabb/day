@@ -1261,6 +1261,12 @@ h2.sec .gls{margin-inline-start:6px}
 .dt-w>input[type=date]{position:absolute!important;inset:0;width:100%!important;height:100%!important;opacity:0;z-index:2;margin:0;cursor:pointer}
 .dt-v{display:flex!important;align-items:center;min-height:44px;direction:rtl;font-variant-numeric:normal;white-space:nowrap}.dt-v.empty{color:var(--muted,#94a3b8)}
 .dt-v::before{content:"📅";margin-inline-end:8px;font-size:15px}
+
+.mx{float:left;position:sticky;top:0;z-index:5;margin:-10px 0 0 -4px}
+.pgbk{display:flex;margin:0 0 8px;position:relative;z-index:3}
+.bkx{font-size:17px;line-height:1}
+.tk-grp{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;font-size:14px}.tk-grp .sp{flex:1}
+.tk-ig{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1815,7 +1821,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-040000';
+const BUILD = '20261123-051000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2125,7 +2131,11 @@ function modal(html, cls = '') {
   root.innerHTML = `<div class="mback" data-act="mclose-bg"><div class="modal ${cls}" role="dialog" aria-modal="true">${html}</div></div>`;
   document.body.style.overflow = 'hidden';
   labelTables(root);
-  return root.firstChild.firstChild;
+  const md = root.firstChild.firstChild, xb = document.createElement('button');
+  xb.type = 'button'; xb.className = 'gls mx no-print'; xb.title = 'إغلاق'; xb.setAttribute('aria-label', 'إغلاق'); xb.innerHTML = '<i>✖️</i>';
+  xb.onclick = () => { const c = md.querySelector('[data-k="0"], #ec-no, [data-act="mclose"]'); if (c) c.click(); else closeModal(); };
+  md.prepend(xb);
+  return md;
 }
 function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; if (_pendingRefresh) { _pendingRefresh = false; render(); } }
 const modalOpen = () => !!$('#modal-root').firstChild;
@@ -2218,6 +2228,11 @@ function labelTables(root) {
     tb.querySelectorAll('tbody tr, tfoot tr').forEach(tr => { let c = 0; tr.querySelectorAll('td').forEach(td => { td.dataset.l = hs[c] || ''; c += +td.colSpan || 1; }); });
   });
 }
+/* زرار رجوع ↩️ في أي صفحة مفتوحة (غير الرئيسية) لو مفيش رجوع جاهز فيها */
+function pgBack(vw, r) {
+  if (['home', 'more'].includes(r.name) || vw.querySelector('.bkx, .pgbk')) return;
+  vw.insertAdjacentHTML('afterbegin', `<button type="button" class="gls pgbk no-print" data-act="pg-back" title="رجوع" aria-label="رجوع"><i>↩️</i></button>`);
+}
 function render() {
   if (!ME) return renderLogin();
   if (!$('#view')) renderShell();
@@ -2231,7 +2246,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); hopsFold(vw); } }
+  try { fn(r, vw); pgBack(vw, r); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); hopsFold(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2617,14 +2632,14 @@ function vEntry(r, el) {
       const opts = isIn
         ? [['TRANSFER', 'in', 'وارد من خزنة المكتب', 'مبلغ استلمته من خزينة المكتب', 'swap', TYPES.TRANSFER.c], ['IN_OWNER', '', 'وارد من الأستاذ محمود', TYPES.IN_OWNER.hint, TYPES.IN_OWNER.ic, TYPES.IN_OWNER.c], ['IN_CLIENT', '', 'وارد من عميل', 'اختر العميل الذي دفع', TYPES.IN_CLIENT.ic, TYPES.IN_CLIENT.c]]
         : [['GOV_FEE', '', 'رسوم بإيصال', TYPES.GOV_FEE.hint, TYPES.GOV_FEE.ic, TYPES.GOV_FEE.c], ['OP_EXP', '', 'مصروف مباشر', TYPES.OP_EXP.hint, TYPES.OP_EXP.ic, TYPES.OP_EXP.c], ['OFFICE_EXP', '', 'مصروف عمومي', TYPES.OFFICE_EXP.hint, TYPES.OFFICE_EXP.ic, TYPES.OFFICE_EXP.c], ['TRANSFER', 'out', 'تحويل عهدة لزميل', 'من عهدتك إلى زميل (أو رد للخزينة)', 'swap', TYPES.TRANSFER.c]];
-      el.innerHTML = `<div class="row" style="margin-bottom:8px"><a href="#entry" class="btn ghost sm">${icon('back', 16)} رجوع</a></div>
+      el.innerHTML = `<div class="row" style="margin-bottom:8px"><a href="#entry" class="btn ghost sm"><span class="bkx">↩️</span> رجوع</a></div>
         <h1 class="pg">${isIn ? 'وارد' : 'صرف'} <small>${isIn ? 'من أين جاء المبلغ؟' : 'اختر نوع الصرف'}</small></h1>
         <div class="biglist">${opts.filter(o => types.includes(o[0]) && !(o[0] === 'TRANSFER' && o[1] === 'in' && !inAllowed(ME.role, 'TRANSFER_in'))).map(([k, md, n, hint, ic, c]) => bigBtn({ TRANSFER_in: '🏦', IN_OWNER: '👤', IN_CLIENT: '🤝', GOV_FEE: '🧾', OP_EXP: '🚗', OFFICE_EXP: '🏢', TRANSFER_out: '🔄' }[k === 'TRANSFER' ? 'TRANSFER_' + md : k], n, hint, c, `entry/${k}${md ? '?mode=' + md : ''}`)).join('')}</div>`;
       return;
     }
     if (r.arg === 'claim') {
       if (!types.includes('FEE') && !types.includes('TAXC')) return go('entry');
-      el.innerHTML = `<div class="row" style="margin-bottom:8px"><a href="#entry" class="btn ghost sm">${icon('back', 16)} رجوع</a></div>
+      el.innerHTML = `<div class="row" style="margin-bottom:8px"><a href="#entry" class="btn ghost sm"><span class="bkx">↩️</span> رجوع</a></div>
         <h1 class="pg">مطالبة <small>أتعاب ولا ضرائب؟</small></h1>
         <div class="biglist">${types.includes('FEE') ? bigBtn('💼', 'مطالبة أتعاب', TYPES.FEE.hint, TYPES.FEE.c, 'entry/FEE') : ''}${!types.includes('TAXC') ? '' : bigBtn('🏛️', 'مطالبة ضرائب', 'دخل، قيمة مضافة، مساهمة تكافلية، أو أخرى — تُتابَع من التحصيل', TYPES.TAXC.c, 'entry/TAXC')}</div>`;
       return;
@@ -4057,7 +4072,7 @@ function vClient(r, el) {
       <table class="st-info"><tr><th>اسم العميل</th><td><b>${esc(c.name)}</b></td><th>رقم الموبايل</th><td class="num">${esc(c.phone || '—')}</td></tr>
         <tr><th>تاريخ فتح الحساب</th><td class="num">${st.length ? st[0].t.date : '—'}</td><th>آخر حركة</th><td class="num">${st.length ? st[st.length - 1].t.date : '—'}</td></tr>
         <tr><th>عدد الحركات</th><td>${rowsM.length}</td><th>${c.address ? 'العنوان' : 'نوع العميل'}</th><td>${esc(c.address || c.kind || '—')}</td></tr>${filtered ? `<tr><th>الفلتر</th><td colspan="3">${esc(fDesc)}</td></tr>` : ''}</table></div>
-    <div class="row no-print" style="margin-bottom:8px"><a href="#clients" class="btn ghost sm">${icon('back', 16)} العملاء</a></div>
+    <div class="row no-print" style="margin-bottom:8px"><a href="#clients" class="btn ghost sm"><span class="bkx">↩️</span> العملاء</a></div>
     <div class="card pad no-print ch-card">
       <div class="ch-top"><div class="av ch-av">${esc(initials(c.name))}</div>
         <div class="grow ch-nm"><div class="ch-h">${esc(c.name)}</div>
@@ -4233,7 +4248,7 @@ function vAccount(r, el) {
   opening = r2(opening + rows.filter(x => x.op).reduce((s, x) => s + x.v, 0));
   const inT = r2(mv.filter(x => x.v > 0).reduce((s, x) => s + x.v, 0)), outT = r2(mv.filter(x => x.v < 0).reduce((s, x) => s - x.v, 0));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم</b><div class="small muted">كشف ${esc(a.name)} — ${dLong(today())}</div></div></div>
-    ${isPriv() ? `<div class="row no-print" style="margin-bottom:8px"><a href="#accounts" class="btn ghost sm">${icon('back', 16)} الخزينة والعهد</a></div>` : ''}
+    ${isPriv() ? `<div class="row no-print" style="margin-bottom:8px"><a href="#accounts" class="btn ghost sm"><span class="bkx">↩️</span> الخزينة والعهد</a></div>` : ''}
     <h1 class="pg">${esc(a.name)} <span class="sp"></span>${isFull() && a.type === 'treasury' ? `<button class="btn sm no-print ${accHidden(a.id) ? '' : 'pri'}" data-act="acc-home" data-id="${a.id}">${accHidden(a.id) ? 'غير ظاهرة في الرئيسية' : '✓ تظهر وتُجمع في الرئيسية'}</button>` : ''}${isFull() && a.type !== 'custody' && a.id !== 'TRS' ? `<button class="btn sm no-print" data-act="acc-edit" data-id="${a.id}">${icon('edit', 16)} تعديل</button>` : ''}<button class="btn sm pri no-print" data-act="pd-account" data-id="${a.id}">${icon('print', 16)} طباعة PDF</button></h1>
     ${a.type === 'custody' ? `<div class="no-print">${reviewLine(a.id)}</div>` : ''}
     <div class="grid g4"><div class="card kpi hl"><div class="l">الرصيد الحالي</div><div class="v ${accBal(a.id) < 0 ? 'neg' : ''}">${money(accBal(a.id))} <small>ج.م</small></div></div>
@@ -4907,7 +4922,7 @@ function vSettings(r, el) {
   const GENSET = new Set([...GEN, 'ntl']), argK = GENSET.has(r.arg) ? 'gen' : r.arg;
   const CATS = [['gen', 'إعدادات التطبيق', 'sliders', 'حسابي · التنبيهات · المظهر · الاتصال بالشيت · التذكير · ترحيل الإكسيل · النسخ الاحتياطي · سجل التعديلات والإشعارات'], ['team', 'الفريق والصلاحيات', 'users', 'إضافة وتعديل وحذف الزملاء ومين يسجّل وارد'],
     ['lists', 'القوائم', 'list', 'البنود وأنواع الرسوم والأماكن'], ['sec', 'الأمان', 'key', 'تسجيل الخروج التلقائي وكود الحذف'], ['hr', 'الموارد البشرية HR', 'users', 'الحضور والإجازات والسلف والتقييم والمسحوبات']].filter(c => secs[c[0]]);
-  if (argK && secs[argK]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm">${icon('back', 16)} الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === argK)[1]}</h1>` + (argK === 'gen' ? secs.gen : secs[argK].replace(/<h2 class="sec">(القوائم|كود الحذف|كود التعديل)<\/h2>/, '')); if (argK === 'gen' && secs.log || argK === 'log') setTimeout(logLoad, 0); return; }
+  if (argK && secs[argK]) { el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#settings" class="btn ghost sm"><span class="bkx">↩️</span> الإعدادات</a></div><h1 class="pg">${CATS.find(c => c[0] === argK)[1]}</h1>` + (argK === 'gen' ? secs.gen : secs[argK].replace(/<h2 class="sec">(القوائم|كود الحذف|كود التعديل)<\/h2>/, '')); if (argK === 'gen' && secs.log || argK === 'log') setTimeout(logLoad, 0); return; }
   el.innerHTML = `<h1 class="pg">الإعدادات</h1>${FAILED.length ? `<div class="note err" style="margin-bottom:10px">${icon('alert', 18)}<div>${FAILED.length} عملية لم تُحفظ على الشيت. <a href="#settings/conn">التفاصيل</a></div></div>` : ''}
     <div class="setcats">${CATS.map(([k, l, i, d]) => `<div class="setcat" data-act="go" data-h="settings/${k}">${appic(k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}
     ${[...(isPriv() ? [['journal', 'اليومية', 'كل الحركات والبحث والتصدير'], ['accounts', 'الخزينة والعهد', 'الأرصدة وحركات العهد'], ['review', 'مراجعة الاعتماد', 'المعتمد وبانتظار الاعتماد']] : []), ...(isPriv() && !isSup() ? [['reports', 'التقارير', 'ملخصات الفترات والفرق']] : []), ...(isFull() ? [['analytics', 'التحليلات المالية', 'الاتجاهات والمقارنات'], ['dups', 'مراجعة تكرار العملاء', 'دمج العملاء المتشابهين']] : [])].map(([k, l, d]) => `<div class="setcat" data-act="${k === 'ntlog' ? 'nt-log' : 'go'}" data-h="${k}">${appic(k === 'ntlog' ? 'review' : k, 44)}<div class="grow"><b>${l}</b><small>${d}</small></div>${icon('back', 16)}</div>`).join('')}</div>
@@ -6038,7 +6053,7 @@ function tkRow(t, o = {}) {
   }
   return `<div class="tk ${late ? 'late' : ''}"><button class="tk-c" data-act="tk-done" data-id="${esc(t.id)}" aria-label="إتمام المهمة: ${esc(t.text)}"></button>
     <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}</div></div>
-    ${/^CL-/.test(t.id) ? `<button class="tk-x" data-act="coll-inv" data-id="${esc(t.id.slice(3))}" aria-label="فاتورة التحصيل" title="فاتورة التحصيل">🧾</button>` : ''}${tkCanEdit(t) || (/^(AP|CL)-/.test(t.id) && (isPriv() || tkMine(t))) ? `<button class="tk-x" data-act="tk-edit" data-id="${esc(t.id)}" aria-label="تعديل المهمة" title="تعديل المهمة">✏️</button>` : ''}${o.arch ? `<button class="tk-x" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="أرشفة" title="أرشفة">🗄️</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
+    ${/^CL-/.test(t.id) ? `<button class="tk-x" data-act="coll-inv" data-id="${esc(t.id.slice(3))}" aria-label="فاتورة التحصيل" title="فاتورة التحصيل">🧾</button>` : ''}${tkCanEdit(t) || (/^(AP|CL)-/.test(t.id) && (isPriv() || tkMine(t))) ? `<button class="tk-x" data-act="tk-edit" data-id="${esc(t.id)}" aria-label="تعديل المهمة" title="تعديل المهمة">✏️</button>` : ''}${o.arch ? `<button class="btn sm ghost tk-ig" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="تجاهل المهمة" title="تجاهل المهمة">🙈 تجاهل</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
 }
 function opsSetupCard() {
   const c = opsCfg();
@@ -6092,8 +6107,10 @@ function vTasks(r, el) {
     + (OPS_ST.state === 'err' ? `<div class="note warn" style="margin-bottom:10px">${icon('alert', 18)}<div class="grow">تعذّر تحديث المهام (${esc(OPS_ST.msg)}). المعروض آخر نسخة محفوظة على هذا الجهاز${OPS.q.length ? `، و${OPS.q.length} تعديل بانتظار الرفع` : ''}.</div></div>` : '')
     + (man.length ? grp('متأخرة', late, 'late') + grp('اليوم', now) + grp('قادمة', later)
       : (sys.length ? `<div class="small muted" style="margin:6px 0">لا توجد مهام مضافة يدويًا.</div>` : `<div class="card"><div class="empty">${who === 'me' ? 'لا توجد مهام مفتوحة عليك.' : 'لا توجد مهام مفتوحة.'}</div></div>`))
-    + (sys.length ? `<div class="tk-g tk-sys" data-act="tk-sys" role="button" aria-expanded="${sysOn}">⚙️ مهام النظام <small>(${sys.length})</small>${sysLate ? ` <small class="neg">· ${sysLate} متأخرة</small>` : ''}<span class="sp"></span><i>${sysOn ? '▴' : '▾'}</i></div>${sysOn ? `<div class="row wrap" style="margin:8px 0">${sysLate ? `<button class="btn sm" data-act="tk-arch-late">🗄️ أرشفة كل المتأخرة (${sysLate})</button>` : ''}</div><div class="card">${sys.sort(tkSort).map(t => tkRow(t, { who: showWho, arch: true })).join('')}</div>` : ''}` : '')
-    + (archN ? `<button class="btn sm ghost" data-act="tk-arch-view" style="margin-top:10px">🗄️ أرشيف مهام النظام (${archN})</button>${LS.get('tkArchOn', 0) ? `<div class="card" style="margin-top:8px">${archL.map(t => `<div class="tk"><div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m"><b>${esc(t.clientName)}</b>${t.due ? ' · ' + dShort(t.due) : ''}</div></div><button class="btn sm" data-act="tk-unarch" data-id="${esc(t.id)}">استرجاع</button></div>`).join('')}</div>` : ''}` : '')
+    + (sys.length ? `<div class="tk-g tk-sys" data-act="tk-sys" role="button" aria-expanded="${sysOn}">⚙️ مهام النظام <small>(${sys.length})</small>${sysLate ? ` <small class="neg">· ${sysLate} متأخرة</small>` : ''}<span class="sp"></span><i>${sysOn ? '▴' : '▾'}</i></div>${sysOn ? `<div class="row wrap" style="margin:8px 0">${sysLate ? `<button class="btn sm" data-act="tk-arch-late">🙈 تجاهل كل المتأخرة (${sysLate})</button>` : ''}</div>${(() => { const g = {}; sys.sort(tkSort).forEach(t => { const k = String(t.text).split(' — ')[0]; (g[k] = g[k] || []).push(t); });
+        return Object.entries(g).sort((a, b) => b[1].length - a[1].length).map(([k, L]) => { const lt = L.filter(tkLate).length, on = colOpen('tg:' + k, 1);
+          return `<div class="tk-grp"><b>${esc(k)}</b><small class="muted">(${L.length})</small>${lt ? `<small class="neg">· ${lt} متأخرة</small>` : ''}<span class="sp"></span><button class="btn sm ghost" data-act="tk-arch-grp" data-ids="${esc(L.map(t => t.id).join(','))}" data-g="${esc(k)}">🙈 تجاهل الكل</button>${colBtn('tg:' + k, 1)}</div>${on ? `<div class="card">${L.map(t => tkRow(t, { who: showWho, arch: true })).join('')}</div>` : ''}`; }).join(''); })()}` : ''}` : '')
+    + (archN ? `<button class="btn sm ghost" data-act="tk-arch-view" style="margin-top:10px">🙈 المهام المتجاهلة (${archN})</button>${LS.get('tkArchOn', 0) ? `<div class="card" style="margin-top:8px">${archL.map(t => `<div class="tk"><div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m"><b>${esc(t.clientName)}</b>${t.due ? ' · ' + dShort(t.due) : ''}</div></div><button class="btn sm" data-act="tk-unarch" data-id="${esc(t.id)}">استرجاع</button></div>`).join('')}</div>` : ''}` : '')
     + (closed.length ? `<button class="btn sm ghost" data-act="tk-toggle-done" style="margin-top:14px">${TK.done ? 'إخفاء' : 'عرض'} ما أُغلق خلال 7 أيام (${closed.length})</button>${TK.done ? `<div class="card" style="margin-top:8px">${closed.map(t => tkRow(t, { who: showWho })).join('')}</div>` : ''}` : '')
     + prod
     + `<div class="small muted" style="margin-top:16px">تُضاف المهام من هنا (➕ إضافة مهمة) أو من برنامج «إدارة المكتب» وتظهر هنا خلال دقيقة. إغلاق المهمة أو إعادة توزيعها من علامة ⋯.</div>`
@@ -6745,7 +6762,7 @@ function vCrm(r, el) {
   if (r.arg === 'p') {
     const p = CRM.p[r.arg2]; if (!p || yes(p.deleted)) { el.innerHTML = head + '<div class="card pad empty">العميل غير موجود.</div>'; return; }
     const acc = crmAccOf(p), ex = crmExtracts(), cos = crmCos(p.id), wa = waNumber(p.wa || p.phone);
-    el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#crm" class="btn ghost sm">${icon('back', 16)} قاعدة البيانات</a></div>${err}
+    el.innerHTML = `<div class="row" style="margin-bottom:6px"><a href="#crm" class="btn ghost sm"><span class="bkx">↩️</span> قاعدة البيانات</a></div>${err}
       <div class="card pad"><div class="row wrap" style="gap:8px;align-items:center"><h2 class="grow" style="margin:0">👤 ${esc(p.name)}</h2>
         ${yes(p.poa) ? '<span class="badge">توكيل عادي</span>' : ''}${yes(p.poaCap) ? '<span class="badge">توكيل بالصفة</span>' : ''}</div>
         <div class="small" style="margin-top:6px">📞 <span class="num">${esc(p.phone || '')}</span>${p.wa && p.wa !== p.phone ? ` · واتساب <span class="num">${esc(p.wa)}</span>` : ''}${wa ? ` · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">💬 واتساب</a>` : ''}</div>
@@ -7688,7 +7705,8 @@ Object.assign(ACT, {
   'um-out': () => { closeModal(); ACT.logout(); },
   'co-w': el => { CO.w = el.dataset.k; stRe(); },
   'tk-edit': el => { const id = el.dataset.id; if (id.startsWith('AP-')) return apForm(id.slice(3)); if (id.startsWith('CL-')) return collForm(id.slice(3)); tkEdit(id); },
-  'tk-arch': el => { const st = tkArchSet(); st.add(el.dataset.id); tkArchSave(st); toast('اتأرشفت'); stRe(); },
+  'tk-arch': el => { const st = tkArchSet(); st.add(el.dataset.id); tkArchSave(st); toast('اتجاهلت — هتلاقيها في «المهام المتجاهلة»'); stRe(); },
+  'tk-arch-grp': async el => { const ids = String(el.dataset.ids || '').split(',').filter(Boolean); if (!ids.length) return; if (!(await ask('تجاهل ' + ids.length + ' مهمة من «' + esc(el.dataset.g) + '»؟ تقدري ترجعيهم من «المهام المتجاهلة».', 'تجاهل'))) return; const st = tkArchSet(); ids.forEach(id => st.add(id)); tkArchSave(st); toast('اتجاهلوا ' + ids.length); stRe(); },
   'tk-arch-late': async () => { const L = tkAll().filter(t => /^(TF|RN)-/.test(t.id) && tkOpen(t) && tkLate(t)); if (!L.length) return; if (!(await ask('أرشفة ' + L.length + ' مهمة نظام متأخرة؟ تقدري ترجعيهم من الأرشيف.', 'أرشفة'))) return; const st = tkArchSet(); L.forEach(t => st.add(t.id)); tkArchSave(st); toast('اتأرشفوا ' + L.length); stRe(); },
   'tk-arch-view': () => { LS.set('tkArchOn', LS.get('tkArchOn', 0) ? 0 : 1); stRe(); },
   'tk-unarch': el => { const st = tkArchSet(); st.delete(el.dataset.id); tkArchSave(st); toast('اترجعت'); stRe(); },
@@ -7700,7 +7718,7 @@ Object.assign(ACT, {
   'sel-fee': el => docFee(el.dataset.id),
   'sel-doc': el => docForm(el.dataset.id),
 });
-Object.assign(ACT, { 'bill-edit': el => billForm(el.dataset.id), 'col-tog': el => { const k = el.dataset.k, def = +el.dataset.def; LS.set('col_' + k, colOpen(k, def) ? 0 : 1); stRe(); } });
+Object.assign(ACT, { 'pg-back': () => { if (history.length > 1) history.back(); else go('home'); }, 'bill-edit': el => billForm(el.dataset.id), 'col-tog': el => { const k = el.dataset.k, def = +el.dataset.def; LS.set('col_' + k, colOpen(k, def) ? 0 : 1); stRe(); } });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
@@ -7907,7 +7925,9 @@ const TIPS = {
   'tk-done': ['إتمام', 'تعليم المهمة كمنتهية.'],
   'tk-more': ['خيارات المهمة', 'تسجيل مصروف، إعادة توزيع لزميل، أو تسجيل إنها لم تُنفَّذ.'],
   'tk-edit': ['تعديل المهمة', 'تغيير نص المهمة أو المكلَّف بيها أو تاريخها أو ملاحظاتها.'],
-  'tk-arch': ['أرشفة', 'إخفاء مهمة النظام من القايمة (تقدري ترجعيها من الأرشيف).'],
+  'tk-arch': ['تجاهل', 'إخفاء مهمة النظام من القايمة (تقدري ترجعيها من «المهام المتجاهلة»).'],
+  'tk-arch-grp': ['تجاهل الكل', 'تجاهل كل مهام النوع ده مرة واحدة.'],
+  'pg-back': ['رجوع', 'الرجوع للصفحة اللي قبلها.'],
   'tk-arch-late': ['أرشفة المتأخرة', 'أرشفة كل مهام النظام المتأخرة مرة واحدة.'],
   'tk-unarch': ['استرجاع', 'إرجاع المهمة المؤرشفة للقايمة.'],
   'tk-wa': ['واتساب المهام', 'إرسال قايمة المهام لزميل على واتساب.'],
