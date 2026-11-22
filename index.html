@@ -1256,6 +1256,11 @@ h2.sec .gls{margin-inline-start:6px}
 .ch-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .sumrow>div>small{font-size:11px!important;letter-spacing:0}
 .ch-top{align-items:center}
+
+.dt-w{position:relative;display:block;min-width:0}.dt-w.grow{flex:1 1 0}
+.dt-w>input[type=date]{position:absolute!important;inset:0;width:100%!important;height:100%!important;opacity:0;z-index:2;margin:0;cursor:pointer}
+.dt-v{display:flex!important;align-items:center;min-height:44px;direction:rtl;font-variant-numeric:normal;white-space:nowrap}.dt-v.empty{color:var(--muted,#94a3b8)}
+.dt-v::before{content:"📅";margin-inline-end:8px;font-size:15px}
 </style>
 </head>
 <body>
@@ -1810,7 +1815,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-032000';
+const BUILD = '20261123-040000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -7709,6 +7714,22 @@ window.addEventListener('appinstalled', () => { DEFER_INSTALL = null; try { rend
   new MutationObserver(sched).observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.sx-clear'); if (!b) return; e.preventDefault(); e.stopPropagation(); const inp = b.previousElementSibling; if (!inp) return; inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); inp.focus(); }, true);
   sched();
+})();
+/* خانات التاريخ: العرض دايمًا «يوم شهر سنة» بالعربي (الاختيار من التقويم زي ما هو) */
+(function () {
+  const sync = w => { const i = w.querySelector('input'), v = w.querySelector('.dt-v'); if (!i || !v) return; const t = i.value ? dA(i.value) : (i.dataset.ph || 'اختاري التاريخ'); if (v.textContent !== t) v.textContent = t; v.classList.toggle('empty', !i.value); };
+  const wrap = i => {
+    if (i.dataset.dw || i.closest('.dt-w') || i.type !== 'date') return; i.dataset.dw = 1;
+    const w = document.createElement('span'); w.className = 'dt-w' + (i.classList.contains('grow') ? ' grow' : ''); if (i.getAttribute('style')) w.style.cssText = i.getAttribute('style').replace(/(^|;)\s*(color|text-align|direction)[^;]*/g, '');
+    const v = document.createElement('span'); v.className = 'inp dt-v';
+    i.parentNode.insertBefore(w, i); w.appendChild(v); w.appendChild(i); sync(w);
+  };
+  const all = () => { document.querySelectorAll('input[type=date]').forEach(wrap); document.querySelectorAll('.dt-w').forEach(sync); };
+  let q = 0; const sched = () => { if (q) return; q = requestAnimationFrame(() => { q = 0; all(); }); };
+  new MutationObserver(sched).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('input', e => { if (e.target && e.target.type === 'date') sched(); }, true);
+  document.addEventListener('change', e => { if (e.target && e.target.type === 'date') sched(); }, true);
+  setInterval(all, 700); all();
 })();
 /* الأرقام بالعربي (٠١٢٣…) في كل ما يظهر على الشاشة؛ الحقول نفسها بتفضل بأرقام لاتينية عشان الإدخال */
 (function () {
