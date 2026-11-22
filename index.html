@@ -1764,7 +1764,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-063000';
+const BUILD = '20261122-150000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2914,6 +2914,15 @@ async function saveEntry(again) {
   saved.forEach(x => D.txs[x.id] = x);
   queue('saveTx', { txs: baseAt ? saved.map(x => ({ ...x, __base: baseAt })) : saved });
   const tkClosed = opsAfterSave(saved);
+  if (!F.editId) saved.forEach(x => {   // دفع «عدم الالتباس» ⇒ موعد تجديد بعد 28 يوم
+    const txt = String([x.description, x.service, x.stage, x.category].join(' ')).replace(/[أإآ]/g, 'ا');
+    if (!x.clientId || !/التباس|التبس/.test(txt)) return;
+    const cid = resCid(x.clientId), d = addDays(String(x.date).slice(0, 10) || today(), 28), t = 'تجديد شهادة عدم الالتباس — ' + clientName(cid);
+    if (apRaw().some(a => resCid(a.c || '') === cid && a.d === d && a.t === t)) return;
+    const aid = uid('AP');
+    hrPut({ ['ap_' + aid]: { id: aid, d, tm: '', t, c: cid, k: 'close', who: ME.id, n: 'اتدفعت يوم ' + String(x.date).slice(0, 10) + ' — صلاحيتها بتخلص، جدّديها', rm: [7, 2, 1], ok: 0, by: ME.id, at: nowIso(), auto: 1 } });
+    setTimeout(() => toast('📅 اتعمل تذكير بتجديد عدم الالتباس يوم ' + dShort(d)), 1800);
+  });
   saved.forEach((x, i) => { if (photos[i]) queueReceipt(x, photos[i]); });
   changed();
   const acc = t === 'TAXC' ? '' : (F.fromAcc || F.toAcc);
@@ -3350,13 +3359,21 @@ function collRows() {
   return collList().map(x => { const s = cs[x.c] || { bal: 0, last: '' }, a = collAmt(x, s); return { x: { ...x, d: nextColl(x.c) }, s, owe: a.amt, own: a.own, lbl: a.lbl }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
 }
 const CO = { w: 'all' };
-const collWho = x => x.w ? bareName((userById(x.w) || {}).name || '') : '';
+/* تكليف لأكتر من شخص: المعرّفات بتتخزن مفصولة بفاصلة */
+const wIds = v => String(v || '').split(',').map(x => x.trim()).filter(Boolean);
+const wHas = (v, id) => wIds(v).includes(id);
+const wNames = v => wIds(v).map(hrName).join(' و ');
+const wMeOr = v => { const L = wIds(v); return L.includes(ME && ME.id) ? ME.id : L[0] || ''; };
+const wPick = (pid, v) => { const sel = wIds(v); return `<div class="chips wpick" id="${pid}">${liveUsers().filter(u => +u.active !== 0).map(u => `<button type="button" class="chip ${sel.includes(u.id) ? 'on' : ''}" data-wu="${u.id}">${sel.includes(u.id) ? '✓ ' : ''}${esc(bareName(u.name))}</button>`).join('')}</div><div class="small muted" style="margin-top:4px">تقدري تختاري أكتر من حد.</div>`; };
+document.addEventListener('click', e => { const b = e.target.closest('.wpick [data-wu]'); if (!b) return; b.classList.toggle('on'); b.textContent = (b.classList.contains('on') ? '✓ ' : '') + b.textContent.replace(/^✓ /, ''); });
+const wVal = pid => [...document.querySelectorAll('#' + pid + ' [data-wu].on')].map(b => b.dataset.wu).join(',');
+const collWho = x => wNames(x.w);
 function vCollect(r, el) {
   apMigrate();
   const rowsAll = collRows(), td = today();
-  const rows = CO.w === 'all' ? rowsAll : rowsAll.filter(q => q.x.w === (CO.w === 'me' ? ME.id : CO.w));
+  const rows = CO.w === 'all' ? rowsAll : rowsAll.filter(q => wHas(q.x.w, CO.w === 'me' ? ME.id : CO.w));
   const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
-  const wn = k => rowsAll.filter(q => q.x.w === k).length, wChips = rowsAll.length ? `<div class="tk-who"><button class="chip ${CO.w === 'all' ? 'on' : ''}" data-act="co-w" data-k="all">الكل <small>${rowsAll.length}</small></button><button class="chip ${CO.w === 'me' ? 'on' : ''}" data-act="co-w" data-k="me">تحصيلي <small>${wn(ME.id)}</small></button>${isPriv() ? liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id && wn(u.id)).map(u => `<button class="chip ${CO.w === u.id ? 'on' : ''}" data-act="co-w" data-k="${u.id}">${esc(bareName(u.name))} <small>${wn(u.id)}</small></button>`).join('') : ''}</div>` : '';
+  const wn = k => rowsAll.filter(q => wHas(q.x.w, k)).length, wChips = rowsAll.length ? `<div class="tk-who"><button class="chip ${CO.w === 'all' ? 'on' : ''}" data-act="co-w" data-k="all">الكل <small>${rowsAll.length}</small></button><button class="chip ${CO.w === 'me' ? 'on' : ''}" data-act="co-w" data-k="me">تحصيلي <small>${wn(ME.id)}</small></button>${isPriv() ? liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id && wn(u.id)).map(u => `<button class="chip ${CO.w === u.id ? 'on' : ''}" data-act="co-w" data-k="${u.id}">${esc(bareName(u.name))} <small>${wn(u.id)}</small></button>`).join('') : ''}</div>` : '';
   const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
   el.innerHTML = `<div class="co-h"><div class="co-t"><h1 class="pg" style="margin:0">💰 التحصيل</h1><div class="small muted">تحصيل العملاء ومتابعة مطالبات الضرائب</div></div>
       <div class="co-top-acts"><button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل</button>${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} PDF</button>` : ''}</div></div>
@@ -3390,7 +3407,7 @@ const apLeft = a => Math.round((new Date(a.d + 'T12:00:00') - new Date(today() +
 const apWin = (B, td = today()) => B.next.filter(a => td >= apFrom(a));   // مواعيد دخلت فترة التذكير (أسبوع / يومين / يوم قبلها)
 const apLeftTxt = n => n === 1 ? 'بكرة' : n === 2 ? 'بعد يومين' : n <= 10 ? 'بعد ' + n + ' أيام' : 'بعد ' + n + ' يوم';
 const apRaw = () => Object.keys((D && D.lists) || {}).filter(k => k.indexOf('ap_') === 0).map(k => hrGet(k)).filter(a => a && a.id && a.d);
-const apAll = () => apRaw().filter(a => isPriv() || !a.who || a.who === ME.id);
+const apAll = () => apRaw().filter(a => isPriv() || !a.who || wHas(a.who, ME.id));
 const apCmp = (a, b) => (a.d + (a.tm || '')).localeCompare(b.d + (b.tm || ''));
 const apBuckets = (L, td = today()) => { const o = L.filter(a => !a.ok).sort(apCmp); return { late: o.filter(a => a.d < td), now: o.filter(a => a.d === td), next: o.filter(a => a.d > td) }; };
 const nextColl = c => { const L = apRaw().filter(a => !a.ok && a.k === 'collect' && resCid(a.c) === c).sort(apCmp); return L[0] ? L[0].d : ''; };
@@ -3410,7 +3427,7 @@ function apTasks() {
   if (!ME || !D || !D.lists) return [];
   const k = VER + '|' + (ME && ME.id); if (_apT && _apTk === k) return _apT;
   _apT = apAll().filter(a => a.c && D.clients[resCid(a.c)]).map(a => {
-    const c = D.clients[resCid(a.c)], u = userById(a.who || a.by);
+    const c = D.clients[resCid(a.c)], u = userById(wMeOr(a.who) || a.by);
     return { id: 'AP-' + a.id, crm: 'a', apt: true, cid: c.id, clientName: c.name, text: a.t, cat: '', place: a.tm || '', note: a.n || '', who: u ? u.name : '', due: a.d, d: a.d, status: a.ok ? 'done' : 'open', why: '', doneAt: a.okAt || '', doneBy: a.okBy ? hrName(a.okBy) : '', by: a.by };
   }); _apTk = k; return _apT;
 }
@@ -3422,7 +3439,7 @@ function apTaskSet(id, patch) {
 }
 function apRow(a, o = {}) {
   const td = today(), late = !a.ok && a.d < td, cid = a.c && resCid(a.c), c = cid && D.clients[cid];
-  const who = a.who ? hrName(a.who) : '', can = isPriv() || a.by === ME.id;
+  const who = a.who ? wNames(a.who) : '', can = isPriv() || a.by === ME.id;
   const meta = [AP_K[a.k] || AP_K.other, o.date ? `<span class="${late ? 'neg' : ''}">${esc(dShort(a.d))}${a.d === td ? ' (النهارده)' : (a.d > td ? ' · ' + apLeftTxt(apLeft(a)) : '')}</span>` : '', a.tm ? `<span class="num">${esc(a.tm)}</span>` : '', c ? `<a href="#client/${c.id}">${esc(c.name)}</a>` : '', who ? '👤 ' + esc(who) : ''].filter(Boolean).join(' · ');
   return `<div class="lrow ap-r${a.ok ? ' dn' : ''}${late ? ' late' : ''}" style="align-items:flex-start;cursor:default">
     ${o.ro ? `<span class="ap-dot">${late ? '⚠️' : '📅'}</span>` : `<button class="ap-ck${a.ok ? ' on' : ''}" data-act="ap-done" data-id="${esc(a.id)}" aria-label="تم">${a.ok ? '✓' : ''}</button>`}
@@ -3438,7 +3455,7 @@ function apForm(id, pre = {}) {
     ${fld('العنوان', `<input id="ap-t" class="inp" placeholder="مثال: اجتماع مع العميل" value="${esc(cur.t || '')}">`, { req: 1 })}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('التاريخ', `<input id="ap-d" type="date" class="inp" value="${esc(cur.d || pre.d || today())}">`, { req: 1 })}${fld('الوقت (اختياري)', `<input id="ap-tm" type="time" class="inp" value="${esc(cur.tm || '')}">`)}</div>
     ${fld('العميل', `<div class="search">${icon('search', 18)}<input id="ap-q" class="inp" placeholder="ابحث عن العميل"></div><div id="ap-l" class="card" style="margin-top:8px;max-height:170px;overflow:auto;${pick ? 'display:none' : ''}"></div><div id="ap-p" class="small" style="margin-top:6px">${pick ? 'المختار: <b>' + esc(clientName(pick)) + '</b> <a href="#" data-apx="1">تغيير</a>' : ''}</div>`, { req: 1 })}
-    ${fld('لمين الموعد؟', `<select id="ap-w" class="inp"><option value="">الكل (الفريق كله)</option>${users.map(u => `<option value="${u.id}" ${w0 === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+    ${fld('لمين الموعد؟ (من غير اختيار = الفريق كله)', wPick('ap-w', w0))}
     ${fld('فكّروني قبلها بـ', `<div class="chips" id="ap-rm">${AP_RM.map(([d, l]) => `<label class="chip" style="cursor:pointer;gap:6px"><input type="checkbox" value="${d}" ${(id ? apRm(cur) : (AP_RM_DEF[cur.k || pre.k] || [1])).includes(d) ? 'checked' : ''}> ${l}</label>`).join('')}<span class="small muted" style="align-self:center">+ يوم الموعد نفسه دايمًا</span></div>`)}
     ${fld('ملاحظة (اختياري)', `<input id="ap-n" class="inp" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="ap-ok">حفظ</button>${id ? `<button class="btn danger" data-act="ap-del" data-id="${esc(id)}">حذف</button>` : ''}<button class="btn" data-act="mclose">إلغاء</button></div>`);
@@ -3456,7 +3473,7 @@ function apForm(id, pre = {}) {
     if (!t) return toast('اكتبي عنوان الموعد', 'err');
     if (!d) return toast('اختاري التاريخ', 'err');
     const aid = id || uid('AP');
-    hrPut({ ['ap_' + aid]: { id: aid, d, tm: $('#ap-tm').value || '', t, c: pick, k, who: $('#ap-w').value, n: ($('#ap-n').value || '').trim(), rm: [...m.querySelectorAll('#ap-rm input:checked')].map(x => +x.value), ok: cur.ok || 0, by: cur.by || ME.id, at: cur.at || nowIso() } });
+    hrPut({ ['ap_' + aid]: { id: aid, d, tm: $('#ap-tm').value || '', t, c: pick, k, who: wVal('ap-w'), n: ($('#ap-n').value || '').trim(), rm: [...m.querySelectorAll('#ap-rm input:checked')].map(x => +x.value), ok: cur.ok || 0, by: cur.by || ME.id, at: cur.at || nowIso() } });
     closeModal(); toast('اتحفظ الموعد'); apRe();
   };
 }
@@ -3487,7 +3504,7 @@ function apPop() {   // أول ما البرنامج يفتح: لازم تأكي
 const CAL = { m: '', sel: '', mine: 0 };
 function vCalendar(r, el) {
   const td = today(); if (!CAL.m) CAL.m = td.slice(0, 7); if (!CAL.sel) CAL.sel = td; apMigrate();
-  let L = apAll(); if (CAL.mine) L = L.filter(a => !a.who || a.who === ME.id);
+  let L = apAll(); if (CAL.mine) L = L.filter(a => !a.who || wHas(a.who, ME.id));
   const by = {}; L.forEach(a => (by[a.d] = by[a.d] || []).push(a));
   const [Y, M] = CAL.m.split('-').map(Number), dim = new Date(Y, M, 0).getDate(), off = (new Date(Y, M - 1, 1).getDay() + 1) % 7;
   const B = apBuckets(L, td);
@@ -3676,7 +3693,7 @@ function dlForm(id, clientId) {
 }
 function collHomeCard(view) {
   apMigrate();
-  const all0 = collRows(), mine0 = all0.filter(q => q.x.w === ME.id), rows = !isPriv() && mine0.length ? mine0 : all0, td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
+  const all0 = collRows(), mine0 = all0.filter(q => wHas(q.x.w, ME.id)), rows = !isPriv() && mine0.length ? mine0 : all0, td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
   const d = document.createElement('div'); d.className = 'card';
   const tx0 = taxRows().filter(x => !x.done);
   d.innerHTML = `<div class="row" style="padding:12px 14px 4px"><b>💰 التحصيل</b><span class="sp"></span><a href="#collect" class="small">كل التحصيل ←</a></div>
@@ -3737,7 +3754,7 @@ function collForm(id) {
   const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'التحصيل' : 'إضافة عميل للتحصيل'}</h3>
     ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`)}
     <div id="cl-mx"></div>
-    ${fld('تكليف (Assign to)', `<select id="cl-w" class="inp"><option value="">بدون تكليف</option>${users.map(u => `<option value="${u.id}" ${w0 === u.id ? 'selected' : ''}>${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+    ${fld('تكليف (Assign to)', wPick('cl-w', w0))}
     ${fld('ملاحظة (اختياري)', `<input id="cl-n" class="inp" placeholder="مثال: وعد يدفع نهاية الشهر" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
   const mx = () => {
@@ -3758,7 +3775,7 @@ function collForm(id) {
   });
   m.querySelector('#cl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
-    const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), w: $('#cl-w').value, d: cur.d || '', by: ME.id, at: cur.at || today() };
+    const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), w: wVal('cl-w'), d: cur.d || '', by: ME.id, at: cur.at || today() };
     if (mode === 'agree') { const sel = m.querySelector('#cl-ai'); if (!sel) return toast('مفيش دفعات في الاتفاق', 'err'); e.ai = +sel.value; }
     if (mode === 'amt') { e.a = r2(+m.querySelector('#cl-a').value || 0); if (e.a <= 0) return toast('اكتبي مبلغ الدفعة', 'err'); }
     if (mode === 'doc') { e.a = cur.a; e.dn = cur.dn; }
@@ -3770,7 +3787,7 @@ let _clT = null, _clTk = '';
 function clTasks() {
   if (!ME || !D || !D.lists) return [];
   const k = VER + '|' + ME.id; if (_clT && _clTk === k) return _clT;
-  _clT = collList().filter(x => x.w && D.clients[x.c]).map(x => { const c = D.clients[x.c], a = collAmt(x, cliStat(x.c)), u = userById(x.w), dd = nextColl(x.c) || '';
+  _clT = collList().filter(x => x.w && D.clients[x.c]).map(x => { const c = D.clients[x.c], a = collAmt(x, cliStat(x.c)), u = userById(wMeOr(x.w)), dd = nextColl(x.c) || '';
     return { id: 'CL-' + x.c, crm: 'c', cl: true, cid: c.id, clientName: c.name, text: 'تحصيل ' + fmt(a.amt) + ' ج' + (a.lbl ? ' — ' + a.lbl.replace(/^\S+\s/, '') : ''), cat: '', place: '', note: x.n || '', who: u ? u.name : '', due: dd, d: dd, status: 'open', why: '', by: x.by }; });
   _clTk = k; return _clT;
 }
