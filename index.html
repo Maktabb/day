@@ -1768,7 +1768,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-233500';
+const BUILD = '20261123-010000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2138,7 +2138,7 @@ function paintNav() {
   const r = route().name;
   const on = h => (r === h || (h === 'clients' && r === 'client') || (h === 'accounts' && r === 'account') || (h === 'settings' && isPriv() && ['journal', 'accounts', 'account', 'review', 'reports', 'analytics', 'dups'].includes(r))) ? 'on' : '';
   $('#side').innerHTML = `<a class="cta" href="#entry">${icon('plus', 18, 2.2)} حركة جديدة</a>` +
-    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${appic(h, 28, h === 'accounts' && !isPriv() ? '👛' : '')} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}${h === 'tasks' && tkMyOpen().length ? ` <span class="cnt">${tkMyOpen().length}</span>` : ''}</a>`).join('') +
+    navItems().map(([h, l, i]) => `<a href="#${h}" class="${on(h)}">${appic(h, 28, h === 'accounts' && !isPriv() ? '👛' : '')} ${l}${h === 'review' && queueTxs().length ? ` <span class="cnt">${queueTxs().length}</span>` : ''}${h === 'tasks' && tkMyOpen().length ? ` <span class="cnt">${tkMyOpen().length}</span>` : ''}${h === 'collect' && collBadge().tot ? ` <span class="cnt" title="المطلوب تحصيله">${fmt(collBadge().tot)}</span>` : ''}</a>`).join('') +
     `<hr><a href="#" data-act="logout">${appic('logout', 28)} تسجيل الخروج</a>`;
   $('#bnav').innerHTML = `
     <a href="#home" class="${on('home')}"><i class="ne">${EMO.home}</i>الرئيسية</a>
@@ -2184,7 +2184,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); if (fn !== vHome) setTimeout(apPop, 250); if (fn === vHome) { setTimeout(apPop, 200); setTimeout(apHomeTick, 0); setTimeout(notePop, 350); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('tasks')) setTimeout(tkMorningPop, 600); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
+  try { fn(r, vw); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2226,7 +2226,7 @@ function renderLogin() {
     if (String(u.code) === _pin) {
       ME = u; LS.set('session', { userId: u.id, at: nowIso() }); LS.set('lastUser', u.id); LS.set('lastActive', String(Date.now())); try { syncReminders(); } catch (e) { }
       $('#app').onclick = null; document.onkeydown = null;
-      _loginUser = null; _pin = '';
+      _loginUser = null; _pin = ''; _tkPopFor = ''; _apPopFor = '';
       renderShell(); if (!location.hash) location.hash = 'home'; render(); syncNow();
     } else { _pin = ''; paint(); $('#perr').textContent = 'رمز الدخول غير صحيح'; }
   };
@@ -2436,7 +2436,7 @@ function typeTile(k) {
 function vMore(r, el) {
   const items = navItems().filter(([h]) => !['home', 'journal', 'clients'].includes(h));
   el.innerHTML = `<h1 class="pg">المزيد</h1>
-    <div class="appgrid">${items.map(([h, l]) => `<button class="appbtn" data-act="go" data-h="${h}">${appic(h, 62)}<span>${l}</span>${h === 'review' && queueTxs().length ? `<i class="bdg">${queueTxs().length}</i>` : ''}${h === 'tasks' && tkMyOpen().length ? `<i class="bdg">${tkMyOpen().length}</i>` : ''}</button>`).join('')}
+    <div class="appgrid">${items.map(([h, l]) => `<button class="appbtn" data-act="go" data-h="${h}">${appic(h, 62)}<span>${l}</span>${h === 'review' && queueTxs().length ? `<i class="bdg">${queueTxs().length}</i>` : ''}${h === 'tasks' && tkMyOpen().length ? `<i class="bdg">${tkMyOpen().length}</i>` : ''}${h === 'collect' && collBadge().tot ? `<i class="bdg" title="المطلوب تحصيله">${kFmt(collBadge().tot)}</i>` : ''}</button>`).join('')}
       <button class="appbtn" data-act="theme-toggle">${appic('look', 62, themeIsDark() ? '☀️' : '🌙')}<span>${themeIsDark() ? 'الوضع الفاتح' : 'الوضع الداكن'}</span></button>
       <button class="appbtn" data-act="logout">${appic('logout', 62)}<span>تسجيل الخروج</span></button></div>`;
 }
@@ -3214,6 +3214,15 @@ function vOld(r, el) {
 
 /* ====== العملاء ====== */
 const CJ = { q: '', f: 'all', limit: 80 };
+const ccGet = id => { const r = hrGet('cc_' + id); return r ? r.s : ''; };
+const CC_L = { ok: '✅ حسابه مظبوط', rev: '⚠️ محتاج مراجعة حساب' };
+function ccPick(id) {
+  const cur = ccGet(id);
+  const m = modal(`<h3>🗂️ تصنيف حساب العميل</h3><p class="small muted"><b>${esc(clientName(id))}</b></p>
+    <div style="display:grid;gap:8px"><button class="btn ${cur === 'ok' ? 'pri' : ''}" data-cc="ok">${CC_L.ok}</button><button class="btn ${cur === 'rev' ? 'pri' : ''}" data-cc="rev">${CC_L.rev}</button><button class="btn" data-cc="">بدون تصنيف</button></div>
+    <div class="acts"><button class="btn" data-act="mclose">إلغاء</button></div>`);
+  m.addEventListener('click', e => { const b = e.target.closest('[data-cc]'); if (!b) return; hrPut({ ['cc_' + id]: b.dataset.cc ? { s: b.dataset.cc, by: ME.id, at: nowIso() } : { del: 1 } }); closeModal(); toast('تم التصنيف'); render(); });
+}
 let _clRep = null;
 function exportClRep() {
   const R = _clRep; if (!R) return;
@@ -3236,7 +3245,7 @@ function vClients(r, el) {
   const pa = id => xlDone() ? ((c[id] || {}).last || '') : act(id);
   const filt = {
     all: () => true, fu: x => !!fuIndex()[x.id], nophone: x => !x.phone, debt: x => (c[x.id] || {}).bal < 0, credit: x => (c[x.id] || {}).bal > 0,
-    new: x => !String(x.createdBy).includes('ترحيل'),
+    new: x => !String(x.createdBy).includes('ترحيل'), ccok: x => ccGet(x.id) === 'ok', ccrev: x => ccGet(x.id) === 'rev',
     month: x => pa(x.id) >= mStart, quarter: x => pa(x.id) >= qStart,
     owing: x => (c[x.id] || {}).bal < -0.004 && pa(x.id) >= d3,
     owing1: x => (c[x.id] || {}).bal < -0.004 && pa(x.id) >= d1
@@ -3257,13 +3266,13 @@ function vClients(r, el) {
       ${rows.map((r, i) => `<tr><td class="c">${i + 1}</td><td>${esc(r.x.name)}</td><td>${esc(r.x.phone || '')}</td><td class="c">${r.p.n}</td><td class="n">${fmt(r.p.inc)}</td><td class="n">${fmt(r.p.exp)}</td><td class="n">${fmt(r.p.fee)}</td><td class="n"><b class="${r.bal < 0 ? 'neg' : ''}">${fmt(r.bal)}</b></td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="4">الإجمالي (${rows.length} عميل)</td><td class="n">${fmt(sm('inc'))}</td><td class="n">${fmt(sm('exp'))}</td><td class="n">${fmt(sm('fee'))}</td><td class="n">${fmt(r2(cr - db))}</td></tr></tfoot></table></div>`;
   }
-  const _lbl = ({ all: 'كل العملاء', fu: 'عملاء عندهم متابعة مفتوحة', month: 'تعاملنا معهم هذا الشهر', quarter: 'تعاملنا معهم هذا الربع', owing1: 'عليهم رصيد (آخر شهر)', owing: 'عليهم رصيد (آخر 3 شهور)', nophone: 'بدون رقم موبايل', debt: 'عليهم رصيد (مدينون)', credit: 'لهم رصيد', new: 'عملاء جدد' })[CJ.f] || 'كل العملاء';
+  const _lbl = ({ all: 'كل العملاء', fu: 'عملاء عندهم متابعة مفتوحة', month: 'تعاملنا معهم هذا الشهر', quarter: 'تعاملنا معهم هذا الربع', owing1: 'عليهم رصيد (آخر شهر)', owing: 'عليهم رصيد (آخر 3 شهور)', nophone: 'بدون رقم موبايل', debt: 'عليهم رصيد (مدينون)', credit: 'لهم رصيد', new: 'عملاء جدد', ccok: 'حساباتهم مظبوطة', ccrev: 'محتاجين مراجعة حساب' })[CJ.f] || 'كل العملاء';
   _pdClients = () => printClients(arr, _lbl + (CJ.q ? ' · بحث: ' + CJ.q : ''));
   el.innerHTML = `<div class="print-head"><div class="mono">م س</div><div><b>مكتب محمود سالم للمحاسبة والمراجعة وتأسيس الشركات</b><div class="small muted">${per ? (CJ.f === 'month' ? 'تقرير عملاء الشهر' : 'تقرير عملاء الربع') + ' — من ' + from + ' إلى ' + td : 'العملاء'}</div></div></div>
     <h1 class="pg pg-row no-print"><span class="pgt">${sup ? 'عملاء هذه الفترة' : 'العملاء'}<small>${sup ? arr.length : activeClients().length} عميل</small></span>${isPriv() ? `<button class="btn ib-plus ib-pr" data-act="pd-clients" title="طباعة PDF — بيان أرصدة العملاء (${arr.length})" aria-label="طباعة PDF — بيان أرصدة العملاء (${arr.length})">${icon('print', 21)}</button>` : ''}<button class="btn pri ib-plus" data-act="client-new" title="عميل جديد" aria-label="عميل جديد">${icon('plus', 22)}</button></h1>
     <div class="filters card pad">
       <div class="search">${icon('search', 18)}<input class="inp" data-cj="q" value="${esc(CJ.q)}" placeholder="ابحث بالاسم أو رقم الموبايل"></div>
-      <div class="chips scroll">${[['all', 'الكل'], ['fu', '📊 المتابعة'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing', 'fu'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
+      <div class="chips scroll">${[['all', 'الكل'], ['fu', '📊 المتابعة'], ['month', 'تعاملنا معهم هذا الشهر'], ['quarter', 'تعاملنا معهم هذا الربع'], ['owing1', 'عليهم رصيد (آخر شهر)'], ['owing', 'عليهم رصيد (آخر 3 شهور)'], ['nophone', 'بدون رقم موبايل'], ['debt', 'عملاء عليهم فلوس'], ['credit', 'لهم رصيد'], ['ccok', '✅ حساباتهم مظبوطة'], ['ccrev', '⚠️ محتاجين مراجعة'], ['new', 'أضيفوا من التطبيق']].filter(x => sup ? ['month', 'quarter', 'owing1', 'owing', 'fu'].includes(x[0]) : !['owing', 'owing1'].includes(x[0])).map(([k, l]) => `<button class="chip ${CJ.f === k ? 'on' : ''}" data-act="cj-f" data-v="${k}">${l} <span class="muted">${counts[k]}</span></button>`).join('')}</div>
     </div>
     ${rep}
     ${['owing', 'owing1', 'debt'].includes(CJ.f) && isPriv() ? `<div class="card sumrow" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>👥 عدد العملاء</small><b>${arr.length}</b></div><div class="bal neg"><small>⚠️ إجمالي المستحق عليهم</small><b class="neg">${fmt(r2(arr.reduce((t, x) => t - Math.min((c[x.id] || {}).bal || 0, 0), 0)))}</b></div></div>` : ''}
@@ -3271,7 +3280,7 @@ function vClients(r, el) {
       const s = c[x.id], a = ast[x.id];
       return `<div class="lrow" data-act="go" data-h="client/${x.id}"><div class="av">${esc(initials(x.name))}</div>
         <div class="grow"><b>${esc(x.name)}</b><div class="small muted">${x.phone ? `<span class="num">${esc(x.phone)}</span>` : '<span class="badge warn">بدون رقم</span>'}
-        ${a ? ` · ${a.n} حركة في الإكسيل` : ''}${act(x.id) ? ` · آخر نشاط ${dShort(act(x.id))}` : ''}</div>${(b => b ? `<div class="small">${b}</div>` : '')(fuBadge(x.id))}</div>
+        ${a ? ` · ${a.n} حركة في الإكسيل` : ''}${act(x.id) ? ` · آخر نشاط ${dShort(act(x.id))}` : ''}</div>${(b => b ? `<div class="small">${b}</div>` : '')(fuBadge(x.id))}${ccGet(x.id) ? `<div class="small ${ccGet(x.id) === 'rev' ? 'neg' : 'pos'}">${CC_L[ccGet(x.id)]}</div>` : ''}</div>
         ${s && s.n ? `<b class="${s.bal < 0 ? 'neg' : 'pos'}">${money(s.bal)}</b>` : (SAB[x.id] != null ? `<b class="${SAB[x.id] < 0 ? 'neg' : 'pos'}" title="رصيد المحاسب الذكي">${money(SAB[x.id])}</b>` : '')}</div>`;
     }).join('') || '<div class="empty">لا يوجد عملاء مطابقون.</div>'}
     ${arr.length > CJ.limit ? `<div class="totbar"><button class="btn sm" data-act="cj-more">عرض المزيد (${arr.length - CJ.limit})</button></div>` : ''}</div>`;
@@ -3506,7 +3515,7 @@ function apPop() {   // أول ما البرنامج يفتح: لازم تأكي
   const blk = (t, L, cls) => L.length ? `<div class="small ${cls || 'muted'}" style="margin:10px 0 2px;font-weight:600">${t} (${L.length})</div><div class="card">${L.slice(0, 8).map(a => apRow(a, { date: 1, ro: 1 })).join('')}</div>${L.length > 8 ? `<div class="small muted">و${L.length - 8} كمان…</div>` : ''}` : '';
   const m = modal(`<h3>📅 مواعيدك</h3>${blk('⚠️ فائتة لسه ماتمتش', B.late, 'neg')}${blk('📍 النهارده', B.now)}${blk('🔔 قرّب موعدها', soon)}
     <div class="acts"><button class="btn pri" id="ap-pok">تمام ✓ اطّلعت عليها</button><button class="btn" id="ap-pcal">فتح التقويم</button></div>`, 'apop');
-  const after = () => { closeModal(); setTimeout(() => { if (typeof notePop === 'function') notePop(); if (ME && canTab('tasks')) tkMorningPop(); }, 150); };
+  const after = () => { closeModal(); setTimeout(() => { if (typeof notePop === 'function') notePop(); }, 150); };
   m.querySelector('#ap-pok').onclick = after;
   m.querySelector('#ap-pcal').onclick = () => { after(); go('calendar'); };
 }
@@ -3700,6 +3709,12 @@ function dlForm(id, clientId) {
     dlSave(dlList().filter(q => q.id !== rec.id).concat(rec)); closeModal(); toast('تم الحفظ'); render();
   };
 }
+function collBadge() {
+  if (!ME || !D || !D.lists || !canTab('collect')) return { n: 0, tot: 0 };
+  const all0 = collRows(), mine0 = all0.filter(q => wHas(q.x.w, ME.id)), rows = (!isPriv() && mine0.length ? mine0 : all0).filter(q => q.owe > 0.004);
+  return { n: rows.length, tot: r2(rows.reduce((n, q) => n + q.owe, 0)) };
+}
+const kFmt = v => v >= 100000 ? Math.round(v / 1000) + 'k' : v >= 10000 ? (Math.round(v / 100) / 10) + 'k' : fmt(v);
 function collHomeCard(view) {
   apMigrate();
   const all0 = collRows(), mine0 = all0.filter(q => wHas(q.x.w, ME.id)), rows = !isPriv() && mine0.length ? mine0 : all0, td = today(), open = rows.filter(q => q.owe > 0.004), tot = r2(open.reduce((n, q) => n + q.owe, 0)), late = open.filter(q => q.x.d && q.x.d < td).length;
@@ -3978,7 +3993,7 @@ function vClient(r, el) {
         <button class="ch-tg" data-act="ch-toggle" aria-expanded="${CHX() ? 'true' : 'false'}" title="${CHX() ? 'تقليل' : 'تمديد'}"><span>${CHX() ? 'تقليل' : 'تمديد'}</span><i>${CHX() ? '▴' : '▾'}</i></button></div>
       <div class="ch-chips">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${icon('phone', 14)} <span class="num">${esc(c.phone)}</span></a>` : `<span class="badge warn">بدون رقم موبايل</span>`}
         ${c.phone2 ? `<a class="chip" href="tel:${esc(c.phone2)}"><span class="num">${esc(c.phone2)}</span></a>` : ''}
-        <button class="chip ch-bt" ${isPriv() ? `data-act="bill-edit" data-id="${c.id}"` : 'disabled'}>${billGet(c.id).m === 'agree' ? '🤝 اتفاق إجمالي' : '💼 رسوم + أتعاب'}${isPriv() ? ' ✎' : ''}</button></div>
+        ${isPriv() || ccGet(c.id) ? `<button class="chip" ${isPriv() ? `data-act="cc-pick" data-id="${c.id}"` : 'disabled'}>${ccGet(c.id) ? CC_L[ccGet(c.id)] : '🗂️ تصنيف الحساب'}</button>` : ''}<button class="chip ch-bt" ${isPriv() ? `data-act="bill-edit" data-id="${c.id}"` : 'disabled'}>${billGet(c.id).m === 'agree' ? '🤝 اتفاق إجمالي' : '💼 رسوم + أتعاب'}${isPriv() ? ' ✎' : ''}</button></div>
       ${CHX() ? `${c.aliases ? `<div class="small muted" style="margin-top:6px">أسماء أخرى: ${esc(c.aliases.split('|').join('، '))}</div>` : ''}
       <div class="ch-acts">
         <button class="btn ib c-ed" data-act="client-edit" data-id="${c.id}" title="تعديل" aria-label="تعديل"><i>✏️</i></button>
@@ -5165,6 +5180,7 @@ const ACT = {
   'rp-legacy': el => { RP.legacy = el.checked ? 1 : 0; render(); },
   'client-new': () => openClientModal({ onSaved: id => go('client/' + id) }),
   'client-edit': el => openClientModal({ id: el.dataset.id }),
+  'cc-pick': el => ccPick(el.dataset.id),
   'client-wa': el => clientWhatsApp(el.dataset.id),
   'client-merge': el => openMergeModal(el.dataset.id),
   'client-del': el => deleteClient(el.dataset.id),
@@ -6033,7 +6049,7 @@ function opsHomeCard(view) {
 /* ---- داخل نموذج الحركة: مهام العميل المختار (ثم باقي مهام الموظف) تُغلق مع الحفظ ---- */
 function opsMountForm() {
   const host = $('#f-client');
-  if (!host || !F || F.editId || (!opsCfg() && !tkAll().length)) return;
+  if (!host || !F || F.editId || (TYPES[F.type] || {}).d !== -1 || (!opsCfg() && !tkAll().length)) return;
   let forClient = F.clientId ? tkForClient(F.clientId) : [];
   if (!isPriv()) forClient = forClient.filter(tkMine);
   forClient.sort((a, b) => (tkMine(b) - tkMine(a)) || tkSort(a, b));
@@ -6096,7 +6112,7 @@ function notePop() {
   const m = modal(`<h3>🔔 إشعارات</h3>
     ${L.map(n => `<div class="card pad" style="margin-top:8px"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="small muted" style="margin-top:6px">${esc(bareName((userById(n.by) || {}).name || ''))} · ${esc(String(n.at).slice(0, 10))}</div></div>`).join('')}
     <div class="acts"><button class="btn pri" id="nt-ok">تمام ✓ قريتها</button></div>`);
-  m.querySelector('#nt-ok').onclick = () => { const map = {}; L.forEach(n => map[`nr_${n.id}_${ME.id}`] = { n: n.id, u: ME.id, at: nowIso() }); hrPut(map); closeModal(); if (canTab('tasks')) setTimeout(tkMorningPop, 300); };
+  m.querySelector('#nt-ok').onclick = () => { const map = {}; L.forEach(n => map[`nr_${n.id}_${ME.id}`] = { n: n.id, u: ME.id, at: nowIso() }); hrPut(map); closeModal(); };
 }
 function ntManage() {
   const us = liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id), L = ntAll().reverse();
@@ -6125,16 +6141,23 @@ function ntLog() {
       ${tg.map(u => { const r = ntRead(n.id, u.id); return `<div class="small" style="display:flex;gap:6px"><span>${r ? '✅' : '⏳'}</span><b>${esc(bareName(u.name))}</b><span class="muted">${r ? 'شافه ' + esc(ntTs(r.at)) : 'لسه ما شافهوش'}</span></div>`; }).join('')}</div>`; }).join('') : '<div class="empty">لا توجد إشعارات مرسلة.</div>'}
     <div class="acts"><button class="btn pri" data-act="nt-manage">🔔 إشعار جديد</button><button class="btn" data-act="mclose">إغلاق</button></div>`);
 }
+let _tkPopFor = '';
+/* أول ما البرنامج يفتح بعد الدخول: بوب أب المهام الأول، وبعده المواعيد، وبعده الإشعارات */
+function startPops() {
+  if (!ME || modalOpen()) return;
+  if (_tkPopFor !== ME.id) { _tkPopFor = ME.id; if (canTab('tasks') && tkMyOpen().length) return tkMorningPop(); }
+  apPop(); if (!modalOpen()) notePop();
+}
 function tkMorningPop() {
   if (!ME || !canTab('tasks') || modalOpen()) return;
-  const key = 'tkpop:' + ME.id; if (LS.get(key, '') === today()) return;
   const L = tkMyOpen(); if (!L.length) return;
-  LS.set(key, today());
   const late = L.filter(tkLate).length, now = L.filter(t => t.due === today()).length;
   const m = modal(`<h3>📋 راجع المهام اللي عندك</h3>
     <p style="margin:0 0 10px">عندك <b>${L.length}</b> مهمة مفتوحة${late ? ` — منها <b class="neg">${late}</b> متأخرة` : ''}${now ? ` و<b>${now}</b> مطلوبة اليوم` : ''}.</p>
-    <div class="card">${L.slice(0, 6).map(t => tkRow(t, {})).join('')}</div>${L.length > 6 ? `<div class="small muted" style="margin-top:6px">و${L.length - 6} مهام أخرى…</div>` : ''}
-    <div class="acts"><button class="btn pri" data-act="mclose">تمام، راجعتها</button><button class="btn" data-act="mgo" data-h="tasks">فتح المهام</button></div>`);
+    <div class="card" style="max-height:52vh;overflow:auto">${L.slice(0, 12).map(t => tkRow(t, {})).join('')}</div>${L.length > 12 ? `<div class="small muted" style="margin-top:6px">و${L.length - 12} مهام أخرى…</div>` : ''}
+    <div class="acts"><button class="btn pri" id="tk-pok">تمام، راجعتها</button><button class="btn" id="tk-pgo">فتح المهام</button></div>`);
+  m.querySelector('#tk-pok').onclick = () => { closeModal(); setTimeout(startPops, 200); };
+  m.querySelector('#tk-pgo').onclick = () => { closeModal(); go('tasks'); };
 }
 /* ====== دمج مهمة مع مصروف اتسجّل عليها (المصروف يقفل المهمة ولا يتكرر) ====== */
 const tkSameClient = (t, cid) => t.local ? t.cid === cid : !!D.clients[cid] && tkSameName(t.clientName, D.clients[cid].name);
@@ -7764,6 +7787,7 @@ setInterval(() => {
 
 /* ====== شرح الأزرار: ضغطة طويلة على الموبايل أو وقوف الماوس عليها ====== */
 const TIPS = {
+  'cc-pick': ['تصنيف الحساب', 'تحديد إن حساب العميل مظبوط أو محتاج مراجعة، وتقدري تفلتري بيه في صفحة العملاء'],
   'client-edit': ['تعديل العميل', 'تعديل الاسم والموبايل والبيانات الأساسية للعميل.'],
   'ap-add': ['موعد', 'إضافة موعد مرتبط بالعميل (تحصيل، اجتماع، تسليم…) مع تذكير قبلها وتكليف زميل.'],
   'coll-toggle': ['التحصيل', 'إضافة العميل لقائمة التحصيل (بالرصيد أو بدفعة محددة مع تكليف محاسب). لو هو فيها بتعدّليه أو تشيليه.'],
