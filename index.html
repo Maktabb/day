@@ -1764,7 +1764,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-060000';
+const BUILD = '20261122-063000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -4579,10 +4579,11 @@ function hrAtt() {
   // ملخص الشهر
   const m = d.slice(0, 7), A = hrAll('a_').filter(r => String(r.d).startsWith(m));
   const sum = E.map(u => { const L = A.filter(r => r.u === u.id); const c = k => L.filter(r => r.st === k).length; const mins = L.reduce((s, r) => s + hrMins(r.in, r.out), 0); return [u, c('p'), c('l'), c('a'), c('v'), mins]; });
-  return `<div class="row wrap" style="gap:8px;align-items:center"><input type="date" class="inp" id="hr-day" value="${d}" style="width:auto"><button class="chip ${d === today() ? 'on' : ''}" data-act="hr-day" data-v="${today()}">اليوم</button><button class="chip" data-act="hr-day" data-v="${addDays(d, -1)}">اليوم السابق</button><span class="sp"></span><button class="btn sm" data-act="hr-fromexp">🧾 حضور من المصروفات</button><button class="btn sm" data-act="hr-allp">الكل حاضر</button></div>
+  return `<div class="row wrap" style="gap:8px;align-items:center"><input type="date" class="inp" id="hr-day" value="${d}" style="width:auto"><button class="chip ${d === today() ? 'on' : ''}" data-act="hr-day" data-v="${today()}">اليوم</button><button class="chip" data-act="hr-day" data-v="${addDays(d, -1)}">اليوم السابق</button><span class="sp"></span><button class="btn sm" data-act="hr-fromexp">🧾 حضور من المصروفات</button><button class="btn sm" data-act="hr-allp">الكل حاضر</button><button class="btn sm danger" data-act="hr-abs">🚫 تسجيل غياب</button></div>
     ${rows}
     <div class="row" style="margin-top:10px"><button class="btn pri" data-act="hr-att-save">${icon('check', 17)} حفظ حضور ${esc(dLong(d))}</button></div>
     <h2 class="sec">ملخص ${esc(monthName(m))}</h2>
+    ${(AB => AB.length ? `<div class="card" style="margin-bottom:10px"><div class="small muted" style="padding:10px 14px 2px">🚫 أيام الغياب وأسبابها</div>${AB.map(r => `<div class="lrow" style="cursor:default"><b class="grow">${esc(hrName(r.u))}<div class="small muted">${esc(dShort(r.d))}${r.n ? ' — ' + esc(r.n) : ' — بدون سبب مسجَّل'}</div></b></div>`).join('')}</div>` : '')(A.filter(r => r.st === 'a').sort((a, b) => String(b.d).localeCompare(String(a.d))))}
     <div class="card tblwrap"><table class="tbl sm"><thead><tr><th>الموظف</th><th class="n">حاضر</th><th class="n">متأخر</th><th class="n">غائب</th><th class="n">إجازة</th><th class="n">ساعات العمل</th></tr></thead>
     <tbody>${sum.map(([u, p, l, a, v, mn]) => `<tr><td><b>${esc(bareName(u.name))}</b></td><td class="n">${p}</td><td class="n ${l ? 'neg' : ''}">${l}</td><td class="n ${a ? 'neg' : ''}">${a}</td><td class="n">${v}</td><td class="n">${mn ? (mn / 60).toFixed(1) : '—'}</td></tr>`).join('')}</tbody></table></div>`;
 }
@@ -6167,6 +6168,25 @@ Object.assign(ACT, {
       if (!o.st) o.st = 'p'; map[k] = o; n++; });
     if (!Object.keys(map).length) return toast('مفيش حاجة تتحفظ', 'err');
     hrPut(map); toast(`تم حفظ حضور ${n} موظف`); hrRefresh();
+  },
+  'hr-abs': () => {
+    const E = hrEmps(), d0 = HR.day || today(), RS = ['مرض', 'ظرف عائلي / وفاة', 'ظرف طارئ', 'بدون إذن', 'لم يُبلّغ'];
+    const m = modal(`<h3>🚫 تسجيل غياب</h3><div class="form">
+      ${fld('الموظف', `<select id="ab-u" class="inp">${E.map(u => `<option value="${u.id}">${esc(bareName(u.name))}</option>`).join('')}</select>`)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('من', `<input id="ab-f" type="date" class="inp" value="${d0}">`)}${fld('إلى', `<input id="ab-t" type="date" class="inp" value="${d0}">`)}</div>
+      ${fld('السبب', `<div class="chips" id="ab-rs">${RS.map(x => `<button type="button" class="chip" data-r="${esc(x)}">${esc(x)}</button>`).join('')}</div><input id="ab-n" class="inp" placeholder="اكتبي السبب (إجباري)" style="margin-top:8px">`, { req: 1 })}
+      <p class="small muted">أيام الجمعة بتتخطّى تلقائيًا. بيتسجّل «غائب» مع السبب في سجل الحضور.</p></div>
+      <div class="acts"><button class="btn pri" id="ab-ok">حفظ الغياب</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+    m.querySelector('#ab-rs').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; $('#ab-n').value = b.dataset.r; m.querySelectorAll('#ab-rs .chip').forEach(x => x.classList.toggle('on', x === b)); });
+    m.querySelector('#ab-ok').onclick = () => {
+      const u = $('#ab-u').value, f = $('#ab-f').value, t = $('#ab-t').value, n = $('#ab-n').value.trim();
+      if (!f || !t || t < f) return toast('راجعي التاريخ', 'err');
+      if (!n) return toast('اكتبي سبب الغياب', 'err');
+      const map = {}; let c = 0;
+      for (let d = f; d <= t && c < 62; d = addDays(d, 1)) { if (hrFri(d)) continue; map[`hr_a_${u}_${d}`] = { u, d, st: 'a', in: '', out: '', n, by: ME.id }; c++; }
+      if (!c) return toast('الفترة كلها جمعة', 'err');
+      hrPut(map); closeModal(); toast(`اتسجّل غياب ${c} يوم`); hrRefresh();
+    };
   },
   'hr-lv-add': () => {
     const u = $('#lv-u').value, kind = $('#lv-k').value, from = $('#lv-f').value, to = $('#lv-t').value;
