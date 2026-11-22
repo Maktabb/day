@@ -1768,7 +1768,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-220000';
+const BUILD = '20261122-233500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3758,7 +3758,7 @@ function printTaxc() {
     foot: [['الإجمالي (' + L.length + ' مطالبة)', 6], null, null, null, null, null, `<b>${fmt(tot)}</b>`] });
 }
 function collForm(id) {
-  const cur = collList().find(q => q.c === id) || {}; let pick = id || '', mode = cur.m || 'bal';
+  const cur = collList().find(q => q.c === id) || {}; let pick = id || '', mode = cur.m === 'doc' ? 'pick' : (cur.m || 'bal'); const pk = new Set(cur.m === 'doc' ? (cur.ids || []) : []);
   const users = liveUsers().filter(u => +u.active !== 0), w0 = cur.w || '';
   const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'التحصيل' : 'إضافة عميل للتحصيل'}</h3>
     ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`)}
@@ -3773,22 +3773,39 @@ function collForm(id) {
     box.innerHTML = fld('المطلوب تحصيله', `<div style="display:grid;gap:6px">${chip('bal', `الرصيد المستحق عليه <b class="num">${fmt(own)}</b> ج`)}
       ${chip('agree', 'دفعة من الاتفاق')}${mode === 'agree' ? (items.length ? `<select id="cl-ai" class="inp">${items.map((it, i) => `<option value="${i}" ${(+cur.ai || 0) === i ? 'selected' : ''}>${esc(it.t || 'دفعة ' + (i + 1))} — ${fmt(+it.amt || 0)} ج${it.d ? ' (' + esc(it.d) + ')' : ''}</option>`).join('')}</select>` : '<div class="small neg">مفيش دفعات متسجّلة في اتفاق العميل. ضيفيها من «نوع المحاسبة» في صفحته.</div>') : ''}
       ${chip('amt', 'دفعة أخرى (مبلغ أكتبه)')}${mode === 'amt' ? `<input id="cl-a" type="number" step="0.01" inputmode="decimal" class="inp num" placeholder="المبلغ" value="${cur.m === 'amt' ? esc(cur.a || '') : ''}">` : ''}
-      ${cur.m === 'doc' && cur.c === pick ? chip('doc', `فاتورة ${esc(cur.dn || '')} <b class="num">${fmt(+cur.a || 0)}</b> ج`) : ''}</div>`);
+      ${chip('pick', 'حركات محددة من الحساب (زي الفاتورة)')}${mode === 'pick' ? pkBox() : ''}</div>`);
+    if (mode === 'pick') pkTot();
   };
+  const pkRows = () => clientStatement(resCid(pick)).filter(r => !r.x).slice().reverse();
+  const pkNet = () => { const L = pkRows().filter(r => pk.has(r.t.id)); return r2(L.reduce((a, r) => a + r.dr - r.cr, 0)); };
+  const pkTot = () => { const e = m.querySelector('#pk-t'); if (e) { const v = pkNet(); e.innerHTML = `${pk.size} حركة · المطلوب تحصيله <b class="num ${v > 0 ? 'neg' : ''}">${fmt(Math.max(v, 0))}</b> ج`; } };
+  const pkBox = () => { const L = pkRows(); return `<div class="small muted">علّمي الحركات اللي عايزة تطلبي تحصيلها (الأتعاب والمصروفات بتتجمع، والمدفوع بيتخصم).</div>
+      <div class="card" style="max-height:230px;overflow:auto">${L.length ? L.map(r => `<label class="lrow" style="gap:8px;cursor:pointer"><input type="checkbox" data-pk="${esc(r.t.id)}" ${pk.has(r.t.id) ? 'checked' : ''}><span class="small muted num" style="min-width:70px">${esc(r.t.date)}</span><span class="grow small">${esc(docDesc(r))}</span><b class="num ${r.cr ? 'pos' : 'neg'}">${r.cr ? '+' + fmt(r.cr) : fmt(r.dr)}</b></label>`).join('') : '<div class="empty">مفيش حركات على العميل</div>'}</div>
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" data-pkall="1">تحديد الكل</button><button type="button" class="btn sm" data-pkall="0">مسح التحديد</button></div>
+      <div class="small muted" style="margin-top:4px">＋ أتعاب جديدة (بتتسجّل على حساب العميل):</div>
+      <div class="row" style="gap:6px"><input id="pk-d" class="inp grow" placeholder="البيان" value="أتعاب"><input id="pk-a" type="number" step="0.01" inputmode="decimal" class="inp num" placeholder="المبلغ" style="width:96px"><button type="button" class="btn sm pri" data-pkfee="1">إضافة</button></div>
+      <div id="pk-t" class="small" style="margin-top:6px"></div>`; };
   const paint = () => { const l = $('#cl-l'); if (l) l.innerHTML = clientSearch($('#cl-q').value, 10).map(x => `<div class="lrow" data-pick="${x.id}"><b class="grow">${esc(x.name)}</b><span class="small muted">${esc(x.phone || 'بدون رقم')}</span></div>`).join('') || '<div class="empty">لا نتائج</div>'; };
   if (!id) paint(); mx();
   m.addEventListener('input', e => { if (e.target.id === 'cl-q') paint(); });
   m.addEventListener('click', e => {
-    const r = e.target.closest('[data-pick]'); if (r) { pick = r.dataset.pick; $('#cl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; mx(); return; }
-    const b = e.target.closest('[data-m]'); if (b) { mode = b.dataset.m; mx(); }
+    const r = e.target.closest('[data-pick]'); if (r) { pick = r.dataset.pick; pk.clear(); $('#cl-p').innerHTML = 'المختار: <b>' + esc(clientName(pick)) + '</b>'; mx(); return; }
+    const b = e.target.closest('[data-m]'); if (b) { mode = b.dataset.m; mx(); return; }
+    const al = e.target.closest('[data-pkall]'); if (al) { pk.clear(); if (al.dataset.pkall === '1') pkRows().forEach(r => pk.add(r.t.id)); mx(); return; }
+    if (e.target.closest('[data-pkfee]')) {
+      const a = r2(+m.querySelector('#pk-a').value || 0); if (a <= 0) return toast('اكتبي مبلغ الأتعاب', 'err');
+      const now = nowIso(), d = m.querySelector('#pk-d').value.trim() || 'أتعاب', cid = resCid(pick);
+      const x = { id: uid('T'), date: today(), type: 'FEE', amount: a, fromAcc: '', toAcc: '', clientId: cid, category: d, description: '', payMethod: '', place: '', stage: '', service: '', projectRef: '', receiptNo: '', batchId: '', userId: ME.id, createdAt: now, updatedAt: now, updatedBy: ME.id, deleted: 0, approved: 1, approvedBy: ME.id, approvedAt: now };
+      D.txs[x.id] = x; queue('saveTx', { txs: [x] }); pk.add(x.id); changed(); toast('اتضافت الأتعاب واتحددت'); mx();
+    }
   });
+  m.addEventListener('change', e => { const c = e.target.closest('[data-pk]'); if (c) { c.checked ? pk.add(c.dataset.pk) : pk.delete(c.dataset.pk); pkTot(); } });
   m.querySelector('#cl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
     const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), w: wVal('cl-w'), d: cur.d || '', by: ME.id, at: cur.at || today() };
     if (mode === 'agree') { const sel = m.querySelector('#cl-ai'); if (!sel) return toast('مفيش دفعات في الاتفاق', 'err'); e.ai = +sel.value; }
     if (mode === 'amt') { e.a = r2(+m.querySelector('#cl-a').value || 0); if (e.a <= 0) return toast('اكتبي مبلغ الدفعة', 'err'); }
-    if (mode === 'doc') { e.a = cur.a; e.dn = cur.dn; e.dk = cur.dk; e.op = cur.op; e.ids = cur.ids; }
-    if (mode !== 'doc' && cur.m === mode && cur.dn) { e.dn = cur.dn; }
+    if (mode === 'pick') { if (!pk.size) return toast('علّمي حركة واحدة على الأقل', 'err'); const v = pkNet(); if (v <= 0.004) return toast('الحركات المحددة مفيهاش مبلغ مستحق', 'err'); e.m = 'doc'; e.a = v; e.dk = 'inv'; e.op = 0; e.ids = [...pk]; if (cur.m === 'doc' && cur.dn) e.dn = cur.dn; }
     collSave(collList().filter(q => q.c !== e.c).concat([e])); closeModal(); toast('تم الحفظ في التحصيل'); render();
   };
 }
@@ -7525,7 +7542,7 @@ function docForm(cid) {
     <div id="df-du" style="display:none">${fld('آخر موعد للسداد (اختياري)', `<input id="df-d" type="date" class="inp">`)}</div>
     <div id="df-co">${fld('تحصيله (Assign to)', `<select id="df-w" class="inp"><option value="">من غير تحصيل</option><option value="any">للتحصيل — بدون تكليف</option>${liveUsers().filter(u => +u.active !== 0).map(u => `<option value="${u.id}">يحصّله: ${esc(bareName(u.name))}</option>`).join('')}</select>`)}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${fld('رقم المستند', `<input id="df-n" class="inp ltr">`)}${fld('ملاحظة (اختياري)', `<input id="df-t" class="inp">`)}</div>
-    <div class="acts"><button class="btn pri" id="df-p">${icon('print', 17)} طباعة / PDF</button><button class="btn" id="df-w">واتساب</button><button class="btn" id="df-c">💰 للتحصيل فقط</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+    <div class="acts"><button class="btn pri" id="df-p">${icon('print', 17)} طباعة / PDF</button><button class="btn" id="df-wa">واتساب</button><button class="btn" id="df-c">💰 للتحصيل فقط</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
   let auto = '';
   const paint = () => {
     const D0 = base(); LS.set('docK', k); LS.set('docOpen', open ? 1 : 0);
@@ -7550,7 +7567,7 @@ function docForm(cid) {
     toast('اتحوّلت للتحصيل' + (w !== 'any' ? ' وتكلّف بيها ' + bareName((userById(w) || {}).name || '') : '')); return true;
   };
   m.querySelector('#df-p').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!toColl(o)) return; used(o); closeModal(); printDoc(docBuild(cid, k, o)); };
-  m.querySelector('#df-w').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!toColl(o)) return; used(o); waGo(c.phone, docText(cid, k, o)); closeModal(); };
+  m.querySelector('#df-wa').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!toColl(o)) return; used(o); waGo(c.phone, docText(cid, k, o)); closeModal(); };
   m.querySelector('#df-c').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!m.querySelector('#df-w').value) m.querySelector('#df-w').value = 'any'; if (!toColl(o)) return; used(o); closeModal(); render(); };
   paint();
 }
