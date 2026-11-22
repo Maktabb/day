@@ -1764,7 +1764,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261122-170000';
+const BUILD = '20261122-181000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3391,6 +3391,7 @@ function vCollect(r, el) {
         ${x.n ? `<div class="co-note">📝 ${esc(x.n)}</div>` : ''}
         <div class="co-acts no-print">
           ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 15)} اتصال</a><button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} كشف</button>` : ''}
+          <button class="btn sm co-inv" data-act="coll-inv" data-id="${c.id}">🧾 الفاتورة</button>
           <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
           <button class="btn sm" data-act="ap-add" data-c="${c.id}" data-k="collect">📅 موعد</button>
           <button class="btn sm" data-act="coll-del" data-id="${c.id}">${icon('check', 15)} إزالة</button></div></div>`; }).join('')
@@ -3756,7 +3757,7 @@ function collForm(id) {
     <div id="cl-mx"></div>
     ${fld('تكليف (Assign to)', wPick('cl-w', w0))}
     ${fld('ملاحظة (اختياري)', `<input id="cl-n" class="inp" placeholder="مثال: وعد يدفع نهاية الشهر" value="${esc(cur.n || '')}">`)}
-    <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div>`);
+    <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button>${id && collHas(id) ? `<button class="btn" data-act="coll-inv" data-id="${id}">🧾 الفاتورة</button>` : ''}<button class="btn" data-act="mclose">إلغاء</button></div>`);
   const mx = () => {
     const box = m.querySelector('#cl-mx'); if (!pick) { box.innerHTML = ''; return; }
     const st = cliStat(resCid(pick)), own = Math.max(r2(-(st.bal || 0)), 0), items = billGet(resCid(pick)).items || [];
@@ -3778,7 +3779,8 @@ function collForm(id) {
     const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), w: wVal('cl-w'), d: cur.d || '', by: ME.id, at: cur.at || today() };
     if (mode === 'agree') { const sel = m.querySelector('#cl-ai'); if (!sel) return toast('مفيش دفعات في الاتفاق', 'err'); e.ai = +sel.value; }
     if (mode === 'amt') { e.a = r2(+m.querySelector('#cl-a').value || 0); if (e.a <= 0) return toast('اكتبي مبلغ الدفعة', 'err'); }
-    if (mode === 'doc') { e.a = cur.a; e.dn = cur.dn; }
+    if (mode === 'doc') { e.a = cur.a; e.dn = cur.dn; e.dk = cur.dk; e.op = cur.op; e.ids = cur.ids; }
+    if (mode !== 'doc' && cur.m === mode && cur.dn) { e.dn = cur.dn; }
     collSave(collList().filter(q => q.c !== e.c).concat([e])); closeModal(); toast('تم الحفظ في التحصيل'); render();
   };
 }
@@ -3788,7 +3790,7 @@ function clTasks() {
   if (!ME || !D || !D.lists) return [];
   const k = VER + '|' + ME.id; if (_clT && _clTk === k) return _clT;
   _clT = collList().filter(x => x.w && D.clients[x.c]).map(x => { const c = D.clients[x.c], a = collAmt(x, cliStat(x.c)), u = userById(wMeOr(x.w)), dd = nextColl(x.c) || '';
-    return { id: 'CL-' + x.c, crm: 'c', cl: true, cid: c.id, clientName: c.name, text: 'تحصيل ' + fmt(a.amt) + ' ج' + (a.lbl ? ' — ' + a.lbl.replace(/^\S+\s/, '') : ''), cat: '', place: '', note: x.n || '', who: u ? u.name : '', due: dd, d: dd, status: 'open', why: '', by: x.by }; });
+    return { id: 'CL-' + x.c, crm: 'c', cl: true, cid: c.id, clientName: c.name, text: '🧾 تحصيل ' + fmt(a.amt) + ' ج' + (a.lbl ? ' — ' + a.lbl.replace(/^\S+\s/, '') : ''), cat: '', place: '', note: x.n || '', who: u ? u.name : '', due: dd, d: dd, status: 'open', why: '', by: x.by }; });
   _clTk = k; return _clT;
 }
 function clTaskSet(id, patch) { if (!('done' in patch) || !patch.done) return; collSave(collList().filter(q => q.c !== id.slice(3))); toast('اتشال من التحصيل'); }
@@ -3796,6 +3798,32 @@ function clientApBlock(c) {
   const L = apAll().filter(a => a.c && resCid(a.c) === c.id && !a.ok).sort((a, b) => String(a.d).localeCompare(String(b.d)));
   if (!L.length) return '';
   return `<div class="ct-h no-print"><h2>📅 مواعيد العميل <span class="cnt">${L.length}</span></h2><button class="btn sm pri" data-act="ap-add" data-c="${c.id}">${icon('plus', 15)} موعد</button></div><div class="card no-print">${L.map(a => apRow(a, { date: true })).join('')}</div>`;
+}
+/* فاتورة التحصيل: المستند المرفق بمهمة التحصيل بالمبلغ المطلوب */
+function collInvDoc(x) {
+  const cid = resCid(x.c), c = D.clients[cid], st = cliStat(cid), a = collAmt(x, st);
+  if (!x.dn) { const k0 = x.m === 'doc' ? (x.dk || 'inv') : 'clm', n = docNum(k0, (+docSeq()[k0] || 0) + 1); docBump(k0); x.dn = n; collSave(collList().map(q => q.c === x.c ? { ...q, dn: n } : q)); }
+  if (x.m === 'doc' && x.ids && x.ids.length) { const old = CST.sel; CST.sel = new Set(x.ids); try { return { k: x.dk || 'inv', d: docBuild(cid, x.dk || 'inv', { num: x.dn, open: !!x.op, note: x.n || '' }), txt: docText(cid, x.dk || 'inv', { num: x.dn, open: !!x.op, note: x.n || '' }) }; } finally { CST.sel = old; } }
+  if (x.m === 'bal' || (x.m === 'doc' && !(x.ids || []).length && false)) { const old = CST.sel; CST.sel = new Set(clientStatement(cid).filter(r => !r.x && r.t.type !== 'OPENING').map(r => r.t.id)); try { return { k: 'clm', d: docBuild(cid, 'clm', { num: x.dn, open: true, note: x.n || '' }), txt: docText(cid, 'clm', { num: x.dn, open: true, note: x.n || '' }) }; } finally { CST.sel = old; } }
+  // دفعة محددة / دفعة من الاتفاق: مطالبة ببند واحد
+  const desc = x.m === 'agree' ? 'دفعة من الاتفاق — ' + a.lbl.replace(/^\S+\s/, '') : x.m === 'doc' ? 'مستحق فاتورة ' + (x.dn || '') : 'دفعة مستحقة' + (x.n ? ' — ' + x.n : ''), nm = v => `<span class="num">${fmt(v)}</span>`;
+  const info = [['العميل', `<b>${esc(c.name)}</b>`], ['رقم المستند', `<span class="num">${esc(x.dn)}</span>`], ['التاريخ', dLong(today())]]; if (c.phone) info.push(['الموبايل', `<span class="num">${esc(c.phone)}</span>`]);
+  const body = `<table class="pd-t"><thead><tr><th style="width:36px">م</th><th>البيان</th><th style="width:120px">المبلغ</th></tr></thead><tbody><tr><td class="c">1</td><td>${esc(desc)}</td><td class="n">${nm(a.amt)}</td></tr></tbody>
+    <tfoot><tr><td colspan="2">إجمالي المطالبة</td><td class="n">${nm(a.amt)}</td></tr></tfoot></table>
+    <div class="pd-sum"><div class="big neg"><span>المطلوب سداده</span><b class="num">${fmt(a.amt)}</b></div></div>${x.n && x.m !== 'amt' ? `<div class="pd-note">📝 ${esc(x.n)}</div>` : ''}
+    <div class="pd-note" style="margin-top:6px">برجاء التكرم بسداد المبلغ المستحق. شاكرين تعاونكم.</div>`;
+  const txt = [`السادة / ${c.name}`, `نرسل لكم مطالبة مالية رقم ${x.dn}:`, '', `• ${desc}: ${fmt(a.amt)} ج.م`, '', `المطلوب سداده: ${fmt(a.amt)} ج.م`, '', 'مع خالص الشكر — مكتب محمود سالم للمحاسبة والمراجعة.'].join('\n');
+  return { k: 'clm', d: { title: 'مطالبة مالية', file: `مطالبة مالية ${c.name} ${x.dn}`, info, body }, txt };
+}
+function collInv(cid) {
+  const x = collList().find(q => q.c === resCid(cid)); if (!x) return toast('العميل مش في التحصيل', 'err');
+  const c = D.clients[resCid(cid)], a = collAmt(x, cliStat(resCid(cid)));
+  if (!(a.amt > 0.004)) return toast('مفيش مبلغ مطلوب تحصيله', 'err');
+  const R = collInvDoc(x);
+  const m = modal(`<h3>🧾 ${esc(R.d.title)} — ${esc(c.name)}</h3><p class="small muted">رقم <span class="num">${esc(x.dn)}</span> · المبلغ <b class="num neg">${fmt(a.amt)}</b> ج${x.w ? ' · المكلَّف: ' + esc(collWho(x)) : ''}</p>
+    <div class="btn-grid"><button class="btn pri" id="ci-p">🖨️ طباعة / PDF</button><button class="btn" id="ci-w" ${c.phone ? '' : 'disabled'}>💬 واتساب للعميل</button><button class="btn" data-act="mclose">إغلاق</button></div>`);
+  m.querySelector('#ci-p').onclick = () => { closeModal(); printDoc(R.d); };
+  m.querySelector('#ci-w').onclick = () => { waGo(c.phone, R.txt); closeModal(); };
 }
 function clientTasksBlock(c) {
   const all = tkAll().filter(t => (t.local || t.crm ? t.cid === c.id : tkSameName(t.clientName, c.name)));
@@ -5038,6 +5066,7 @@ const ACT = {
   'log-more': () => { LOGV.limit = Math.min(LOGV.limit + 300, 1000); logLoad(); },
   'coll-add': () => collForm(''),
   'coll-edit': el => collForm(el.dataset.id),
+  'coll-inv': el => collInv(el.dataset.id),
   'ap-add': el => apForm('', { c: el.dataset.c || '', k: el.dataset.k || '', d: el.dataset.d || '' }),
   'ap-edit': el => apForm(el.dataset.id),
   'ap-done': el => { const a = hrGet('ap_' + el.dataset.id); if (!a) return; hrPut({ ['ap_' + a.id]: { ...a, ok: a.ok ? 0 : 1, okBy: ME.id, okAt: nowIso() } }); apRe(); },
@@ -5892,7 +5921,7 @@ function tkRow(t, o = {}) {
   }
   return `<div class="tk ${late ? 'late' : ''}"><button class="tk-c" data-act="tk-done" data-id="${esc(t.id)}" aria-label="إتمام المهمة: ${esc(t.text)}"></button>
     <div class="grow"><div class="tk-t">${esc(t.text)}</div><div class="tk-m">${meta}</div></div>
-    ${tkCanEdit(t) || (/^(AP|CL)-/.test(t.id) && (isPriv() || tkMine(t))) ? `<button class="tk-x" data-act="tk-edit" data-id="${esc(t.id)}" aria-label="تعديل المهمة" title="تعديل المهمة">✏️</button>` : ''}${o.arch ? `<button class="tk-x" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="أرشفة" title="أرشفة">🗄️</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
+    ${/^CL-/.test(t.id) ? `<button class="tk-x" data-act="coll-inv" data-id="${esc(t.id.slice(3))}" aria-label="فاتورة التحصيل" title="فاتورة التحصيل">🧾</button>` : ''}${tkCanEdit(t) || (/^(AP|CL)-/.test(t.id) && (isPriv() || tkMine(t))) ? `<button class="tk-x" data-act="tk-edit" data-id="${esc(t.id)}" aria-label="تعديل المهمة" title="تعديل المهمة">✏️</button>` : ''}${o.arch ? `<button class="tk-x" data-act="tk-arch" data-id="${esc(t.id)}" aria-label="أرشفة" title="أرشفة">🗄️</button>` : ''}<button class="tk-x" data-act="tk-more" data-id="${esc(t.id)}" aria-label="خيارات المهمة">⋯</button></div>`;
 }
 function opsSetupCard() {
   const c = opsCfg();
@@ -7506,7 +7535,7 @@ function docForm(cid) {
     const D0 = docData(cid, o.open), due = D0.net < -0.004 ? r2(-D0.net) : 0;
     if (!due) { toast('مفيش مبلغ مستحق في المستند عشان يتحصّل', 'err'); return false; }
     const old = collList().find(q => q.c === resCid(cid)) || {};
-    collSave(collList().filter(q => q.c !== resCid(cid)).concat([{ c: resCid(cid), m: 'doc', a: due, dn: o.num, n: o.note || old.n || '', w: w === 'any' ? '' : w, d: old.d || '', by: ME.id, at: old.at || today() }]));
+    collSave(collList().filter(q => q.c !== resCid(cid)).concat([{ c: resCid(cid), m: 'doc', a: due, dn: o.num, dk: k, op: o.open ? 1 : 0, ids: [...CST.sel].filter(id => (D.tx || {})[id] || true).slice(0, 200), n: o.note || old.n || '', w: w === 'any' ? '' : w, d: old.d || '', by: ME.id, at: old.at || today() }]));
     toast('اتحوّلت للتحصيل' + (w !== 'any' ? ' وتكلّف بيها ' + bareName((userById(w) || {}).name || '') : '')); return true;
   };
   m.querySelector('#df-p').onclick = () => { const o = get(); if (!docData(cid, o.open).rows.length) return toast('مفيش حركات محددة', 'err'); if (!toColl(o)) return; used(o); closeModal(); printDoc(docBuild(cid, k, o)); };
@@ -7711,6 +7740,7 @@ const TIPS = {
   'ap-add': ['موعد', 'إضافة موعد مرتبط بالعميل (تحصيل، اجتماع، تسليم…) مع تذكير قبلها وتكليف زميل.'],
   'coll-toggle': ['التحصيل', 'إضافة العميل لقائمة التحصيل (بالرصيد أو بدفعة محددة مع تكليف محاسب). لو هو فيها بتعدّليه أو تشيليه.'],
   'coll-add': ['إضافة للتحصيل', 'اختاري عميل وحدّدي هتحصّلي منه إيه ومين المسؤول.'],
+  'coll-inv': ['فاتورة التحصيل', 'المطالبة/الفاتورة المرفقة بالتحصيل بالمبلغ المطلوب: طباعة PDF أو إرسالها للعميل على واتساب.'],
   'coll-edit': ['تعديل التحصيل', 'تغيير المبلغ المطلوب أو المحاسب المكلَّف أو الملاحظة.'],
   'coll-del': ['إزالة من التحصيل', 'تشيل العميل من القايمة بعد ما يتحصّل أو لو اتلغى الطلب.'],
   'dl-add': ['تسليم الملفات', 'تسجيل مستندات أو ملفات للعميل ومتابعة تسليمها له.'],
