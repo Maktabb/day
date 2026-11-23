@@ -1826,7 +1826,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-183000';
+const BUILD = '20261123-231000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2494,8 +2494,8 @@ function vHome(r, el) {
     <div class="hops"></div>
 `;
   }
-  if (mine) { el.innerHTML = hello + outLine() + balHome() + reminderBanner() + notifBanner() + installBanner() + body; return; }
-  el.innerHTML = hello + outLine() + balHome() + reminderBanner() + notifBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
+  if (mine) { el.innerHTML = hello + outLine() + attCard() + balHome() + reminderBanner() + notifBanner() + installBanner() + body; return; }
+  el.innerHTML = hello + outLine() + attCard() + balHome() + reminderBanner() + notifBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
     <h2 class="sec">🕘 آخر الحركات<span class="sp"></span>${colBtn('recent', 1)}</h2>
     ${colOpen('recent', 1) ? `<div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
     ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>` : ''}`);
@@ -2532,6 +2532,22 @@ function balqPaint(q) {
 }
 const outTm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if (!m) return ''; let h = +m[1]; const ap = h >= 12 ? 'م' : 'ص'; h = h % 12 || 12; return h + ':' + m[2] + ' ' + ap; };
 const outLine = () => { if (!ME || isFull() || !canTab('out')) return ''; const t = outTm((hrGet('hr_p_' + ME.id) || {}).tout); return t ? `<div class="card pad outln" style="margin:-4px 0 10px;display:flex;align-items:center;gap:8px"><span style="font-size:20px">🕔</span><b>موعد الانصراف الساعة ${t}</b></div>` : ''; };
+const attKey = () => `hr_a_${ME.id}_${today()}`;
+const attCard = () => {
+  if (!ME || isFull() || !canTab('att')) return '';
+  const r = hrGet(attKey()) || {}, ot = outTm((hrGet('hr_p_' + ME.id) || {}).tout), it = outTm((hrGet('hr_p_' + ME.id) || {}).tin);
+  const row = (k, l, em) => `<div class="row" style="gap:8px;align-items:center;margin-top:8px"><b style="min-width:70px">${em} ${l}</b><input type="time" class="inp" id="at-${k}" value="${esc(r[k] || '')}" style="width:auto;flex:1"><button type="button" class="btn sm pri" data-act="att-now" data-k="${k}">الآن</button></div>`;
+  return `<div class="card pad attc" style="margin:0 0 10px"><div class="row" style="align-items:center;gap:8px"><b class="grow">🕘 حضوري وانصرافي اليوم</b>${r.in || r.out ? '<span class="badge" style="background:#e6f6ec;color:#1f8a4c">اتسجّل</span>' : ''}</div>
+    ${it || ot ? `<div class="small muted">${it ? 'الحضور الرسمي ' + it : ''}${it && ot ? ' — ' : ''}${ot ? 'الانصراف الرسمي ' + ot : ''}</div>` : ''}
+    ${row('in', 'الحضور', '🟢')}${row('out', 'الانصراف', '🔴')}
+    <button type="button" class="btn sm" data-act="att-save" style="margin-top:10px">${icon('check', 15)} حفظ</button></div>`;
+};
+const attSave = () => {
+  const i = ($('#at-in') || {}).value || '', o = ($('#at-out') || {}).value || '', k = attKey(), cur = hrGet(k) || {}, tin = (hrGet('hr_p_' + ME.id) || {}).tin || '';
+  if (!i && !o) return toast('اكتبي الحضور أو الانصراف الأول', 'err');
+  const st = ['a', 'v'].includes(cur.st) ? cur.st : (i && tin && i > tin ? 'l' : 'p');
+  hrPut({ [k]: { ...cur, u: ME.id, d: today(), st, in: i, out: o, n: cur.n || '' } }); toast('تم تسجيل حضورك/انصرافك'); render();
+};
 const balIcon = () => (!isPriv() && canTab('bal')) ? `<button type="button" class="gls bq-ic" data-act="bq-open" title="استعلام عن رصيد عميل" aria-label="استعلام عن رصيد عميل"><i>🔍</i></button>` : '';
 const balHome = () => false ? `<div class="card pad bq-home"><div class="bq-h">🔍 استعلام عن رصيد عميل</div><input id="bq-q" class="inp" type="search" placeholder="ابحثي باسم العميل…" autocomplete="off" enterkeyhint="search"><div id="bq-res" style="margin-top:8px"></div></div>` : '';
 function balqWire() { const i = $('#bq-q'); if (i && !i.dataset.w) { i.dataset.w = 1; i.addEventListener('input', () => balqPaint(i.value)); balqPaint(''); } }
@@ -3422,7 +3438,7 @@ function csPeriod(p) {
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
 const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام'], ['crm', 'قاعدة البيانات'], ['taxes', 'الضرائب'], ['formation', 'مشاريع التأسيس'], ['work', 'الملفات الشغالة']];
-const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'bal', 'out', 'crm', 'taxes', 'formation', 'work'].includes(k)); };
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'bal', 'out', 'att', 'crm', 'taxes', 'formation', 'work'].includes(k)); };
 const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
 const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
@@ -4914,7 +4930,7 @@ function vSettings(r, el) {
     
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
   if (isFull()) push('team', `<h2 class="sec">صلاحيات التاب والمهام لكل شخص</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه، وعلى «➕ يضيف مهام» لو عايزاه يقدر يضيف مهمة من اليومية، وعلى «مطالبات الضرائب» لو عايزة المطالبات تظهر عنده (جدول المتابعة في التحصيل + المطالبات في اليومية وكشف العميل). اللي بيسجّل مطالبة بنفسه بيشوفها هو دايمًا. الصلاحية الكاملة بتشوف كل ده.</p>
-    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:sec" ${canTab('sec', u) ? 'checked' : ''}> 🔒 يشوف الباسوردات</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:out" ${canTab('out', u) ? 'checked' : ''}> 🕔 يشوف موعد الانصراف</label>${u.role === 'staff' ? `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:bal" ${canTab('bal', u) ? 'checked' : ''}> 🔍 يستعلم عن رصيد عميل</label>` : ''}</div>`).join('')}</div>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:sec" ${canTab('sec', u) ? 'checked' : ''}> 🔒 يشوف الباسوردات</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:out" ${canTab('out', u) ? 'checked' : ''}> 🕔 يشوف موعد الانصراف</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:att" ${canTab('att', u) ? 'checked' : ''}> 🟢 يسجّل حضوره وانصرافه</label>${u.role === 'staff' ? `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:bal" ${canTab('bal', u) ? 'checked' : ''}> 🔍 يستعلم عن رصيد عميل</label>` : ''}</div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="tabacc-save">حفظ</button></div></div>`);
   if (isFull()) push('team', `<h2 class="sec">صلاحية الوارد والأتعاب</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد لكل شخص (محاسب أو محامي أو مشرف، واحد واحد) أنواع الوارد اللي يسجّلها، وهل يسجّل «أتعاب» و«مطالبات ضرائب» (كل واحدة لوحدها). النوع غير المحدَّد لا يظهر له في البرنامج، وإن لم يُحدَّد أي وارد يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل شيء دائمًا. المطالبات افتراضيًا للصلاحية الكاملة فقط.</p>
     <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-inp="u:${u.id}:FEE" ${feeAllowed(u.role, u.id) ? 'checked' : ''}> 💼 أتعاب</label><label class="ipc"><input type="checkbox" data-inp="u:${u.id}:TAXC" ${taxcAllowed(u.role, u.id) ? 'checked' : ''}> 🏛️ مطالبات ضرائب</label></div>`).join('')}</div>
@@ -6401,6 +6417,8 @@ Object.assign(ACT, {
   'hr-per': el => { HR.per = el.dataset.k; hrRefresh(); },
   'hr-allp': () => $$('.hra [data-h="st"]').forEach(s => { if (!s.value) s.value = 'p'; }),
   'hr-fromexp': () => { if (hrFri(HR.day)) return toast('الجمعة إجازة'); $$('.hra').forEach(c => { const s = c.querySelector('[data-h="st"]'); if (!s.value && hrExpN(c.dataset.u, HR.day)) s.value = 'p'; }); toast('اتعلّم حاضر لمن سجّل مصروفات. غير كده سيبه لتقرري'); },
+  'att-now': el => { const n = new Date(), v = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); const i = $('#at-' + el.dataset.k); if (i) i.value = v; attSave(); },
+  'att-save': () => attSave(),
   'hr-att-save': () => {
     const d = HR.day, map = {}; let n = 0;
     $$('.hra').forEach(c => { const g = k => c.querySelector(`[data-h="${k}"]`).value.trim(); const o = { u: c.dataset.u, d, st: g('st'), in: g('in'), out: g('out'), n: g('n') }; const k = `hr_a_${o.u}_${d}`;
