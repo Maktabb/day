@@ -1267,6 +1267,9 @@ h2.sec .gls{margin-inline-start:6px}
 .bkx{font-size:17px;line-height:1}
 .tk-grp{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;font-size:14px}.tk-grp .sp{flex:1}
 .tk-ig{white-space:nowrap}
+
+.bq-b{font-weight:700;white-space:nowrap}.bq-b small{font-weight:400;opacity:.7}
+.ak-balq{--g1:#ffe9d6;--g2:#ffb878;--gs:rgba(255,140,0,.4)}
 </style>
 </head>
 <body>
@@ -1404,7 +1407,7 @@ const IC = {
 const icon = (n, s = 20, w = 1.8) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n] || ''}"/></svg>`;
 
 /* ====== أيقونات إيموجي بأسلوب أيقونات الآيفون (مربع بزوايا ناعمة وتدرّج لوني) ====== */
-const EMO = { calendar: '📅', work: '📂', formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
+const EMO = { balq: '🔍', calendar: '📅', work: '📂', formation: '🏗️', crm: '🗂️', taxes: '🏛️', hr: '🧑‍💼', home: '🏠', tasks: '📋', journal: '📒', clients: '👥', collect: '💰', deliver: '📦', accounts: '🏦', account: '🏦', review: '✅', reports: '📊', analytics: '📈', dups: '🧩', settings: '⚙️', gen: '🛠️', logout: '🚪', entry: '➕', more: '🧰',
   acct: '👤', conn: '🔗', team: '🧑‍🤝‍🧑', lists: '🗂️', rem: '🔔', sec: '🔐', xl: '📥', bk: '💾', look: '🎨' };
 const appic = (k, s = 40, em) => `<span class="appic ak-${k}" style="--s:${s}px" aria-hidden="true">${em || EMO[k] || '•'}</span>`;
 const txEm = t => (TYPES[t] || {}).em || '•';
@@ -1821,7 +1824,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-051000';
+const BUILD = '20261123-153000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2171,6 +2174,7 @@ function navItems() {
     ...(canTab('taxes') ? [['taxes', 'الضرائب', 'list']] : []),
     ...(canTab('formation') ? [['formation', 'مشاريع التأسيس', 'archive']] : []),
     ...(canTab('work') ? [['work', 'الملفات الشغالة', 'list']] : []),
+    ...(!priv && canTab('bal') ? [['balq', 'استعلام رصيد عميل', 'search']] : []),
     ...(priv ? [] : [['journal', 'حركاتي', 'list'], ['accounts', 'عهدتي', 'wallet']]),
     ['settings', 'الإعدادات', 'sliders']
   ];
@@ -2239,10 +2243,11 @@ function render() {
   paintNav();
   const r = route();
   const V = { home: vHome, entry: vEntry, journal: vJournal, clients: vClients, client: vClient, accounts: vAccounts,
-    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, calendar: vCalendar, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation, work: vWork };
+    account: vAccount, review: vReview, reports: vReports, analytics: vAnalytics, dups: vDups, settings: vSettings, more: vMore, tasks: vTasks, collect: vCollect, calendar: vCalendar, deliver: vDeliver, crm: vCrm, taxes: vTaxes, formation: vFormation, work: vWork, balq: vBalq };
   const fn = V[r.name] || vHome;
   if (((r.name === 'analytics' && !isFull()) || r.name === 'reports' || r.name === 'review' || r.name === 'dups' || r.name === 'clients' || r.name === 'client') && !isPriv()) return go('home');
   if ((r.name === 'collect' || r.name === 'deliver' || r.name === 'tasks') && !canTab(r.name)) return go('home');
+  if (r.name === 'balq' && (isPriv() || !canTab('bal'))) return go('home');
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
@@ -2517,6 +2522,20 @@ function typeTile(k) {
 }
 
 /* ====== المزيد ====== */
+/* استعلام عن رصيد عميل (صلاحية للمحاسب): بحث بالاسم ← الرصيد فقط، من غير كشف الحساب */
+function balqPaint(q) {
+  const box = $('#bq-res'); if (!box) return;
+  const raw = String(q || '').trim(); if (!raw) { box.innerHTML = '<div class="empty">اكتبي اسم العميل أو جزء منه وهيظهر رصيده.</div>'; return; }
+  const L = clientSearch(raw, 15);
+  box.innerHTML = L.length ? `<div class="card">${L.map(c => { const b = cliStat(c.id).bal; return `<div class="lrow"><div class="grow"><b>${esc(c.name)}</b></div><div class="bq-b ${b < -0.004 ? 'neg' : b > 0.004 ? 'pos' : 'muted'}">${b < -0.004 ? 'عليه ' + fmt(-b) : b > 0.004 ? 'له ' + fmt(b) : 'مسدّد ✅'}${Math.abs(b) > 0.004 ? ' <small>ج.م</small>' : ''}</div></div>`; }).join('')}</div>` : '<div class="empty">مفيش عميل بالاسم ده.</div>';
+}
+function vBalq(r, el) {
+  el.innerHTML = `<h1 class="pg">🔍 استعلام عن رصيد عميل</h1>
+    <div class="searchbar"><input id="bq-q" class="inp" type="search" placeholder="ابحثي باسم العميل…" autocomplete="off" enterkeyhint="search"></div>
+    <div id="bq-res" style="margin-top:10px"></div>
+    <div class="small muted" style="margin-top:12px">بيظهر الرصيد بس: «عليه» يعني مستحق على العميل، و«له» يعني له رصيد عند المكتب.</div>`;
+  const i = $('#bq-q'); i.addEventListener('input', () => balqPaint(i.value)); balqPaint(''); setTimeout(() => { try { i.focus(); } catch (e) { } }, 150);
+}
 function vMore(r, el) {
   const items = navItems().filter(([h]) => !['home', 'journal', 'clients'].includes(h));
   el.innerHTML = `<h1 class="pg">المزيد</h1>
@@ -3397,7 +3416,7 @@ function csPeriod(p) {
 const stDesc = (t, c) => { let d = String(t.description || '').trim(); [c.name, ...(c.aliases || '').split('|')].filter(Boolean).forEach(n => { if (d.startsWith(n + ' — ')) d = d.slice(n.length + 3).trim(); else if (d === n) d = ''; }); return d === t.category ? '' : d; };
 /* من يرى تابَي التحصيل والتسليم: الصلاحية الكاملة دائمًا، وغيرها حسب التحديد لكل شخص (الافتراضي: المشرف نعم والمحاسب لا) */
 const TABS = [['tasks', 'المهام'], ['collect', 'التحصيل'], ['deliver', 'التسليم والاستلام'], ['crm', 'قاعدة البيانات'], ['taxes', 'الضرائب'], ['formation', 'مشاريع التأسيس'], ['work', 'الملفات الشغالة']];
-const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'crm', 'taxes', 'formation', 'work'].includes(k)); };
+const canTab = (k, u) => { u = u || ME; if (!u) return false; if (u.role === 'full') return true; const L = (D.lists || {}).tabAcc || []; if (L.includes('u:' + u.id + ':v1')) return L.includes('u:' + u.id + ':' + k); return k === 'tasks' || (u.role === 'sup' && !['tax', 'addtask', 'sec', 'bal', 'crm', 'taxes', 'formation', 'work'].includes(k)); };
 const TAX_OFF = 'خارج الكشف';   // مطالبة ضرائب لا تظهر في كشف حساب العميل (تُخزَّن في خانة المرحلة)
 const taxSeen = t => t.type !== 'TAXC' || canTab('tax') || (ME && t.userId === ME.id);
 /* ====== سجل التعديلات (يُقرأ من الشيت) ====== */
@@ -4888,7 +4907,7 @@ function vSettings(r, el) {
     
     <div class="row wrap"><button class="btn pri" data-act="rem-save">حفظ</button><button class="btn" data-act="rem-perm">${icon('alert', 16)} تفعيل الإشعارات على هذا الجهاز</button><button class="btn" data-act="rem-test">إشعار تجريبي</button></div></div>`); }
   if (isFull()) push('team', `<h2 class="sec">صلاحيات التاب والمهام لكل شخص</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">علّمي كل شخص على التاب اللي يشوفه، وعلى «➕ يضيف مهام» لو عايزاه يقدر يضيف مهمة من اليومية، وعلى «مطالبات الضرائب» لو عايزة المطالبات تظهر عنده (جدول المتابعة في التحصيل + المطالبات في اليومية وكشف العميل). اللي بيسجّل مطالبة بنفسه بيشوفها هو دايمًا. الصلاحية الكاملة بتشوف كل ده.</p>
-    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:sec" ${canTab('sec', u) ? 'checked' : ''}> 🔒 يشوف الباسوردات</label></div>`).join('')}</div>
+    <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${TABS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:${k}" ${canTab(k, u) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-tab="u:${u.id}:tax" ${canTab('tax', u) ? 'checked' : ''}> 🏛️ مطالبات الضرائب</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:addtask" ${canTab('addtask', u) ? 'checked' : ''}> ➕ يضيف مهام</label><label class="ipc"><input type="checkbox" data-tab="u:${u.id}:sec" ${canTab('sec', u) ? 'checked' : ''}> 🔒 يشوف الباسوردات</label>${u.role === 'staff' ? `<label class="ipc"><input type="checkbox" data-tab="u:${u.id}:bal" ${canTab('bal', u) ? 'checked' : ''}> 🔍 يستعلم عن رصيد عميل</label>` : ''}</div>`).join('')}</div>
     <div class="row wrap" style="margin-top:10px"><button class="btn pri" data-act="tabacc-save">حفظ</button></div></div>`);
   if (isFull()) push('team', `<h2 class="sec">صلاحية الوارد والأتعاب</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">حدّد لكل شخص (محاسب أو محامي أو مشرف، واحد واحد) أنواع الوارد اللي يسجّلها، وهل يسجّل «أتعاب» و«مطالبات ضرائب» (كل واحدة لوحدها). النوع غير المحدَّد لا يظهر له في البرنامج، وإن لم يُحدَّد أي وارد يختفي زر «وارد» كله. الصلاحية الكاملة تسجّل كل شيء دائمًا. المطالبات افتراضيًا للصلاحية الكاملة فقط.</p>
     <div class="inperm">${liveUsers().filter(u => +u.active !== 0 && u.role !== 'full').map(u => `<div class="ipr"><b>${esc(u.name)} <small class="muted">(${esc(ROLE_NAMES[u.role] || '')})</small></b>${IN_KINDS.map(([k, kl]) => `<label class="ipc"><input type="checkbox" data-inp="u:${u.id}:${k}" ${inAllowed(u.role, k, u.id) ? 'checked' : ''}> ${kl}</label>`).join('')}<label class="ipc" style="border-inline-start:1px solid var(--line);padding-inline-start:10px"><input type="checkbox" data-inp="u:${u.id}:FEE" ${feeAllowed(u.role, u.id) ? 'checked' : ''}> 💼 أتعاب</label><label class="ipc"><input type="checkbox" data-inp="u:${u.id}:TAXC" ${taxcAllowed(u.role, u.id) ? 'checked' : ''}> 🏛️ مطالبات ضرائب</label></div>`).join('')}</div>
