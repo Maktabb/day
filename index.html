@@ -1270,6 +1270,7 @@ h2.sec .gls{margin-inline-start:6px}
 
 .bq-b{font-weight:700;white-space:nowrap}.bq-b small{font-weight:400;opacity:.7}
 .ak-balq{--g1:#ffe9d6;--g2:#ffb878;--gs:rgba(255,140,0,.4)}
+.bq-home{margin:10px 0}.bq-h{font-weight:700;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -1824,7 +1825,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-153000';
+const BUILD = '20261123-155000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -2251,7 +2252,7 @@ function render() {
   if (isSup() && (r.name === 'reports' || r.name === 'dups')) return go('home');
   const vw = $('#view');
   vw.innerHTML = '';
-  try { fn(r, vw); pgBack(vw, r); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); hopsFold(vw); } }
+  try { fn(r, vw); balqWire(); pgBack(vw, r); if (fn !== vHome) setTimeout(startPops, 250); if (fn === vHome) { setTimeout(startPops, 200); setTimeout(apHomeTick, 0); if (isFull()) { dsumHomeCard(vw); } acHomeCard(vw); apHomeCard(vw); if (canTab('tasks') || canAddTask()) opsHomeCard(vw); if (canTab('collect')) collHomeCard(vw); if (canTab('deliver')) dlHomeCard(vw); hopsFold(vw); } }
   catch (e) {
     /* خطأ في صفحة واحدة لا يُسقط البرنامج كله: تظهر رسالة واضحة بدل صفحة بيضاء */
     console.error(e);
@@ -2493,8 +2494,8 @@ function vHome(r, el) {
     <div class="hops"></div>
 `;
   }
-  if (mine) { el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + body; return; }
-  el.innerHTML = hello + reminderBanner() + notifBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
+  if (mine) { el.innerHTML = hello + balHome() + reminderBanner() + notifBanner() + installBanner() + body; return; }
+  el.innerHTML = hello + balHome() + reminderBanner() + notifBanner() + installBanner() + quick + ownSrcCard() + body + queueSection() + (isSup() ? '' : `
     <h2 class="sec">🕘 آخر الحركات<span class="sp"></span>${colBtn('recent', 1)}</h2>
     ${colOpen('recent', 1) ? `<div class="card">${recent.length ? recent.map(t => txRow(t, mine ? myAcc() : '')).join('') : `<div class="empty">لا توجد حركات بعد. ابدأ من «حركة جديدة».</div>`}
     ${recent.length ? `<div class="totbar"><a href="#journal">عرض اليومية كاملة ←</a></div>` : ''}</div>` : ''}`);
@@ -2529,6 +2530,8 @@ function balqPaint(q) {
   const L = clientSearch(raw, 15);
   box.innerHTML = L.length ? `<div class="card">${L.map(c => { const b = cliStat(c.id).bal; return `<div class="lrow"><div class="grow"><b>${esc(c.name)}</b></div><div class="bq-b ${b < -0.004 ? 'neg' : b > 0.004 ? 'pos' : 'muted'}">${b < -0.004 ? 'عليه ' + fmt(-b) : b > 0.004 ? 'له ' + fmt(b) : 'مسدّد ✅'}${Math.abs(b) > 0.004 ? ' <small>ج.م</small>' : ''}</div></div>`; }).join('')}</div>` : '<div class="empty">مفيش عميل بالاسم ده.</div>';
 }
+const balHome = () => (!isPriv() && canTab('bal')) ? `<div class="card pad bq-home"><div class="bq-h">🔍 استعلام عن رصيد عميل</div><input id="bq-q" class="inp" type="search" placeholder="ابحثي باسم العميل…" autocomplete="off" enterkeyhint="search"><div id="bq-res" style="margin-top:8px"></div></div>` : '';
+function balqWire() { const i = $('#bq-q'); if (i && !i.dataset.w) { i.dataset.w = 1; i.addEventListener('input', () => balqPaint(i.value)); balqPaint(''); } }
 function vBalq(r, el) {
   el.innerHTML = `<h1 class="pg">🔍 استعلام عن رصيد عميل</h1>
     <div class="searchbar"><input id="bq-q" class="inp" type="search" placeholder="ابحثي باسم العميل…" autocomplete="off" enterkeyhint="search"></div>
