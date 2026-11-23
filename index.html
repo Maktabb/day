@@ -1826,7 +1826,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-170000';
+const BUILD = '20261123-172000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -7743,8 +7743,29 @@ Object.assign(ACT, {
   'sel-doc': el => docForm(el.dataset.id),
 });
 Object.assign(ACT, { 'bq-open': () => {
-    modal(`<h3>🔍 استعلام عن رصيد عميل</h3><input id="bq-q" class="inp" type="search" placeholder="ابحثي باسم العميل…" autocomplete="off" enterkeyhint="search"><div id="bq-res" style="margin-top:10px;max-height:55vh;overflow:auto"></div><div class="small muted" style="margin-top:8px">«عليه» = مستحق على العميل، «له» = رصيد له عند المكتب.</div>`);
-    const i = $('#bq-q'); i.addEventListener('input', () => balqPaint(i.value)); balqPaint(''); setTimeout(() => { try { i.focus(); } catch (e) { } }, 150);
+    const m = modal(`<h3>🔍 هل رصيد العميل يسمح بالصرف؟</h3>
+      <input id="bq-q" class="inp" type="search" placeholder="ابحثي باسم العميل…" autocomplete="off" enterkeyhint="search">
+      <div id="bq-list" style="margin-top:8px"></div>
+      <div id="bq-sel" style="display:none;margin-top:8px"><div class="row" style="align-items:center;gap:8px"><b id="bq-nm" class="grow"></b><button type="button" class="btn sm ghost" id="bq-ch">تغيير</button></div>
+        <input id="bq-a" class="inp num" type="text" inputmode="decimal" placeholder="المبلغ المراد سداده" style="margin-top:8px" autocomplete="off">
+        <div id="bq-ans" style="margin-top:10px"></div></div>`);
+    let cid = '';
+    const q = m.querySelector('#bq-q'), list = m.querySelector('#bq-list'), sel = m.querySelector('#bq-sel'), a = m.querySelector('#bq-a'), ans = m.querySelector('#bq-ans');
+    const answer = () => {
+      const v = parseFloat(latin(a.value).replace(/[^\d.]/g, '')) || 0;
+      if (!cid || v <= 0) { ans.innerHTML = '<div class="small muted">اكتبي المبلغ وهيظهر لك الرد.</div>'; return; }
+      const ok = cliStat(cid).bal + 0.004 >= v;
+      ans.innerHTML = ok ? `<div class="note ok"><div>✅ رصيده <b>يسمح</b> بصرف المبلغ ده.</div></div>` : `<div class="note err"><div>⛔ رصيده <b>لا يسمح</b>. رجاء مراجعة الأستاذ محمود قبل الصرف.</div></div>`;
+    };
+    q.addEventListener('input', () => {
+      const raw = q.value.trim(); if (!raw) { list.innerHTML = ''; return; }
+      const L = clientSearch(raw, 8);
+      list.innerHTML = L.length ? `<div class="card">${L.map(c => `<button type="button" class="lrow" data-bqc="${esc(c.id)}" style="width:100%;text-align:start;background:none;border:0;cursor:pointer"><b>${esc(c.name)}</b></button>`).join('')}</div>` : '<div class="empty">مفيش عميل بالاسم ده.</div>';
+    });
+    list.addEventListener('click', e => { const b = e.target.closest('[data-bqc]'); if (!b) return; cid = b.dataset.bqc; m.querySelector('#bq-nm').textContent = clientName(cid); q.style.display = 'none'; list.innerHTML = ''; sel.style.display = ''; a.value = ''; answer(); a.focus(); });
+    m.querySelector('#bq-ch').onclick = () => { cid = ''; sel.style.display = 'none'; q.style.display = ''; q.value = ''; q.focus(); };
+    a.addEventListener('input', answer);
+    setTimeout(() => { try { q.focus(); } catch (e) { } }, 150);
   }, 'ai-tog': () => { LS.set('aiOn', aiOn() ? 0 : 1); aiFabSync(); toast(aiOn() ? 'المساعد اتفتح' : 'المساعد اتقفل'); render(); }, 'pg-back': () => { if (history.length > 1) history.back(); else go('home'); }, 'bill-edit': el => billForm(el.dataset.id), 'col-tog': el => { const k = el.dataset.k, def = +el.dataset.def; LS.set('col_' + k, colOpen(k, def) ? 0 : 1); stRe(); } });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
