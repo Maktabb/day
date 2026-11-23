@@ -1825,7 +1825,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261123-155000';
+const BUILD = '20261123-161000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -4929,6 +4929,7 @@ function vSettings(r, el) {
       ${isPriv() ? `<button class="btn" data-act="j-export-all">${icon('download', 17)} تصدير كل الحركات (Excel)</button>${isSup() ? '' : `<button class="btn" data-act="cl-export">${icon('download', 17)} تصدير العملاء (Excel)</button>`}` : ''}
       ${isFull() ? `<label class="btn">${icon('upload', 17)} استرجاع نسخة<input type="file" accept=".json" id="bk-file" hidden></label>` : ''}</div>
       <p class="small muted" style="margin:10px 0 0">الشيت نفسه هو النسخة الأساسية، ويمكن تفعيل نسخة احتياطية يومية تلقائية على Google Drive بتشغيل الدالة <b>installDailyBackup</b> مرة واحدة من محرر Apps Script.</p></div>`);
+  if (isFull()) push('ai', `<h2 class="sec">🤖 المساعد الذكي</h2><div class="card pad"><div class="row" style="align-items:center;gap:10px"><div class="grow"><b>زرار المساعد</b><div class="small muted">بيظهر عندك أنتِ بس (الصلاحية الكاملة)، ومش بيظهر للمشرفين ولا المحاسبين.</div></div><button class="btn ${aiOn() ? 'pri' : ''}" data-act="ai-tog">${aiOn() ? '✅ مفتوح' : '⛔ مقفول'}</button></div></div>`);
   push('look', `<h2 class="sec">المظهر</h2><div class="card pad">
     <label class="row" style="gap:10px;margin-bottom:14px;cursor:pointer"><input type="checkbox" class="sw" data-look="theme" ${themeIsDark() ? 'checked' : ''}> <span class="grow"><b>🌙 الوضع الداكن</b><br><small class="muted">ألوان داكنة مريحة للعين ليلًا</small></span></label>
     <label class="row" style="gap:10px;margin-bottom:14px;cursor:pointer"><input type="checkbox" class="sw" data-look="fx" ${fxOn() ? 'checked' : ''}> <span class="grow"><b>🔷 الخلفية الهندسية المتحركة</b><br><small class="muted">مربعات ومثلثات ودوائر تتحرك بهدوء خلف الصفحات. أوقفيها لو الجهاز قديم أو بطيء.</small></span></label>
@@ -4936,7 +4937,7 @@ function vSettings(r, el) {
     <p class="small muted" style="margin:12px 0 0">هذه الاختيارات تُحفظ على هذا الجهاز فقط.</p></div>`);
   if (isFull()) push('hr', hrView());
   if (isSup()) Object.keys(secs).forEach(k => { if (!['lists', 'acct', 'alerts'].includes(k)) delete secs[k]; });
-  const GEN = ['acct', 'alerts', 'look', 'conn', 'rem', 'xl', 'bk', 'log'];
+  const GEN = ['acct', 'alerts', 'ai', 'look', 'conn', 'rem', 'xl', 'bk', 'log'];
   if (isFull()) secs.ntl = `<h2 class="sec">سجل الإشعارات</h2><div class="card pad"><p class="small muted" style="margin:0 0 10px">الإشعارات المرسلة للفريق ومين شافها.</p><button class="btn" data-act="nt-log">${icon('list', 17)} فتح سجل الإشعارات</button></div>`;
   if (secs.xl) secs.xl = '<h2 class="sec">ترحيل حركات الإكسيل</h2>' + secs.xl;
   const genOrder = [...GEN, 'ntl'].filter(k => secs[k]);
@@ -7740,7 +7741,7 @@ Object.assign(ACT, {
   'sel-fee': el => docFee(el.dataset.id),
   'sel-doc': el => docForm(el.dataset.id),
 });
-Object.assign(ACT, { 'pg-back': () => { if (history.length > 1) history.back(); else go('home'); }, 'bill-edit': el => billForm(el.dataset.id), 'col-tog': el => { const k = el.dataset.k, def = +el.dataset.def; LS.set('col_' + k, colOpen(k, def) ? 0 : 1); stRe(); } });
+Object.assign(ACT, { 'ai-tog': () => { LS.set('aiOn', aiOn() ? 0 : 1); aiFabSync(); toast(aiOn() ? 'المساعد اتفتح' : 'المساعد اتقفل'); render(); }, 'pg-back': () => { if (history.length > 1) history.back(); else go('home'); }, 'bill-edit': el => billForm(el.dataset.id), 'col-tog': el => { const k = el.dataset.k, def = +el.dataset.def; LS.set('col_' + k, colOpen(k, def) ? 0 : 1); stRe(); } });
 setInterval(() => { if (ME && D && !document.hidden) opsSync(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && D && Date.now() - OPS_ST.last > 15000) opsSync(); });
 
@@ -7920,10 +7921,15 @@ function aiOpen() {
   };
   m.querySelector('#ai-go').onclick = send; q.addEventListener('keydown', e => { if (e.key === 'Enter') send(); }); q.focus();
 }
-setInterval(() => {
-  if (!ME || !D || document.getElementById('ai-fab')) return;
+/* المساعد الذكي: لصاحب الصلاحية الكاملة بس، وتقدر تفتحه وتقفله من الإعدادات */
+const aiOn = () => !!ME && isFull() && !!LS.get('aiOn', 1);
+function aiFabSync() {
+  const cur = document.getElementById('ai-fab');
+  if (!ME || !D || !aiOn()) { if (cur) cur.remove(); return; }
+  if (cur) return;
   const b = document.createElement('button'); b.id = 'ai-fab'; b.className = 'no-print'; b.setAttribute('aria-label', 'المساعد'); b.textContent = '🤖'; b.onclick = aiOpen; document.body.appendChild(b);
-}, 2000);
+}
+setInterval(aiFabSync, 2000);
 
 /* ====== شرح الأزرار: ضغطة طويلة على الموبايل أو وقوف الماوس عليها ====== */
 const TIPS = {
