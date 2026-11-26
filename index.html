@@ -1827,7 +1827,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261126-152000';
+const BUILD = '20261126-163000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3493,7 +3493,7 @@ const logShell = () => `<div class="row wrap" style="gap:8px;margin-bottom:8px">
 document.addEventListener('input', e => { if (e.target && e.target.id === 'log-q') { LOGV.q = e.target.value; logPaint(); } });
 /* ====== التحصيل: عملاء نحتاج نحصّل منهم ====== */
 const collList = () => { const seen = {}; return list('collect').map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(x => x && x.c).map(x => ({ ...x, c: resCid(x.c) })).filter(x => D.clients[x.c] && !seen[x.c] && (seen[x.c] = 1)); };
-function collSave(arr) { D.lists = D.lists || {}; const _o = {}; collList().forEach(q => _o[q.c] = q); arr = arr.map(x => { const o = _o[x.c]; if (!o) return x; const y = { ...x }; if (!y.log && o.log) y.log = o.log; if (!('cd' in y) && o.cd) y.cd = o.cd; return y; }); D.lists.collect = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { collect: D.lists.collect } }); changed(); }
+function collSave(arr) { D.lists = D.lists || {}; const _o = {}; collList().forEach(q => _o[q.c] = q); arr = arr.map(x => { const o = _o[x.c]; if (!o) return x; const y = { ...x }; if (!y.log && o.log) y.log = o.log; if (!('cd' in y) && o.cd) y.cd = o.cd; if (!('wk' in y) && o.wk) y.wk = o.wk; if (!('wkn' in y) && o.wkn) y.wkn = o.wkn; return y; }); D.lists.collect = arr.map(x => JSON.stringify(x)); queue('saveLists', { lists: { collect: D.lists.collect } }); changed(); }
 const collHas = id => collList().some(x => x.c === resCid(id));
 /* المطلوب تحصيله: الرصيد / دفعة من الاتفاق / مبلغ محدد / فاتورة صادرة */
 function collAmt(x, st) {
@@ -3534,12 +3534,14 @@ function vCollect(r, el) {
   apMigrate();
   const rowsAll = collRows(), td = today();
   const byW = !isPriv() || CO.w === 'all' ? rowsAll : rowsAll.filter(q => CO.w === 'others' ? !wHas(q.x.w, ME.id) : wHas(q.x.w, CO.w === 'me' ? ME.id : CO.w));
-  const nDone = byW.filter(q => q.x.cd).length, nOpen = byW.length - nDone;
-  const rows = (CO.s === 'done' ? byW.filter(q => q.x.cd) : CO.s === 'open' ? byW.filter(q => !q.x.cd) : byW.slice()).sort((a, b) => (a.x.cd ? 1 : 0) - (b.x.cd ? 1 : 0));
-  const act = rows.filter(q => !q.x.cd);
+  const isWo = q => q.x.wk === 'open', rd = byW.filter(q => !q.x.cd && !isWo(q)), po = byW.filter(q => !q.x.cd && isWo(q)), cdn = byW.filter(q => q.x.cd);
+  const rank = q => q.x.cd ? 2 : isWo(q) ? 1 : 0;
+  const rows = (CO.s === 'wd' ? rd : CO.s === 'wo' ? po : CO.s === 'cd' ? cdn : byW.slice()).sort((a, b) => rank(a) - rank(b));
+  const act = rd;
   const tot = r2(act.reduce((n, q) => n + q.owe, 0)), n0 = act.filter(q => q.owe > 0.004).length;
-  const sChips = `<div class="tk-who" style="margin-top:8px"><button class="chip ${CO.s === 'all' ? 'on' : ''}" data-act="co-s" data-k="all">كل الشغل <small>${byW.length}</small></button><button class="chip ${CO.s === 'open' ? 'on' : ''}" data-act="co-s" data-k="open">⏳ شغل ما خلص <small>${nOpen}</small></button><button class="chip ${CO.s === 'done' ? 'on' : ''}" data-act="co-s" data-k="done">✅ شغل خلص <small>${nDone}</small></button></div>`;
+  const sChips = `<div class="tk-who" style="margin-top:8px"><button class="chip ${CO.s === 'all' ? 'on' : ''}" data-act="co-s" data-k="all">كل الشغل <small>${byW.length}</small></button><button class="chip ${CO.s === 'wd' ? 'on' : ''}" data-act="co-s" data-k="wd">✅ شغل خلص <small>${rd.length}</small></button><button class="chip ${CO.s === 'wo' ? 'on' : ''}" data-act="co-s" data-k="wo">📄 ما خلصش <small>${po.length}</small></button><button class="chip ${CO.s === 'cd' ? 'on' : ''}" data-act="co-s" data-k="cd">💵 اتحصّل <small>${cdn.length}</small></button></div>`;
   const wn = k => rowsAll.filter(q => wHas(q.x.w, k)).length, wChips = rowsAll.length ? `<div class="tk-who"><button class="chip ${CO.w === 'all' ? 'on' : ''}" data-act="co-w" data-k="all">الكل <small>${rowsAll.length}</small></button><button class="chip ${CO.w === 'me' ? 'on' : ''}" data-act="co-w" data-k="me">تحصيلي <small>${wn(ME.id)}</small></button><button class="chip ${CO.w === 'others' ? 'on' : ''}" data-act="co-w" data-k="others">تحصيلات الغير <small>${rowsAll.filter(q => !wHas(q.x.w, ME.id)).length}</small></button>${isPriv() ? liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id && wn(u.id)).map(u => `<button class="chip ${CO.w === u.id ? 'on' : ''}" data-act="co-w" data-k="${u.id}">${esc(bareName(u.name))} <small>${wn(u.id)}</small></button>`).join('') : ''}</div>` : '';
+  const nOpen = po.length, nDone = rd.length;
   const late = act.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
   el.innerHTML = `<div class="co-h"><div class="co-t"><h1 class="pg" style="margin:0">💰 التحصيل</h1><div class="small muted">تحصيل العملاء ومتابعة مطالبات الضرائب</div></div>
       <div class="co-top-acts">${isPriv() ? `<button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل</button>${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} PDF</button>` : ''}` : ''}</div></div>
@@ -3548,14 +3550,15 @@ function vCollect(r, el) {
       <div><small>في القائمة</small><b>${byW.length}</b></div>
       <div><small>عليهم رصيد</small><b>${n0}</b></div>
       <div><small>تأخر موعدهم</small><b class="${late ? 'neg' : ''}">${late}</b></div>
-      <div data-act="co-s" data-k="open" style="cursor:pointer"><small>⏳ شغل ما خلص</small><b>${nOpen}</b></div>
-      <div data-act="co-s" data-k="done" style="cursor:pointer"><small>✅ شغل خلص</small><b class="${nDone ? 'pos' : ''}">${nDone}</b></div>
-      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>المتوقع تحصيله</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
+      <div data-act="co-s" data-k="wd" style="cursor:pointer"><small>✅ شغل خلص</small><b class="${nDone ? 'pos' : ''}">${nDone}</b></div>
+      <div data-act="co-s" data-k="wo" style="cursor:pointer"><small>📄 ما خلصش</small><b>${nOpen}</b></div>
+      <div class="bal ${tot > 0 ? 'neg' : ''}"><small>المتوقع تحصيله (الشغل الخلصان)</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
     </div>
     ${rows.length ? rows.map(({ x, s, owe, own, lbl }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td, has = owe > 0.004;
       const pv = isPriv(), LG = (x.log || []).slice().reverse();
       return `<div class="card co-c${isLate ? ' late' : ''}${x.cd ? ' cdone' : ''}"><div class="co-top">${pv ? `<a class="co-n" href="#client/${c.id}">${esc(c.name)}</a>` : `<span class="co-n">${esc(c.name)}</span>`}
           <div class="co-amt"><small>${lbl ? esc(lbl) : (has ? 'المطلوب تحصيله' : (s.bal > 0.004 ? 'له رصيد دائن' : 'مسدَّد'))}</small><b class="${has ? 'neg' : 'pos'}">${fmt(has ? owe : Math.max(s.bal || 0, 0))}</b></div></div>
+        ${!x.cd && x.wk === 'open' ? `<div class="note" style="margin:6px 0;background:#fff7e6"><div>📄 الشغل ما خلصش${x.wkn ? ' — فاضل: ' + esc(x.wkn) : ''} <small>(مش واجب تحصيله لسه)</small></div></div>` : ''}
         ${x.cd ? `<div class="note ok" style="margin:6px 0"><div>✅ تم التحصيل — ${esc(hrName(x.cd.u))} • ${esc(dA(String(x.cd.at).slice(0, 10)))}${pv ? ' <small>(راجعي الحساب وبعدين «إزالة»)</small>' : ''}</div></div>` : ''}
         <div class="co-meta">${x.w ? `<span class="co-w">👤 ${esc(collWho(x))}</span>` : ''}${lbl && pv ? `<span>رصيده الكلي <b class="num ${own > 0.004 ? 'neg' : ''}">${fmt(own)}</b></span>` : ''}${c.phone ? `<span class="num">📞 ${esc(c.phone)}</span>` : ''}${pv ? `<span>آخر نشاط <span class="num">${esc(s.last || '—')}</span></span>` : ''}${x.d ? `<span class="${isLate ? 'neg' : ''}">الموعد <span class="num">${esc(dA(x.d))}</span>${isLate ? ' ⚠️ متأخر' : ''}</span>` : ''}</div>
         ${x.n ? `<div class="co-note">📝 ${esc(x.n)}</div>` : ''}
@@ -3564,6 +3567,7 @@ function vCollect(r, el) {
           ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">${icon('phone', 15)} اتصال</a>` : ''}
           <button class="btn sm" data-act="co-log" data-id="${c.id}">📝 ملاحظة الاتصال</button>
           <button class="btn sm ${x.cd ? '' : 'pri'}" data-act="co-done" data-id="${c.id}">${x.cd ? '↩️ تراجع' : '✅ تم التحصيل'}</button>
+          ${pv && !x.cd ? `<button class="btn sm" data-act="co-wk" data-id="${c.id}">${x.wk === 'open' ? '✅ الشغل خلص' : '📄 ما خلصش'}</button>` : ''}
           ${pv ? `${c.phone ? `<button class="btn sm" data-act="client-wa" data-id="${c.id}">${icon('chat', 15)} كشف</button>` : ''}<button class="btn sm co-inv" data-act="coll-inv" data-id="${c.id}">🧾 الفاتورة</button>
           <button class="btn sm" data-act="coll-edit" data-id="${c.id}">${icon('edit', 15)} تعديل</button>
           <button class="btn sm" data-act="ap-add" data-c="${c.id}" data-k="collect">📅 موعد</button>
@@ -3867,7 +3871,7 @@ function dlForm(id, clientId) {
 }
 function collBadge() {
   if (!ME || !D || !D.lists || !canTab('collect')) return { n: 0, tot: 0 };
-  const all0 = collRows(), mine0 = all0.filter(q => wHas(q.x.w, ME.id)), rows = (!isPriv() && mine0.length ? mine0 : all0).filter(q => q.owe > 0.004);
+  const all0 = collRows(), mine0 = all0.filter(q => wHas(q.x.w, ME.id)), rows = (!isPriv() && mine0.length ? mine0 : all0).filter(q => q.owe > 0.004 && q.x.wk !== 'open' && !q.x.cd);
   return { n: rows.length, tot: r2(rows.reduce((n, q) => n + q.owe, 0)) };
 }
 const kFmt = v => v >= 100000 ? Math.round(v / 1000) + 'k' : v >= 10000 ? (Math.round(v / 100) / 10) + 'k' : fmt(v);
@@ -3934,6 +3938,7 @@ function collForm(id) {
   const m = modal(`<h3>${icon('wallet', 20)} ${id ? 'التحصيل' : 'إضافة عميل للتحصيل'}</h3>
     ${id ? `<p><b>${esc(clientName(id))}</b></p>` : fld('العميل', `<div class="search">${icon('search', 18)}<input id="cl-q" class="inp" placeholder="ابحث عن العميل"></div><div id="cl-l" class="card" style="margin-top:8px;max-height:200px;overflow:auto"></div><div id="cl-p" class="small" style="margin-top:6px"></div>`)}
     <div id="cl-mx"></div>
+    ${fld('حالة الشغل الإجرائي', `<select id="cl-wk" class="inp"><option value="">✅ الشغل خلص — واجب يتحصّل دلوقتي</option><option value="open" ${cur.wk === 'open' ? 'selected' : ''}>📄 الشغل ما خلصش — فاضل له ورق</option></select><input id="cl-wkn" class="inp" style="margin-top:6px" placeholder="الورق الناقص (اختياري)" value="${esc(cur.wkn || '')}">`)}
     ${fld('تكليف (Assign to)', wPick('cl-w', w0))}
     ${fld('ملاحظة (اختياري)', `<input id="cl-n" class="inp" placeholder="مثال: وعد يدفع نهاية الشهر" value="${esc(cur.n || '')}">`)}
     <div class="acts"><button class="btn pri" id="cl-ok">حفظ</button>${id && collHas(id) ? `<button class="btn" data-act="coll-inv" data-id="${id}">🧾 الفاتورة</button>` : ''}<button class="btn" data-act="mclose">إلغاء</button></div>`);
@@ -3974,7 +3979,7 @@ function collForm(id) {
   m.addEventListener('change', e => { const c = e.target.closest('[data-pk]'); if (c) { c.checked ? pk.add(c.dataset.pk) : pk.delete(c.dataset.pk); pkTot(); } });
   m.querySelector('#cl-ok').onclick = () => {
     if (!pick) return toast('اختاري العميل أولًا', 'err');
-    const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), w: wVal('cl-w'), d: cur.d || '', by: ME.id, at: cur.at || today() };
+    const e = { c: resCid(pick), m: mode, n: $('#cl-n').value.trim(), wk: $('#cl-wk').value === 'open' ? 'open' : '', wkn: $('#cl-wk').value === 'open' ? $('#cl-wkn').value.trim() : '', w: wVal('cl-w'), d: cur.d || '', by: ME.id, at: cur.at || today() };
     if (mode === 'agree') { const sel = m.querySelector('#cl-ai'); if (!sel) return toast('مفيش دفعات في الاتفاق', 'err'); e.ai = +sel.value; }
     if (mode === 'agbal' && !(billCalc(resCid(pick)).agBal > 0.004)) return toast('مفيش باقي على الاتفاق', 'err');
     if (mode === 'amt') { e.a = r2(+m.querySelector('#cl-a').value || 0); if (e.a <= 0) return toast('اكتبي مبلغ الدفعة', 'err'); }
@@ -3987,7 +3992,7 @@ let _clT = null, _clTk = '';
 function clTasks() {
   if (!ME || !D || !D.lists) return [];
   const k = VER + '|' + ME.id; if (_clT && _clTk === k) return _clT;
-  _clT = collList().filter(x => x.w && !x.cd && D.clients[x.c]).map(x => { const c = D.clients[x.c], a = collAmt(x, cliStat(x.c)), u = userById(wMeOr(x.w)), dd = nextColl(x.c) || '';
+  _clT = collList().filter(x => x.w && !x.cd && x.wk !== 'open' && D.clients[x.c]).map(x => { const c = D.clients[x.c], a = collAmt(x, cliStat(x.c)), u = userById(wMeOr(x.w)), dd = nextColl(x.c) || '';
     return { id: 'CL-' + x.c, crm: 'c', cl: true, cid: c.id, clientName: c.name, text: '🧾 تحصيل ' + fmt(a.amt) + ' ج' + (a.lbl ? ' — ' + a.lbl.replace(/^\S+\s/, '') : ''), cat: '', place: '', note: x.n || '', who: u ? u.name : '', due: dd, d: dd, status: 'open', why: '', by: x.by }; });
   _clTk = k; return _clT;
 }
@@ -7787,6 +7792,11 @@ Object.assign(ACT, {
   'um-out': () => { closeModal(); ACT.logout(); },
   'co-w': el => { CO.w = el.dataset.k; stRe(); },
   'co-s': el => { CO.s = CO.s === el.dataset.k && el.dataset.k !== 'all' ? 'all' : el.dataset.k; stRe(); },
+  'co-wk': el => { if (!isPriv()) return; const id = resCid(el.dataset.id), x = collList().find(q => q.c === id); if (!x) return;
+    const go = n => { collSave(collList().map(q => q.c === id ? { ...q, wk: q.wk === 'open' ? '' : 'open', wkn: q.wk === 'open' ? '' : n } : q)); toast(x.wk === 'open' ? 'الشغل خلص — واجب تحصيله' : 'اتعلّم: الشغل ما خلصش'); render(); };
+    if (x.wk === 'open') return go('');
+    const m = modal(`<h3>📄 الشغل ما خلصش — ${esc(clientName(id))}</h3><div class="form">${fld('الورق الناقص (اختياري)', '<input id="wk-n" class="inp" placeholder="مثال: شهادة الضرائب / توقيع العميل">')}<div class="acts"><button class="btn pri" id="wk-ok">حفظ</button><button class="btn" data-act="mclose">إلغاء</button></div></div>`);
+    m.querySelector('#wk-ok').onclick = () => { const n = m.querySelector('#wk-n').value.trim(); closeModal(); go(n); }; },
   'tk-edit': el => { const id = el.dataset.id; if (id.startsWith('AP-')) return apForm(id.slice(3)); if (id.startsWith('CL-')) return collForm(id.slice(3)); tkEdit(id); },
   'tk-arch': el => { const st = tkArchSet(); st.add(el.dataset.id); tkArchSave(st); toast('اتجاهلت — هتلاقيها في «المهام المتجاهلة»'); stRe(); },
   'tk-arch-grp': async el => { const ids = String(el.dataset.ids || '').split(',').filter(Boolean); if (!ids.length) return; if (!(await ask('تجاهل ' + ids.length + ' مهمة من «' + esc(el.dataset.g) + '»؟ تقدري ترجعيهم من «المهام المتجاهلة».', 'تجاهل'))) return; const st = tkArchSet(); ids.forEach(id => st.add(id)); tkArchSave(st); toast('اتجاهلوا ' + ids.length); stRe(); },
