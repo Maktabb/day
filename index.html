@@ -1827,7 +1827,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261126-163000';
+const BUILD = '20261126-220000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -4518,7 +4518,20 @@ function dayReview() {
 }
 
 /* ====== التحليلات المالية (الصلاحية الكاملة) ====== */
-const AN = { tab: 'is', period: 'all', from: '', to: '', ownerRev: 0 };
+const AN = { tab: 'is', period: 'all', from: '', to: '', ownerRev: 0, g: 'm', y: 0, mo: 0, init: 0 };
+const AN_G = [['m', 'شهر'], ['q', 'ربع سنة'], ['y', 'سنة'], ['all', 'الكل'], ['custom', 'فترة محددة']];
+const anP2 = n => String(n).padStart(2, '0');
+function anSet() {
+  if (!AN.init) { const t = today(); AN.y = +t.slice(0, 4); AN.mo = +t.slice(5, 7); AN.init = 1; }
+  const y = AN.y, mo = AN.mo, q = Math.ceil(mo / 3), last = (yy, mm) => new Date(yy, mm, 0).getDate();
+  if (AN.g === 'm') { AN.from = `${y}-${anP2(mo)}-01`; AN.to = `${y}-${anP2(mo)}-${anP2(last(y, mo))}`; AN.period = 'custom'; }
+  else if (AN.g === 'q') { const m1 = q * 3 - 2, m3 = q * 3; AN.from = `${y}-${anP2(m1)}-01`; AN.to = `${y}-${anP2(m3)}-${anP2(last(y, m3))}`; AN.period = 'custom'; }
+  else if (AN.g === 'y') { AN.from = `${y}-01-01`; AN.to = `${y}-12-31`; AN.period = 'custom'; }
+  else if (AN.g === 'all') AN.period = 'all';
+  else AN.period = 'custom';
+}
+const anLbl = () => { const y = AN.y, q = Math.ceil(AN.mo / 3), QN = ['الأول', 'الثاني', 'الثالث', 'الرابع'];
+  return AN.g === 'm' ? AR_MONTHS[AN.mo - 1] + ' ' + y : AN.g === 'q' ? 'الربع ' + QN[q - 1] + ' ' + y + ' (' + AR_MONTHS[q * 3 - 3] + ' – ' + AR_MONTHS[q * 3 - 1] + ')' : AN.g === 'y' ? 'سنة ' + y : ''; };
 const AN_TABS = [['is', 'قائمة الدخل'], ['ie', 'إيرادات ومصروفات'], ['ge', 'مصروفات عمومية'], ['pl', 'ربحية وسيولة'], ['bs', 'المركز المالي'], ['st', 'مستوى الموظف'], ['pe', 'مصروفات شخصية']];
 
 const anMon = ym => { const [y, m] = ym.split('-'); return AR_MONTHS[+m - 1] + ' ' + y.slice(2); };
@@ -4584,11 +4597,13 @@ const anRow = (label, v, o = {}) => `<tr class="${o.cls || ''}"><td>${o.ind ? '<
 
 function vAnalytics(r, el) {
   if (!isFull()) return go('home');
+  anSet();
   const txs = anTxs(), { S, M, mk } = anAgg(txs);
   const body = { is: anIncome, ie: anIE, ge: anGeneral, pl: anProfit, bs: anBalance, st: anStaff, pe: anPersonal }[AN.tab](txs, S, M, mk);
   el.innerHTML = `<h1 class="pg">التحليلات المالية <span class="sp"></span><button class="btn sm pri no-print" data-act="pd-analytics">${icon('print', 16)} طباعة PDF</button></h1>
-    <div class="card pad filters"><select class="inp" data-act-change="an-period" style="width:100%">${PERIODS.filter(p => p[0] !== 'yest').map(([k, l]) => `<option value="${k}" ${AN.period === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      ${AN.period === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-an="from" value="${AN.from}"><span class="small">إلى</span><input type="date" class="inp" data-an="to" value="${AN.to}"></div>` : ''}
+    <div class="card pad filters"><div class="chips" style="gap:6px;flex-wrap:wrap">${AN_G.map(([k, l]) => `<button class="chip ${AN.g === k ? 'on' : ''}" data-act="an-g" data-v="${k}">${l}</button>`).join('')}</div>
+      ${['m', 'q', 'y'].includes(AN.g) ? `<div class="row" style="align-items:center;gap:8px;margin-top:10px"><button class="btn sm" data-act="an-nav" data-d="-1" aria-label="السابق">▶</button><b class="grow" style="text-align:center">${esc(anLbl())}</b><button class="btn sm" data-act="an-nav" data-d="1" aria-label="التالي">◀</button><button class="btn sm" data-act="an-now">الحالي</button></div>` : ''}
+      ${AN.g === 'custom' ? `<div class="fbar"><span class="small">من</span><input type="date" class="inp" data-an="from" value="${AN.from}"><span class="small">إلى</span><input type="date" class="inp" data-an="to" value="${AN.to}"></div>` : ''}
       <div class="chips scroll antabs" style="margin-top:10px">${AN_TABS.map(([k, l]) => `<button class="chip ${AN.tab === k ? 'on' : ''}" data-act="an-tab" data-v="${k}">${l}</button>`).join('')}</div></div>
     ${xlDone() ? '' : `<div class="note warn" style="margin-top:10px">${icon('info', 18)}<div>حركات الإكسيل القديمة لم تُرحَّل بعد، فالتحليلات هنا تشمل حركات البرنامج فقط. نفّذي «ترحيل حركات الإكسيل» من الإعدادات لتدخل المصروفات القديمة في كل التحليلات.</div></div>`}
     <div style="margin-top:12px">${body}</div>
@@ -5345,6 +5360,9 @@ const ACT = {
   'as-more': () => { const y = window.scrollY; AS.limit += 400; render(); window.scrollTo(0, y); },
   'as-all': () => { const y = window.scrollY; AS.limit = 1e9; render(); window.scrollTo(0, y); },
   'an-period': el => { AN.period = el.dataset.v; render(); },
+  'an-g': el => { AN.g = el.dataset.v; if (AN.g === 'custom' && !AN.from) { const t = today(); AN.from = monthStart(t); AN.to = t; } render(); },
+  'an-nav': el => { const d = +el.dataset.d; if (AN.g === 'y') AN.y += d; else { let k = AN.g === 'q' ? 3 : 1; AN.mo += d * k; while (AN.mo < 1) { AN.mo += 12; AN.y--; } while (AN.mo > 12) { AN.mo -= 12; AN.y++; } } render(); },
+  'an-now': () => { AN.init = 0; anSet(); render(); },
   'an-tab': el => { AN.tab = el.dataset.v; render(); },
   'an-owner': el => { AN.ownerRev = el.checked ? 1 : 0; render(); },
   'rp-period': el => { RP.period = el.dataset.v; render(); },
