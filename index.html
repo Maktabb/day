@@ -1827,7 +1827,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261126-220000';
+const BUILD = '20261126-221500';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3074,7 +3074,8 @@ async function saveEntry(again) {
 }
 
 /* ====== اليومية ====== */
-const J = { period: 'all', from: '', to: '', type: '', acc: '', q: '', limit: 150 };
+const J = { period: 'all', from: '', to: '', type: '', acc: '', q: '', limit: 150, amin: '', amax: '' };
+const jAmt = v => (J.amin === '' || v >= +J.amin - 0.005) && (J.amax === '' || v <= +J.amax + 0.005);
 function periodRange(p, from, to) {
   const t = today();
   switch (p) {
@@ -3103,6 +3104,7 @@ function journalTxs() {
     if (t.date < a || t.date > b) return false;
     if (!isPriv() && !(t.fromAcc === myAcc() || t.toAcc === myAcc() || t.userId === ME.id)) return false;
     if (J.type === 'ARCH') return false;
+    if ((J.amin !== '' || J.amax !== '') && !jAmt(Math.abs(+t.amount || 0))) return false;
     if (J.type && t.type !== J.type) return false;
     if (J.acc && t.fromAcc !== J.acc && t.toAcc !== J.acc) return false;
     if (qk) {
@@ -3124,6 +3126,7 @@ function journalArch() {
   return A.rows.filter(x => {
     const d = x[ci.date]; if (d < a || d > b) return false;
     if (mem && x[ci.member] !== mem) return false;
+    if ((J.amin !== '' || J.amax !== '') && ![ci.inc, ci.cust, ci.misc, ci.fee].some(k => (+x[k] || 0) > 0 && jAmt(+x[k]))) return false;
     if (qk && !nkey([x[ci.name], x[ci.desc], x[ci.place], x[ci.kind], x[ci.member], clientName(x[ci.clientId])].join(' ')).includes(qk)) return false;
     return true;
   });
@@ -3159,12 +3162,14 @@ function vJournal(r, el) {
         <select class="inp" data-j="type"><option value="">كل الأنواع</option>${xlDone() ? '' : `<option value="ARCH" ${J.type === 'ARCH' ? 'selected' : ''}>📊 من يومية الإكسيل فقط</option>`}${Object.entries(TYPES).map(([k, m]) => `<option value="${k}" ${J.type === k ? 'selected' : ''}>${m.n}</option>`).join('')}</select>
         ${isPriv() ? `<select class="inp" data-j="acc"><option value="">كل الحسابات</option>${visAccounts().filter(a => !accGone(a)).map(a => `<option value="${a.id}" ${J.acc === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>` : ''}
         <div class="search grow" style="min-width:200px">${icon('search', 18)}<input class="inp" style="width:100%" data-j="q" value="${esc(J.q)}" placeholder="بحث: عميل، بند، إيصال، مكان…"></div>
+        <button class="btn sm" data-act="j-find">🔎 قيمة / تاريخ</button>
         <button class="btn sm" data-act="day-review">${icon('list', 16)} مراجعة يوم</button>
         <button class="btn sm" data-act="dsum">📝 ملخص اليوم</button>
         <button class="btn sm pri" data-act="pd-journal">${icon('print', 16)} طباعة PDF</button>
         ${isPriv() ? `<button class="btn sm" data-act="j-export">${icon('download', 16)} تصدير Excel</button>` : ''}
       </div>
     </div>
+    ${J.amin !== '' || J.amax !== '' ? `<div class="note info no-print" style="margin-top:10px;align-items:center"><div class="grow">🔎 بحث بالقيمة: ${J.amin !== '' && J.amax !== '' && +J.amin === +J.amax ? '<b class="num">' + fmt(+J.amin) + '</b>' : (J.amin !== '' ? 'من <b class="num">' + fmt(+J.amin) + '</b> ' : '') + (J.amax !== '' ? 'إلى <b class="num">' + fmt(+J.amax) + '</b>' : '')} <small>— ${shown.length} حركة</small></div><button class="btn sm" data-act="j-find-clr">✖️ مسح</button></div>` : ''}
     <div class="card" style="margin-top:12px">
       ${shown.length ? Object.entries(groups).map(([d, farr]) => {
         const arr = farr.filter(f => f.t).map(f => f.t);
@@ -5332,6 +5337,21 @@ const ACT = {
   },
   mclose: () => closeModal(),
   'mclose-bg': (el, e) => { if (e.target === el && !el.querySelector('.apop')) closeModal(); },
+  'j-find': () => {
+    const m = modal(`<h3>🔎 بحث في اليومية بقيمة أو تاريخ</h3><div class="form">
+      ${fld('القيمة (المبلغ)', `<div class="row" style="gap:8px"><input id="jf-a" class="inp num grow" inputmode="decimal" placeholder="من / القيمة بالظبط" value="${esc(J.amin)}"><input id="jf-b" class="inp num grow" inputmode="decimal" placeholder="إلى (اختياري)" value="${esc(J.amax !== J.amin ? J.amax : '')}"></div><div class="small muted">اكتبي رقم واحد للبحث عن المبلغ بالظبط، أو رقمين لنطاق.</div>`)}
+      ${fld('التاريخ', `<div class="row" style="gap:8px"><input id="jf-d1" type="date" class="inp grow" value="${J.period === 'custom' ? J.from : ''}"><input id="jf-d2" type="date" class="inp grow" value="${J.period === 'custom' ? J.to : ''}"></div><div class="small muted">تاريخ واحد = يوم بعينه. لو عايزة فترة اكتبي «من» و«إلى».</div>`)}
+      <div class="acts"><button class="btn pri" id="jf-ok">بحث</button><button class="btn" id="jf-clr">مسح الكل</button><button class="btn" data-act="mclose">إلغاء</button></div></div>`);
+    const num = id => { const v = latin(m.querySelector(id).value).replace(/[^\d.]/g, ''); return v === '' ? '' : String(+v); };
+    m.querySelector('#jf-ok').onclick = () => {
+      let a = num('#jf-a'), b = num('#jf-b'); if (a !== '' && b === '') b = a; if (a === '' && b !== '') a = b; if (a !== '' && +a > +b) [a, b] = [b, a];
+      let d1 = m.querySelector('#jf-d1').value, d2 = m.querySelector('#jf-d2').value; if (d1 && !d2) d2 = d1; if (d2 && !d1) d1 = d2; if (d1 && d2 && d1 > d2) [d1, d2] = [d2, d1];
+      J.amin = a; J.amax = b; if (d1) { J.period = 'custom'; J.from = d1; J.to = d2; } else if (J.period === 'custom') { J.period = 'all'; }
+      J.limit = 150; closeModal(); render();
+    };
+    m.querySelector('#jf-clr').onclick = () => { J.amin = J.amax = ''; J.period = 'all'; J.from = J.to = ''; J.limit = 150; closeModal(); render(); };
+  },
+  'j-find-clr': () => { J.amin = J.amax = ''; J.limit = 150; render(); },
   'j-period': el => { J.period = el.dataset.v; J.limit = 150; render(); },
   'j-more': () => { const y = window.scrollY; J.limit += 300; render(); window.scrollTo(0, y); },
   'j-export': () => exportJournal(),
