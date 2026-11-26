@@ -996,6 +996,7 @@ html{overscroll-behavior-y:none}
 .ownsrc{box-shadow:inset 0 0 0 1.5px var(--gold),var(--shadow)}
 
 /* ---- ملخص كشف الحساب: المربعات الأساسية في سطر واحد ---- */
+.co-sum{grid-template-columns:repeat(3,minmax(0,1fr))!important}.co-sum>div:nth-child(n+4){border-top:.5px solid var(--line)}.co-sum>div:nth-child(4){border-inline-start:0}
 .sumrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:12px;overflow:hidden;padding:0}
 .sumrow>div{padding:11px 4px;text-align:center;border-inline-start:.5px solid var(--line);min-width:0}
 .sumrow>div:first-child{border-inline-start:0}
@@ -1826,7 +1827,7 @@ function ranked(listName, type) {
 const cfgOk = () => !!(CFG.url && CFG.key);
 function setSync(state, msg) { SYNC.state = state; SYNC.msg = msg || ''; paintSync(); }
 const HEAVY = { importTx: 1, saveReceipt: 1, init: 1 };
-const BUILD = '20261126-150000';
+const BUILD = '20261126-152000';
 async function apiGet(action, params = {}) {
   const u = new URL(CFG.url);
   u.searchParams.set('action', action);
@@ -3507,7 +3508,7 @@ function collRows() {
   const cs = calc().cli;
   return collList().filter(x => isPriv() || wHas(x.w, ME.id)).map(x => { const s = cs[x.c] || { bal: 0, last: '' }, a = collAmt(x, s); return { x: { ...x, d: nextColl(x.c) }, s, owe: a.amt, own: a.own, lbl: a.lbl }; }).sort((a, b) => b.owe - a.owe || a.x.c.localeCompare(b.x.c));
 }
-const CO = { w: 'all' };
+const CO = { w: 'all', s: 'all' };
 /* تكليف لأكتر من شخص: المعرّفات بتتخزن مفصولة بفاصلة */
 const wIds = v => String(v || '').split(',').map(x => x.trim()).filter(Boolean);
 const wHas = (v, id) => wIds(v).includes(id);
@@ -3532,17 +3533,23 @@ function coLog(cid) {
 function vCollect(r, el) {
   apMigrate();
   const rowsAll = collRows(), td = today();
-  const rows = !isPriv() || CO.w === 'all' ? rowsAll : rowsAll.filter(q => wHas(q.x.w, CO.w === 'me' ? ME.id : CO.w));
-  const tot = r2(rows.reduce((n, q) => n + q.owe, 0)), n0 = rows.filter(q => q.owe > 0.004).length;
-  const wn = k => rowsAll.filter(q => wHas(q.x.w, k)).length, wChips = rowsAll.length ? `<div class="tk-who"><button class="chip ${CO.w === 'all' ? 'on' : ''}" data-act="co-w" data-k="all">الكل <small>${rowsAll.length}</small></button><button class="chip ${CO.w === 'me' ? 'on' : ''}" data-act="co-w" data-k="me">تحصيلي <small>${wn(ME.id)}</small></button>${isPriv() ? liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id && wn(u.id)).map(u => `<button class="chip ${CO.w === u.id ? 'on' : ''}" data-act="co-w" data-k="${u.id}">${esc(bareName(u.name))} <small>${wn(u.id)}</small></button>`).join('') : ''}</div>` : '';
-  const late = rows.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
+  const byW = !isPriv() || CO.w === 'all' ? rowsAll : rowsAll.filter(q => CO.w === 'others' ? !wHas(q.x.w, ME.id) : wHas(q.x.w, CO.w === 'me' ? ME.id : CO.w));
+  const nDone = byW.filter(q => q.x.cd).length, nOpen = byW.length - nDone;
+  const rows = (CO.s === 'done' ? byW.filter(q => q.x.cd) : CO.s === 'open' ? byW.filter(q => !q.x.cd) : byW.slice()).sort((a, b) => (a.x.cd ? 1 : 0) - (b.x.cd ? 1 : 0));
+  const act = rows.filter(q => !q.x.cd);
+  const tot = r2(act.reduce((n, q) => n + q.owe, 0)), n0 = act.filter(q => q.owe > 0.004).length;
+  const sChips = `<div class="tk-who" style="margin-top:8px"><button class="chip ${CO.s === 'all' ? 'on' : ''}" data-act="co-s" data-k="all">كل الشغل <small>${byW.length}</small></button><button class="chip ${CO.s === 'open' ? 'on' : ''}" data-act="co-s" data-k="open">⏳ شغل ما خلص <small>${nOpen}</small></button><button class="chip ${CO.s === 'done' ? 'on' : ''}" data-act="co-s" data-k="done">✅ شغل خلص <small>${nDone}</small></button></div>`;
+  const wn = k => rowsAll.filter(q => wHas(q.x.w, k)).length, wChips = rowsAll.length ? `<div class="tk-who"><button class="chip ${CO.w === 'all' ? 'on' : ''}" data-act="co-w" data-k="all">الكل <small>${rowsAll.length}</small></button><button class="chip ${CO.w === 'me' ? 'on' : ''}" data-act="co-w" data-k="me">تحصيلي <small>${wn(ME.id)}</small></button><button class="chip ${CO.w === 'others' ? 'on' : ''}" data-act="co-w" data-k="others">تحصيلات الغير <small>${rowsAll.filter(q => !wHas(q.x.w, ME.id)).length}</small></button>${isPriv() ? liveUsers().filter(u => +u.active !== 0 && u.id !== ME.id && wn(u.id)).map(u => `<button class="chip ${CO.w === u.id ? 'on' : ''}" data-act="co-w" data-k="${u.id}">${esc(bareName(u.name))} <small>${wn(u.id)}</small></button>`).join('') : ''}</div>` : '';
+  const late = act.filter(q => q.owe > 0.004 && q.x.d && q.x.d < td).length;
   el.innerHTML = `<div class="co-h"><div class="co-t"><h1 class="pg" style="margin:0">💰 التحصيل</h1><div class="small muted">تحصيل العملاء ومتابعة مطالبات الضرائب</div></div>
       <div class="co-top-acts">${isPriv() ? `<button class="btn pri" data-act="coll-add">${icon('plus', 17)} إضافة عميل</button>${rows.length ? `<button class="btn" data-act="pd-collect">${icon('print', 17)} PDF</button>` : ''}` : ''}</div></div>
-    ${isPriv() ? wChips : ''}
+    ${isPriv() ? wChips : ''}${rowsAll.length ? sChips : ''}
     <div class="card sumrow co-sum">
-      <div><small>في القائمة</small><b>${rows.length}</b></div>
+      <div><small>في القائمة</small><b>${byW.length}</b></div>
       <div><small>عليهم رصيد</small><b>${n0}</b></div>
       <div><small>تأخر موعدهم</small><b class="${late ? 'neg' : ''}">${late}</b></div>
+      <div data-act="co-s" data-k="open" style="cursor:pointer"><small>⏳ شغل ما خلص</small><b>${nOpen}</b></div>
+      <div data-act="co-s" data-k="done" style="cursor:pointer"><small>✅ شغل خلص</small><b class="${nDone ? 'pos' : ''}">${nDone}</b></div>
       <div class="bal ${tot > 0 ? 'neg' : ''}"><small>المتوقع تحصيله</small><b class="${tot > 0 ? 'neg' : 'pos'}">${fmt(tot)}</b></div>
     </div>
     ${rows.length ? rows.map(({ x, s, owe, own, lbl }) => { const c = D.clients[x.c], isLate = owe > 0.004 && x.d && x.d < td, has = owe > 0.004;
@@ -7779,6 +7786,7 @@ Object.assign(ACT, {
   'um-go': el => { closeModal(); go(el.dataset.h); },
   'um-out': () => { closeModal(); ACT.logout(); },
   'co-w': el => { CO.w = el.dataset.k; stRe(); },
+  'co-s': el => { CO.s = CO.s === el.dataset.k && el.dataset.k !== 'all' ? 'all' : el.dataset.k; stRe(); },
   'tk-edit': el => { const id = el.dataset.id; if (id.startsWith('AP-')) return apForm(id.slice(3)); if (id.startsWith('CL-')) return collForm(id.slice(3)); tkEdit(id); },
   'tk-arch': el => { const st = tkArchSet(); st.add(el.dataset.id); tkArchSave(st); toast('اتجاهلت — هتلاقيها في «المهام المتجاهلة»'); stRe(); },
   'tk-arch-grp': async el => { const ids = String(el.dataset.ids || '').split(',').filter(Boolean); if (!ids.length) return; if (!(await ask('تجاهل ' + ids.length + ' مهمة من «' + esc(el.dataset.g) + '»؟ تقدري ترجعيهم من «المهام المتجاهلة».', 'تجاهل'))) return; const st = tkArchSet(); ids.forEach(id => st.add(id)); tkArchSave(st); toast('اتجاهلوا ' + ids.length); stRe(); },
